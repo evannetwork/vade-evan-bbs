@@ -1,0 +1,20 @@
+[package]
+name = "vade-evan-bbs"
+version = "0.0.1"
+authors = ["evan GmbH"]
+edition = "2018"
+license = "Apache-2.0"
+license-file = "LICENSE.txt"
+description = "Workflow handling and signature creation for BBS crypto suite in evan"
+homepage = "https://github.com/evannetwork/vade-evan-bbs"
+documentation = "https://docs.rs/crate/vade-evan-bbs"
+repository = "https://github.com/evannetwork/vade-evan-bbs"
+readme = "README.md"
+keywords = ["did", "ssi", "vc", "zkp"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bbs = "0.4.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0.53", features = ["preserve_order", "raw_value"] }
