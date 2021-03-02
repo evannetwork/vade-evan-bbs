@@ -2,15 +2,16 @@ use bbs::{BlindSignatureContext, ProofNonce};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+pub const CREDENTIAL_REQUEST_TYPE: &str = "EvanBbsCredentialRequest";
+
 /// Message following a `CredentialOffer`, sent by a potential credential prover.
 /// Provides the values that need to be signed by the issuer in both encoded/cleartext, and blinded format.
 /// Incorporates the nonce value sent in `CredentialOffer`.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct BbsCredentialRequest {
     pub subject: String,
     pub schema: String,
-    pub credential_definition: String,
     pub r#type: String,
     pub blind_signature_context: BlindSignatureContext,
     pub credential_values: HashMap<String, String>,
@@ -18,7 +19,7 @@ pub struct BbsCredentialRequest {
 
 /// Specifies the properties of a credential, as well as metadata.
 /// Needs to be stored publicly available and temper-proof.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CredentialSchema {
     pub id: String,
@@ -34,7 +35,7 @@ pub struct CredentialSchema {
     pub proof: Option<AssertionProof>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SchemaProperty {
     pub r#type: String,
@@ -44,7 +45,7 @@ pub struct SchemaProperty {
     pub items: Option<Vec<String>>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct AssertionProof {
     pub r#type: String,
@@ -57,13 +58,12 @@ pub struct AssertionProof {
 /// Message following a `CredentialProposal`, sent by an issuer.
 /// Specifies the DIDs of both the `CredentialSchema` and `CredentialDefinition`
 /// to be used for issuance.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CredentialOffer {
     pub issuer: String,
     pub subject: String,
     pub r#type: String,
     pub schema: String,
-    pub credential_definition: String,
     pub nonce: ProofNonce,
 }

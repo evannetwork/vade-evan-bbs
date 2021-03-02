@@ -23,6 +23,8 @@ pub mod accounts {
         #[allow(dead_code)]
         pub const ISSUER_DID: &str = "did:evan:testcore:0x6240cedfc840579b7fdcd686bdc65a9a8c42dea6";
 
+        pub const HOLDER_DID: &str = "did:evan:testcore:0x0d87204c3957d73b68ae28d0af961d3c72403901";
+
         #[allow(dead_code)]
         pub const ISSUER_PRIVATE_KEY: &str =
             "30d446cc76b19c6eacad89237d021eb2c85144b61d63cb852aee09179f460920";
@@ -120,6 +122,16 @@ pub mod environment {
 
 #[allow(dead_code)]
 pub mod vc_zkp {
+    pub const EXAMPLE_CREDENTIAL_OFFERING: &str = r###"
+    {
+        "issuer": "did:evan:testcore:0x6240cedfc840579b7fdcd686bdc65a9a8c42dea6",
+        "subject": "did:evan:testcore:0x67ce8b01b3b75a9ba4a1462139a1edaa0d2f539f",
+        "type": "EvanBbsCredentialOffering",
+        "schema": "did:evan:schema:0x1ace8b01be3bca9ba4a1462130a1e0ad0d2f539f",
+        "nonce": "[34,215,241,88,186,112,29,159,65,215,242,164,19,8,201,78,55,108,154,119,184,224,225,40,48,180,69,178,148,5,59,111]"
+    }
+    "###;
+
     #[allow(dead_code)]
     pub const EXAMPLE_CREDENTIAL_SCHEMA: &str = r###"
     {

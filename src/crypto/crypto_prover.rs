@@ -10,16 +10,16 @@ pub struct CryptoProver {}
 
 impl CryptoProver {
     pub fn create_blind_signature_context(
-        issuer_pub_key: DeterministicPublicKey,
-        schema: CredentialSchema,
-        master_secret: SignatureMessage,
-        credential_offering_nonce: ProofNonce,
+        issuer_pub_key: &DeterministicPublicKey,
+        schema: &CredentialSchema,
+        master_secret: &SignatureMessage,
+        credential_offering_nonce: &ProofNonce,
     ) -> Result<(BlindSignatureContext, SignatureBlinding), Box<dyn Error>> {
         let pk = issuer_pub_key
             .to_public_key(schema.properties.len())
             .map_err(|e| "Cannot create blind signature context. Provided invalid schema")?;
         let mut messages = BTreeMap::new();
-        messages.insert(0, master_secret);
+        messages.insert(0, master_secret.clone());
         let (context, blinding) =
             BbsProver::new_blind_signature_context(&pk, &messages, &credential_offering_nonce)
                 .map_err(|e| format!("{}", e))?;
@@ -43,10 +43,10 @@ mod tests {
         let credential_schema: CredentialSchema =
             serde_json::from_str(EXAMPLE_CREDENTIAL_SCHEMA).unwrap();
         let ctx = CryptoProver::create_blind_signature_context(
-            dpk,
-            credential_schema,
-            master_secret,
-            nonce,
+            &dpk,
+            &credential_schema,
+            &master_secret,
+            &nonce,
         );
         assert!(ctx.is_ok());
     }
@@ -60,10 +60,10 @@ mod tests {
             serde_json::from_str(EXAMPLE_CREDENTIAL_SCHEMA).unwrap();
         credential_schema.properties = HashMap::new();
         let ctx = CryptoProver::create_blind_signature_context(
-            dpk,
-            credential_schema,
-            master_secret,
-            nonce,
+            &dpk,
+            &credential_schema,
+            &master_secret,
+            &nonce,
         );
         match ctx {
             Ok(_) => assert!(false),
