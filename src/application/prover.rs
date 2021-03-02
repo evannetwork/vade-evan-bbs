@@ -1,5 +1,6 @@
 use super::datatypes::{
-    BbsCredentialRequest, CredentialOffer, CredentialSchema, CREDENTIAL_REQUEST_TYPE,
+    BbsCredentialOffer, BbsCredentialRequest, CredentialProposal, CredentialSchema,
+    CREDENTIAL_PROPOSAL_TYPE, CREDENTIAL_REQUEST_TYPE,
 };
 use crate::crypto::crypto_prover::CryptoProver;
 use bbs::{keys::DeterministicPublicKey, SignatureBlinding, SignatureMessage};
@@ -11,6 +12,28 @@ pub struct Prover {}
 // TODO: Add error class
 
 impl Prover {
+    /// Create a new credential proposal to send to a potential issuer.
+    ///
+    /// # Arguments
+    /// * `issuer_did` - DID of the issuer the proposal is for
+    /// * `subject_did` - DID of the proposal creator and potential subject of the credential
+    /// * `schema_did` - DID of the schema to propose the credential for
+    ///
+    /// # Returns
+    /// * `CredentialProposal` - The message to be sent to an issuer
+    pub fn propose_credential(
+        issuer_did: &str,
+        subject_did: &str,
+        schema_did: &str,
+    ) -> CredentialProposal {
+        CredentialProposal {
+            issuer: issuer_did.to_owned(),
+            subject: subject_did.to_owned(),
+            schema: schema_did.to_owned(),
+            r#type: CREDENTIAL_PROPOSAL_TYPE.to_string(),
+        }
+    }
+
     /// Request a new credential based on a received credential offering.
     ///
     /// # Arguments
@@ -23,7 +46,7 @@ impl Prover {
     /// * `CredentialRequest` - The request to be sent to the issuer
     /// * `CredentialSecretsBlindingFactors` - Blinding factors used for blinding the credential values. Need to be stored privately at the prover's site
     pub fn request_credential(
-        credential_offering: &CredentialOffer,
+        credential_offering: &BbsCredentialOffer,
         credential_schema: &CredentialSchema,
         master_secret: &SignatureMessage,
         credential_values: HashMap<String, String>,
@@ -44,7 +67,12 @@ impl Prover {
             &master_secret,
             &credential_offering.nonce,
         )
-        .map_err(|e| format!("Could not create signature blinding: {}", e))?;
+        .map_err(|e| {
+            format!(
+                "Cannot request credential: Could not create signature blinding: {}",
+                e
+            )
+        })?;
 
         Ok((
             BbsCredentialRequest {
@@ -62,14 +90,17 @@ impl Prover {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::test_data::vc_zkp::{EXAMPLE_CREDENTIAL_OFFERING, EXAMPLE_CREDENTIAL_SCHEMA};
+    use crate::utils::test_data::{
+        accounts::local::{HOLDER_DID, ISSUER_DID},
+        vc_zkp::{EXAMPLE_CREDENTIAL_OFFERING, EXAMPLE_CREDENTIAL_SCHEMA},
+    };
     use bbs::issuer::Issuer as BbsIssuer;
     use bbs::prover::Prover as BbsProver;
 
     fn setup_test() -> Result<
         (
             DeterministicPublicKey,
-            CredentialOffer,
+            BbsCredentialOffer,
             CredentialSchema,
             SignatureMessage,
             HashMap<String, String>,
@@ -77,13 +108,22 @@ mod tests {
         Box<dyn Error>,
     > {
         let (dpk, _) = BbsIssuer::new_short_keys(None);
-        let offering: CredentialOffer = serde_json::from_str(EXAMPLE_CREDENTIAL_OFFERING)?;
+        let offering: BbsCredentialOffer = serde_json::from_str(EXAMPLE_CREDENTIAL_OFFERING)?;
         let schema: CredentialSchema = serde_json::from_str(EXAMPLE_CREDENTIAL_SCHEMA)?;
         let secret = BbsProver::new_link_secret();
         let mut credential_values = HashMap::new();
         credential_values.insert("test_property_string".to_owned(), "value".to_owned());
 
         return Ok((dpk, offering, schema, secret, credential_values));
+    }
+
+    #[test]
+    fn can_propose_credential() {
+        let proposal = Prover::propose_credential(&ISSUER_DID, &HOLDER_DID, "schemadid");
+        assert_eq!(&proposal.subject, &HOLDER_DID);
+        assert_eq!(&proposal.issuer, &ISSUER_DID);
+        assert_eq!(&proposal.schema, "schemadid");
+        assert_eq!(&proposal.r#type, CREDENTIAL_PROPOSAL_TYPE);
     }
 
     #[test]

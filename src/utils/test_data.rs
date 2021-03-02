@@ -122,6 +122,14 @@ pub mod environment {
 
 #[allow(dead_code)]
 pub mod vc_zkp {
+    pub const EXAMPLE_CREDENTIAL_PROPOSAL: &str = r###"
+    {
+        "issuer": "did:evan:testcore:0x6240cedfc840579b7fdcd686bdc65a9a8c42dea6",
+        "subject": "did:evan:testcore:0x67ce8b01b3b75a9ba4a1462139a1edaa0d2f539f",
+        "type": "EvanCredentialProposal",
+        "schema": "did:evan:schema:0x1ace8b01be3bca9ba4a1462130a1e0ad0d2f539f"
+    }
+    "###;
     pub const EXAMPLE_CREDENTIAL_OFFERING: &str = r###"
     {
         "issuer": "did:evan:testcore:0x6240cedfc840579b7fdcd686bdc65a9a8c42dea6",
