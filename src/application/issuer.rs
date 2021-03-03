@@ -1,9 +1,21 @@
-use crate::application::datatypes::{
-    BbsCredential, BbsCredentialOffer, BbsCredentialRequest, CredentialProposal, CredentialSchema,
-    CREDENTIAL_OFFER_TYPE,
+use crate::{
+    application::datatypes::{
+        BbsCredential, BbsCredentialOffer, BbsCredentialRequest, CredentialProposal,
+        CredentialSchema, CREDENTIAL_OFFER_TYPE, CREDENTIAL_SIGNATURE_TYPE,
+    },
+    crypto::crypto_issuer::CryptoIssuer,
 };
-use bbs::{issuer::Issuer as BbsIssuer, keys::SecretKey};
+
+use bbs::{
+    issuer::Issuer as BbsIssuer,
+    keys::{DeterministicPublicKey, SecretKey},
+};
 use std::error::Error;
+
+use crate::application::{
+    datatypes::{BbsCredentialSignature, CredentialSchemaReference, CredentialSubject},
+    utils::generate_uuid,
+};
 
 pub struct Issuer {}
 
@@ -40,10 +52,52 @@ impl Issuer {
     pub fn issue_credential(
         issuer_did: &str,
         subject_did: &str,
-        credential_request: BbsCredentialRequest,
-        private_key: SecretKey,
+        credential_offer: &BbsCredentialOffer,
+        credential_request: &BbsCredentialRequest,
+        issuer_public_key: &DeterministicPublicKey,
+        issuer_secret_key: &SecretKey,
         credential_schema: CredentialSchema,
     ) -> Result<BbsCredential, Box<dyn Error>> {
+        let credential_subject = CredentialSubject {
+            id: subject_did.to_owned(),
+            data,
+        };
+
+        let schema_reference = CredentialSchemaReference {
+            id: credential_schema.id,
+            r#type: "EvanZKPSchema".to_string(),
+        };
+
+        let signature = CryptoIssuer::create_signature(
+            &credential_request.blind_signature_context,
+            &credential_offer.nonce,
+            credential_request.credential_values.clone(),
+            issuer_public_key,
+            issuer_secret_key,
+        )
+        .map_err(|e| format!("Error creating bbs+ signature: {}", e))?;
+
+        let credential_id = generate_uuid();
+
+        let vc_signature = BbsCredentialSignature {
+            r#type: CREDENTIAL_SIGNATURE_TYPE.to_string(),
+            credential_definition: credential_definition.id,
+            issuance_nonce,
+            signature,
+            signature_correctness_proof,
+            revocation_id: rev_idx,
+            revocation_registry_definition: revocation_registry_definition.id.clone(),
+        };
+
+        let credential = Credential {
+            context: vec!["https://www.w3.org/2018/credentials/v1".to_string()],
+            id: credential_id,
+            r#type: vec!["VerifiableCredential".to_string()],
+            issuer: issuer_did.to_owned(),
+            credential_subject,
+            credential_schema: schema_reference,
+            proof: cred_signature,
+        };
         Ok(BbsCredential {})
     }
 }
@@ -71,7 +125,7 @@ mod tests {
     }
 
     #[test]
-    fn fails_on_wrong_issuer() -> Result<(), Box<dyn Error>> {
+    fn credential_offer_fails_on_wrong_issuer() -> Result<(), Box<dyn Error>> {
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
         let offer = Issuer::offer_credential(&proposal, "random_issuer");
 

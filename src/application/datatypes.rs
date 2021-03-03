@@ -4,7 +4,8 @@ use std::collections::HashMap;
 
 pub const CREDENTIAL_REQUEST_TYPE: &str = "EvanBbsCredentialRequest";
 pub const CREDENTIAL_PROPOSAL_TYPE: &str = "EvanCredentialProposal";
-pub const CREDENTIAL_OFFER_TYPE: &str = "EvanBbsBbsCredentialOffering";
+pub const CREDENTIAL_OFFER_TYPE: &str = "EvanBbsCredentialOffering";
+pub const CREDENTIAL_SIGNATURE_TYPE: &str = "BbsBlsSignature2020";
 
 /// Message following a `BbsCredentialOffer`, sent by a potential credential prover.
 /// Provides the values that need to be signed by the issuer in both encoded/cleartext, and blinded format.

@@ -15,9 +15,14 @@ impl CryptoProver {
         master_secret: &SignatureMessage,
         credential_offering_nonce: &ProofNonce,
     ) -> Result<(BlindSignatureContext, SignatureBlinding), Box<dyn Error>> {
+        if schema.properties.len() == 0 {
+            return Err(Box::from(
+                "Cannot create blind signature context. Provided invalid schema",
+            ));
+        }
         let pk = issuer_pub_key
-            .to_public_key(schema.properties.len())
-            .map_err(|e| "Cannot create blind signature context. Provided invalid schema")?;
+            .to_public_key(schema.properties.len() + 1) // + 1 for master secret
+            .unwrap(); // can unwrap because we dealt with possible error before
         let mut messages = BTreeMap::new();
         messages.insert(0, master_secret.clone());
         let (context, blinding) =
