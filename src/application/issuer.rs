@@ -1,7 +1,8 @@
 use crate::{
     application::datatypes::{
         BbsCredential, BbsCredentialOffer, BbsCredentialRequest, CredentialProposal,
-        CredentialSchema, CREDENTIAL_OFFER_TYPE, CREDENTIAL_SIGNATURE_TYPE,
+        CredentialSchema, UnfinishedBbsCredential, CREDENTIAL_OFFER_TYPE, CREDENTIAL_PROOF_PURPOSE,
+        CREDENTIAL_SCHEMA_TYPE, CREDENTIAL_SIGNATURE_TYPE, DEFAULT_CREDENTIAL_CONTEXT,
     },
     crypto::crypto_issuer::CryptoIssuer,
 };
@@ -13,8 +14,11 @@ use bbs::{
 use std::error::Error;
 
 use crate::application::{
-    datatypes::{BbsCredentialSignature, CredentialSchemaReference, CredentialSubject},
-    utils::generate_uuid,
+    datatypes::{
+        BbsCredentialSignature, BbsUnfinishedCredentialSignature, CredentialSchemaReference,
+        CredentialSubject,
+    },
+    utils::{generate_uuid, get_now_as_iso_string},
 };
 
 pub struct Issuer {}
@@ -54,10 +58,11 @@ impl Issuer {
         subject_did: &str,
         credential_offer: &BbsCredentialOffer,
         credential_request: &BbsCredentialRequest,
+        issuer_public_key_id: &str,
         issuer_public_key: &DeterministicPublicKey,
         issuer_secret_key: &SecretKey,
         credential_schema: CredentialSchema,
-    ) -> Result<BbsCredential, Box<dyn Error>> {
+    ) -> Result<UnfinishedBbsCredential, Box<dyn Error>> {
         let credential_subject = CredentialSubject {
             id: subject_did.to_owned(),
             data,
@@ -65,10 +70,10 @@ impl Issuer {
 
         let schema_reference = CredentialSchemaReference {
             id: credential_schema.id,
-            r#type: "EvanZKPSchema".to_string(),
+            r#type: CREDENTIAL_SCHEMA_TYPE.to_string(),
         };
 
-        let signature = CryptoIssuer::create_signature(
+        let blind_signature = CryptoIssuer::create_signature(
             &credential_request.blind_signature_context,
             &credential_offer.nonce,
             credential_request.credential_values.clone(),
@@ -79,26 +84,28 @@ impl Issuer {
 
         let credential_id = generate_uuid();
 
-        let vc_signature = BbsCredentialSignature {
+        let vc_signature = BbsUnfinishedCredentialSignature {
             r#type: CREDENTIAL_SIGNATURE_TYPE.to_string(),
-            credential_definition: credential_definition.id,
-            issuance_nonce,
-            signature,
-            signature_correctness_proof,
-            revocation_id: rev_idx,
-            revocation_registry_definition: revocation_registry_definition.id.clone(),
+            created: get_now_as_iso_string(),
+            proof_purpose: CREDENTIAL_PROOF_PURPOSE.to_owned(),
+            verification_method: issuer_public_key_id.to_owned(),
+            required_reveal_statements: get_required_indices(
+                credential_request.credential_values.clone(),
+                &credential_schema,
+            ),
+            blind_signature: serde_json::to_string(&blind_signature)?,
         };
 
-        let credential = Credential {
-            context: vec!["https://www.w3.org/2018/credentials/v1".to_string()],
+        let credential = UnfinishedBbsCredential {
+            context: DEFAULT_CREDENTIAL_CONTEXT,
             id: credential_id,
             r#type: vec!["VerifiableCredential".to_string()],
             issuer: issuer_did.to_owned(),
             credential_subject,
             credential_schema: schema_reference,
-            proof: cred_signature,
+            proof: vc_signature,
         };
-        Ok(BbsCredential {})
+        Ok(credential)
     }
 }
 

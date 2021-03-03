@@ -6,6 +6,10 @@ pub const CREDENTIAL_REQUEST_TYPE: &str = "EvanBbsCredentialRequest";
 pub const CREDENTIAL_PROPOSAL_TYPE: &str = "EvanCredentialProposal";
 pub const CREDENTIAL_OFFER_TYPE: &str = "EvanBbsCredentialOffering";
 pub const CREDENTIAL_SIGNATURE_TYPE: &str = "BbsBlsSignature2020";
+pub const CREDENTIAL_SCHEMA_TYPE: &str = "EvanZKPSchema";
+pub const CREDENTIAL_PROOF_PURPOSE: &str = "assertionMethod";
+pub const DEFAULT_CREDENTIAL_CONTEXT: Vec<String> =
+    vec!["https://www.w3.org/2018/credentials/v1".to_string()];
 
 /// Message following a `BbsCredentialOffer`, sent by a potential credential prover.
 /// Provides the values that need to be signed by the issuer in both encoded/cleartext, and blinded format.
@@ -98,6 +102,20 @@ pub struct BbsCredential {
     pub proof: BbsCredentialSignature,
 }
 
+// A verifiable credential with a blind signature that still needs to be processed by the holder
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct UnfinishedBbsCredential {
+    #[serde(rename(serialize = "@context", deserialize = "@context"))]
+    pub context: Vec<String>,
+    pub id: String,
+    pub r#type: Vec<String>,
+    pub issuer: String,
+    pub credential_subject: CredentialSubject,
+    pub credential_schema: CredentialSchemaReference,
+    pub proof: BbsUnfinishedCredentialSignature,
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CredentialSubject {
@@ -121,4 +139,15 @@ pub struct BbsCredentialSignature {
     pub verification_method: String,
     pub required_reveal_statements: Vec<u32>,
     pub signature: String,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BbsUnfinishedCredentialSignature {
+    pub r#type: String,
+    pub created: String,
+    pub proof_purpose: String,
+    pub verification_method: String,
+    pub required_reveal_statements: Vec<u32>,
+    pub blind_signature: String,
 }
