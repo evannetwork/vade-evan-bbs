@@ -1,6 +1,6 @@
 use super::datatypes::{
-    BbsCredentialOffer, BbsCredentialRequest, CredentialProposal, CredentialSchema,
-    CREDENTIAL_PROPOSAL_TYPE, CREDENTIAL_REQUEST_TYPE,
+    BbsCredential, BbsCredentialOffer, BbsCredentialRequest, CredentialProposal, CredentialSchema,
+    UnfinishedBbsCredential, CREDENTIAL_PROPOSAL_TYPE, CREDENTIAL_REQUEST_TYPE,
 };
 use crate::crypto::crypto_prover::CryptoProver;
 use bbs::{keys::DeterministicPublicKey, SignatureBlinding, SignatureMessage};
@@ -85,6 +85,15 @@ impl Prover {
             blinding,
         ))
     }
+
+    pub fn finish_credential(
+        unfinished_credential: &UnfinishedBbsCredential,
+        master_secret: &SignatureMessage,
+    ) -> Result<BbsCredential, Box<dyn Error>> {
+        unfinished_credential
+        let signature = CryptoProver::finish_credential_signature();
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -96,7 +105,6 @@ mod tests {
     };
     use bbs::issuer::Issuer as BbsIssuer;
     use bbs::prover::Prover as BbsProver;
-
     fn setup_test() -> Result<
         (
             DeterministicPublicKey,
@@ -149,6 +157,13 @@ mod tests {
                 "Cannot request credential: Missing required schema property: test_property_string"
             ),
         }
+        Ok(())
+    }
+
+    #[test]
+    fn can_finish_credential() -> Result<(), Box<dyn Error>> {
+        Prover::finish_credential();
+
         Ok(())
     }
 }

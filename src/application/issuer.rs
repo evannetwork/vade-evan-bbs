@@ -53,60 +53,61 @@ impl Issuer {
         })
     }
 
-    pub fn issue_credential(
-        issuer_did: &str,
-        subject_did: &str,
-        credential_offer: &BbsCredentialOffer,
-        credential_request: &BbsCredentialRequest,
-        issuer_public_key_id: &str,
-        issuer_public_key: &DeterministicPublicKey,
-        issuer_secret_key: &SecretKey,
-        credential_schema: CredentialSchema,
-    ) -> Result<UnfinishedBbsCredential, Box<dyn Error>> {
-        let credential_subject = CredentialSubject {
-            id: subject_did.to_owned(),
-            data,
-        };
+    // TODO: Finish as soon as Dechi gets answer from Credential WG
+    // pub fn issue_credential(
+    //     issuer_did: &str,
+    //     subject_did: &str,
+    //     credential_offer: &BbsCredentialOffer,
+    //     credential_request: &BbsCredentialRequest,
+    //     issuer_public_key_id: &str,
+    //     issuer_public_key: &DeterministicPublicKey,
+    //     issuer_secret_key: &SecretKey,
+    //     credential_schema: CredentialSchema,
+    // ) -> Result<UnfinishedBbsCredential, Box<dyn Error>> {
+    //     let credential_subject = CredentialSubject {
+    //         id: subject_did.to_owned(),
+    //         data,
+    //     };
 
-        let schema_reference = CredentialSchemaReference {
-            id: credential_schema.id,
-            r#type: CREDENTIAL_SCHEMA_TYPE.to_string(),
-        };
+    //     let schema_reference = CredentialSchemaReference {
+    //         id: credential_schema.id,
+    //         r#type: CREDENTIAL_SCHEMA_TYPE.to_string(),
+    //     };
 
-        let blind_signature = CryptoIssuer::create_signature(
-            &credential_request.blind_signature_context,
-            &credential_offer.nonce,
-            credential_request.credential_values.clone(),
-            issuer_public_key,
-            issuer_secret_key,
-        )
-        .map_err(|e| format!("Error creating bbs+ signature: {}", e))?;
+    //     let blind_signature = CryptoIssuer::create_signature(
+    //         &credential_request.blind_signature_context,
+    //         &credential_offer.nonce,
+    //         credential_request.credential_values.clone(),
+    //         issuer_public_key,
+    //         issuer_secret_key,
+    //     )
+    //     .map_err(|e| format!("Error creating bbs+ signature: {}", e))?;
 
-        let credential_id = generate_uuid();
+    //     let credential_id = generate_uuid();
 
-        let vc_signature = BbsUnfinishedCredentialSignature {
-            r#type: CREDENTIAL_SIGNATURE_TYPE.to_string(),
-            created: get_now_as_iso_string(),
-            proof_purpose: CREDENTIAL_PROOF_PURPOSE.to_owned(),
-            verification_method: issuer_public_key_id.to_owned(),
-            required_reveal_statements: get_required_indices(
-                credential_request.credential_values.clone(),
-                &credential_schema,
-            ),
-            blind_signature: serde_json::to_string(&blind_signature)?,
-        };
+    //     let vc_signature = BbsUnfinishedCredentialSignature {
+    //         r#type: CREDENTIAL_SIGNATURE_TYPE.to_string(),
+    //         created: get_now_as_iso_string(),
+    //         proof_purpose: CREDENTIAL_PROOF_PURPOSE.to_owned(),
+    //         verification_method: issuer_public_key_id.to_owned(),
+    //         required_reveal_statements: get_required_indices(
+    //             credential_request.credential_values.clone(),
+    //             &credential_schema,
+    //         ),
+    //         blind_signature: serde_json::to_string(&blind_signature)?,
+    //     };
 
-        let credential = UnfinishedBbsCredential {
-            context: DEFAULT_CREDENTIAL_CONTEXT,
-            id: credential_id,
-            r#type: vec!["VerifiableCredential".to_string()],
-            issuer: issuer_did.to_owned(),
-            credential_subject,
-            credential_schema: schema_reference,
-            proof: vc_signature,
-        };
-        Ok(credential)
-    }
+    //     let credential = UnfinishedBbsCredential {
+    //         context: DEFAULT_CREDENTIAL_CONTEXT,
+    //         id: credential_id,
+    //         r#type: vec!["VerifiableCredential".to_string()],
+    //         issuer: issuer_did.to_owned(),
+    //         credential_subject,
+    //         credential_schema: schema_reference,
+    //         proof: vc_signature,
+    //     };
+    //     Ok(credential)
+    // }
 }
 
 #[cfg(test)]
@@ -149,7 +150,7 @@ mod tests {
 
     #[test]
     fn can_issue_credential() -> Result<(), Box<dyn Error>> {
-        let credential = Issuer::issue_credential();
+        // let credential = Issuer::issue_credential();
         Ok(())
     }
 }

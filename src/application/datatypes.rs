@@ -8,8 +8,8 @@ pub const CREDENTIAL_OFFER_TYPE: &str = "EvanBbsCredentialOffering";
 pub const CREDENTIAL_SIGNATURE_TYPE: &str = "BbsBlsSignature2020";
 pub const CREDENTIAL_SCHEMA_TYPE: &str = "EvanZKPSchema";
 pub const CREDENTIAL_PROOF_PURPOSE: &str = "assertionMethod";
-pub const DEFAULT_CREDENTIAL_CONTEXT: Vec<String> =
-    vec!["https://www.w3.org/2018/credentials/v1".to_string()];
+pub const DEFAULT_CREDENTIAL_CONTEXT: [&'static str; 1] =
+    ["https://www.w3.org/2018/credentials/v1"];
 
 /// Message following a `BbsCredentialOffer`, sent by a potential credential prover.
 /// Provides the values that need to be signed by the issuer in both encoded/cleartext, and blinded format.

@@ -1,7 +1,9 @@
-use crate::application::datatypes::CredentialSchema;
+use crate::application::datatypes::{CredentialSchema, UnfinishedBbsCredential};
 use bbs::{
-    keys::DeterministicPublicKey, prover::Prover as BbsProver, BlindSignatureContext, ProofNonce,
-    SignatureBlinding, SignatureMessage,
+    keys::DeterministicPublicKey,
+    prover::Prover as BbsProver,
+    signature::{BlindSignature, Signature},
+    BlindSignatureContext, ProofNonce, SignatureBlinding, SignatureMessage,
 };
 use std::collections::BTreeMap;
 use std::error::Error;
@@ -30,6 +32,20 @@ impl CryptoProver {
                 .map_err(|e| format!("{}", e))?;
 
         return Ok((context, blinding));
+    }
+
+    pub fn finish_credential_signature(
+        credential: UnfinishedBbsCredential,
+        issuer_public_key: &DeterministicPublicKey,
+        blind_signature: &BlindSignature,
+        blinding_factor: &SignatureBlinding,
+    ) -> Result<Signature, Box<dyn Error>> {
+        BbsProver::complete_signature(
+            verkey: &PublicKey,
+            messages: &[SignatureMessage],
+            blind_signature: &BlindSignature,
+            blinding_factor: &SignatureBlinding,
+        )
     }
 }
 
@@ -77,5 +93,10 @@ mod tests {
                 "Cannot create blind signature context. Provided invalid schema"
             ),
         }
+    }
+
+    #[test]
+    fn can_finish_credential_signature() {
+        CryptoProver::finish_credential_signature();
     }
 }
