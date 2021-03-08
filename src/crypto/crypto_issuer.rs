@@ -5,7 +5,7 @@ use bbs::{
     signature::BlindSignature,
     BlindSignatureContext, HashElem, ProofNonce, SignatureMessage,
 };
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::error::Error;
 
 pub struct CryptoIssuer {}
@@ -14,18 +14,14 @@ impl CryptoIssuer {
     pub fn create_signature(
         blind_signature_context: &BlindSignatureContext,
         signing_nonce: &ProofNonce,
-        credential_values: HashMap<String, String>,
+        credential_values: Vec<String>,
         issuer_public_key: &DeterministicPublicKey,
         issuer_secret_key: &SecretKey,
     ) -> Result<BlindSignature, Box<dyn Error>> {
-        let keys = canonicalize_credential_value_keys(&credential_values);
-
         let mut messages = BTreeMap::new();
         let mut i = 1; // 0 is always reserved for master secret
-        for key in keys {
-            let message = SignatureMessage::hash(credential_values.get(&key).ok_or_else(|| {
-                "Key not found in array. Something went wrong during canonicalization"
-            })?);
+        for value in &credential_values {
+            let message = SignatureMessage::hash(value);
             messages.insert(i, message);
             i += 1;
         }
@@ -51,8 +47,7 @@ impl CryptoIssuer {
 mod tests {
     use super::*;
     use crate::{
-        application::datatypes::{CredentialSchema, SchemaProperty},
-        crypto::crypto_prover::CryptoProver,
+        application::datatypes::CredentialSchema, crypto::crypto_prover::CryptoProver,
         utils::test_data::vc_zkp::EXAMPLE_CREDENTIAL_SCHEMA,
     };
     use bbs::prover::Prover as BbsProver;
@@ -69,8 +64,8 @@ mod tests {
             CryptoProver::create_blind_signature_context(&dpk, &schema, &master_secret, &nonce)?;
 
         // Issuer
-        let mut values = HashMap::new();
-        values.insert("test_property_string".to_owned(), "test_value".to_owned());
+        let mut values = Vec::new();
+        values.insert(0, "test_property_string: test_value".to_owned());
         let signature =
             CryptoIssuer::create_signature(&blind_signature_context, &nonce, values, &dpk, &sk);
 
@@ -92,12 +87,9 @@ mod tests {
         let (blind_signature_context, _) =
             CryptoProver::create_blind_signature_context(&dpk, &schema, &master_secret, &nonce)?;
 
-        let mut values = HashMap::new();
-        values.insert("test_property_string".to_owned(), "test_value".to_owned());
-        values.insert(
-            "property_not_included_in_schema".to_owned(),
-            "test_value".to_owned(),
-        );
+        let mut values = Vec::new();
+        values.insert(0, "test_property_string: test_value".to_owned());
+        values.insert(1, "property_not_included_in_schema: test_value".to_owned());
         let signature =
             CryptoIssuer::create_signature(&blind_signature_context, &nonce, values, &dpk, &sk);
 

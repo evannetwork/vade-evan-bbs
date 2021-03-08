@@ -86,14 +86,14 @@ impl Prover {
         ))
     }
 
-    pub fn finish_credential(
-        unfinished_credential: &UnfinishedBbsCredential,
-        master_secret: &SignatureMessage,
-    ) -> Result<BbsCredential, Box<dyn Error>> {
-        unfinished_credential
-        let signature = CryptoProver::finish_credential_signature();
-        Ok(())
-    }
+    // pub fn finish_credential(
+    //     unfinished_credential: &UnfinishedBbsCredential,
+    //     master_secret: &SignatureMessage,
+    // ) -> Result<BbsCredential, Box<dyn Error>> {
+    //     unfinished_credential
+    //     let signature = CryptoProver::finish_credential_signature();
+    //     Ok(())
+    // }
 }
 
 #[cfg(test)]
@@ -162,7 +162,7 @@ mod tests {
 
     #[test]
     fn can_finish_credential() -> Result<(), Box<dyn Error>> {
-        Prover::finish_credential();
+        // Prover::finish_credential();
 
         Ok(())
     }

@@ -1,8 +1,8 @@
 use crate::{
     application::datatypes::{
-        BbsCredential, BbsCredentialOffer, BbsCredentialRequest, CredentialProposal,
-        CredentialSchema, UnfinishedBbsCredential, CREDENTIAL_OFFER_TYPE, CREDENTIAL_PROOF_PURPOSE,
-        CREDENTIAL_SCHEMA_TYPE, CREDENTIAL_SIGNATURE_TYPE, DEFAULT_CREDENTIAL_CONTEXT,
+        BbsCredentialOffer, BbsCredentialRequest, CredentialProposal, CredentialSchema,
+        UnfinishedBbsCredential, CREDENTIAL_OFFER_TYPE, CREDENTIAL_PROOF_PURPOSE,
+        CREDENTIAL_SCHEMA_TYPE, CREDENTIAL_SIGNATURE_TYPE, DEFAULT_CREDENTIAL_CONTEXTS,
     },
     crypto::crypto_issuer::CryptoIssuer,
 };
@@ -14,10 +14,7 @@ use bbs::{
 use std::error::Error;
 
 use crate::application::{
-    datatypes::{
-        BbsCredentialSignature, BbsUnfinishedCredentialSignature, CredentialSchemaReference,
-        CredentialSubject,
-    },
+    datatypes::{BbsUnfinishedCredentialSignature, CredentialSchemaReference, CredentialSubject},
     utils::{generate_uuid, get_now_as_iso_string},
 };
 
@@ -53,71 +50,133 @@ impl Issuer {
         })
     }
 
-    // TODO: Finish as soon as Dechi gets answer from Credential WG
-    // pub fn issue_credential(
-    //     issuer_did: &str,
-    //     subject_did: &str,
-    //     credential_offer: &BbsCredentialOffer,
-    //     credential_request: &BbsCredentialRequest,
-    //     issuer_public_key_id: &str,
-    //     issuer_public_key: &DeterministicPublicKey,
-    //     issuer_secret_key: &SecretKey,
-    //     credential_schema: CredentialSchema,
-    // ) -> Result<UnfinishedBbsCredential, Box<dyn Error>> {
-    //     let credential_subject = CredentialSubject {
-    //         id: subject_did.to_owned(),
-    //         data,
-    //     };
+    pub fn issue_credential(
+        issuer_did: &str,
+        subject_did: &str,
+        credential_offer: &BbsCredentialOffer,
+        credential_request: &BbsCredentialRequest,
+        issuer_public_key_id: &str,
+        issuer_public_key: &DeterministicPublicKey,
+        issuer_secret_key: &SecretKey,
+        credential_schema: CredentialSchema,
+        required_indices: Vec<u32>,
+        nquads: Vec<String>,
+    ) -> Result<UnfinishedBbsCredential, Box<dyn Error>> {
+        let credential_subject = CredentialSubject {
+            id: subject_did.to_owned(),
+            data: credential_request.credential_values.clone(),
+        };
 
-    //     let schema_reference = CredentialSchemaReference {
-    //         id: credential_schema.id,
-    //         r#type: CREDENTIAL_SCHEMA_TYPE.to_string(),
-    //     };
+        let schema_reference = CredentialSchemaReference {
+            id: credential_schema.id,
+            r#type: CREDENTIAL_SCHEMA_TYPE.to_string(),
+        };
 
-    //     let blind_signature = CryptoIssuer::create_signature(
-    //         &credential_request.blind_signature_context,
-    //         &credential_offer.nonce,
-    //         credential_request.credential_values.clone(),
-    //         issuer_public_key,
-    //         issuer_secret_key,
-    //     )
-    //     .map_err(|e| format!("Error creating bbs+ signature: {}", e))?;
+        let blind_signature = CryptoIssuer::create_signature(
+            &credential_request.blind_signature_context,
+            &credential_offer.nonce,
+            nquads.clone(),
+            issuer_public_key,
+            issuer_secret_key,
+        )
+        .map_err(|e| format!("Error creating bbs+ signature: {}", e))?;
 
-    //     let credential_id = generate_uuid();
+        let credential_id = generate_uuid();
 
-    //     let vc_signature = BbsUnfinishedCredentialSignature {
-    //         r#type: CREDENTIAL_SIGNATURE_TYPE.to_string(),
-    //         created: get_now_as_iso_string(),
-    //         proof_purpose: CREDENTIAL_PROOF_PURPOSE.to_owned(),
-    //         verification_method: issuer_public_key_id.to_owned(),
-    //         required_reveal_statements: get_required_indices(
-    //             credential_request.credential_values.clone(),
-    //             &credential_schema,
-    //         ),
-    //         blind_signature: serde_json::to_string(&blind_signature)?,
-    //     };
+        let vc_signature = BbsUnfinishedCredentialSignature {
+            r#type: CREDENTIAL_SIGNATURE_TYPE.to_string(),
+            created: get_now_as_iso_string(),
+            proof_purpose: CREDENTIAL_PROOF_PURPOSE.to_owned(),
+            verification_method: issuer_public_key_id.to_owned(),
+            required_reveal_statements: required_indices,
+            blind_signature: serde_json::to_string(&blind_signature)?,
+        };
 
-    //     let credential = UnfinishedBbsCredential {
-    //         context: DEFAULT_CREDENTIAL_CONTEXT,
-    //         id: credential_id,
-    //         r#type: vec!["VerifiableCredential".to_string()],
-    //         issuer: issuer_did.to_owned(),
-    //         credential_subject,
-    //         credential_schema: schema_reference,
-    //         proof: vc_signature,
-    //     };
-    //     Ok(credential)
-    // }
+        let credential = UnfinishedBbsCredential {
+            context: DEFAULT_CREDENTIAL_CONTEXTS
+                .iter()
+                .map(|c| String::from(c.to_owned()))
+                .collect::<Vec<_>>(),
+            id: credential_id,
+            r#type: vec!["VerifiableCredential".to_string()],
+            issuer: issuer_did.to_owned(),
+            credential_subject,
+            credential_schema: schema_reference,
+            proof: vc_signature,
+        };
+        Ok(credential)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::datatypes::CredentialSchema;
-    use crate::utils::test_data::{
-        accounts::local::{HOLDER_DID, ISSUER_DID},
-        vc_zkp::{EXAMPLE_CREDENTIAL_PROPOSAL, EXAMPLE_CREDENTIAL_SCHEMA},
+    use crate::{
+        application::{
+            datatypes::{BbsCredentialOffer, BbsCredentialRequest, UnfinishedBbsCredential},
+            prover::Prover,
+        },
+        utils::test_data::{
+            accounts::local::{HOLDER_DID, ISSUER_DID},
+            vc_zkp::{EXAMPLE_CREDENTIAL_PROPOSAL, EXAMPLE_CREDENTIAL_SCHEMA},
+        },
     };
+    use bbs::issuer::Issuer as BbsIssuer;
+    use bbs::prover::Prover as BbsProver;
+    use std::collections::HashMap;
+
+    fn request_credential(
+        pub_key: &DeterministicPublicKey,
+        offer: &BbsCredentialOffer,
+        amount_of_values: u8,
+    ) -> Result<(BbsCredentialRequest, CredentialSchema, Vec<String>), Box<dyn Error>> {
+        let schema: CredentialSchema = serde_json::from_str(EXAMPLE_CREDENTIAL_SCHEMA)?;
+        let secret = BbsProver::new_link_secret();
+        let mut credential_values = HashMap::new();
+        credential_values.insert("test_property_string".to_owned(), "value".to_owned());
+        for i in 1..amount_of_values {
+            credential_values.insert(format!("test_property_string{}", i), "value".to_owned());
+        }
+
+        // Nquad-ize. Flatten the json-ld document graph.
+        // This will be done by TnT for now as we currently could not find a suitable rust library
+        let mut nquads = Vec::new();
+        for (key, value) in &credential_values {
+            let string = format!("{}: {}", key, value);
+            nquads.insert(nquads.len(), string);
+        }
+
+        let (credential_request, _) =
+            Prover::request_credential(offer, &schema, &secret, credential_values, pub_key)
+                .map_err(|e| format!("{}", e))?;
+
+        return Ok((credential_request, schema, nquads));
+    }
+
+    fn assert_credential(
+        credential_request: BbsCredentialRequest,
+        cred: UnfinishedBbsCredential,
+        pub_key_id: &str,
+        schema_id: &str,
+    ) {
+        assert_eq!(&cred.issuer, ISSUER_DID);
+        assert_eq!(&cred.credential_subject.id, HOLDER_DID);
+        assert_eq!(&cred.credential_schema.id, schema_id);
+        // proof
+        assert_eq!(&cred.proof.required_reveal_statements, &[1].to_vec());
+        assert_eq!(&cred.proof.r#type, CREDENTIAL_SIGNATURE_TYPE);
+        assert_eq!(&cred.proof.proof_purpose, CREDENTIAL_PROOF_PURPOSE);
+        assert_eq!(&cred.proof.verification_method, pub_key_id);
+        // Credential subject
+        // Are the values correctly copied into the credentials?
+        assert!(&cred
+            .credential_subject
+            .data
+            .keys()
+            .all(|key| credential_request.credential_values.contains_key(key)
+                && credential_request.credential_values.get(key)
+                    == cred.credential_subject.data.get(key)));
+    }
 
     #[test]
     fn can_offer_credential() -> Result<(), Box<dyn Error>> {
@@ -149,8 +208,68 @@ mod tests {
     }
 
     #[test]
-    fn can_issue_credential() -> Result<(), Box<dyn Error>> {
-        // let credential = Issuer::issue_credential();
+    fn can_issue_credential_one_property() -> Result<(), Box<dyn Error>> {
+        let (dpk, sk) = BbsIssuer::new_short_keys(None);
+        let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
+        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID)?;
+        let key_id = format!("{}#key-1", ISSUER_DID);
+        let (credential_request, schema, nquads) = request_credential(&dpk, &offer, 1)?;
+
+        match Issuer::issue_credential(
+            &ISSUER_DID,
+            &HOLDER_DID,
+            &offer,
+            &credential_request,
+            &key_id,
+            &dpk,
+            &sk,
+            schema.clone(),
+            [1].to_vec(),
+            nquads,
+        ) {
+            Ok(cred) => {
+                assert_credential(
+                    credential_request.clone(),
+                    cred.clone(),
+                    &key_id,
+                    &schema.id,
+                );
+            }
+            Err(e) => assert!(false, "Received error when issuing credential: {}", e),
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn can_issue_credential_five_properties() -> Result<(), Box<dyn Error>> {
+        let (dpk, sk) = BbsIssuer::new_short_keys(None);
+        let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
+        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID)?;
+        let key_id = format!("{}#key-1", ISSUER_DID);
+        let (credential_request, schema, nquads) = request_credential(&dpk, &offer, 5)?;
+
+        match Issuer::issue_credential(
+            &ISSUER_DID,
+            &HOLDER_DID,
+            &offer,
+            &credential_request,
+            &key_id,
+            &dpk,
+            &sk,
+            schema.clone(),
+            [1].to_vec(),
+            nquads,
+        ) {
+            Ok(cred) => {
+                assert_credential(
+                    credential_request.clone(),
+                    cred.clone(),
+                    &key_id,
+                    &schema.id,
+                );
+            }
+            Err(e) => assert!(false, "Received error when issuing credential: {}", e),
+        }
         Ok(())
     }
 }
