@@ -1,3 +1,7 @@
+use crate::application::{
+    datatypes::{BbsUnfinishedCredentialSignature, CredentialSchemaReference, CredentialSubject},
+    utils::{generate_uuid, get_now_as_iso_string},
+};
 use crate::{
     application::datatypes::{
         BbsCredentialOffer, BbsCredentialRequest, CredentialProposal, CredentialSchema,
@@ -6,17 +10,11 @@ use crate::{
     },
     crypto::crypto_issuer::CryptoIssuer,
 };
-
 use bbs::{
     issuer::Issuer as BbsIssuer,
     keys::{DeterministicPublicKey, SecretKey},
 };
 use std::error::Error;
-
-use crate::application::{
-    datatypes::{BbsUnfinishedCredentialSignature, CredentialSchemaReference, CredentialSubject},
-    utils::{generate_uuid, get_now_as_iso_string},
-};
 
 pub struct Issuer {}
 
@@ -81,17 +79,16 @@ impl Issuer {
         )
         .map_err(|e| format!("Error creating bbs+ signature: {}", e))?;
 
-        let credential_id = generate_uuid();
-
         let vc_signature = BbsUnfinishedCredentialSignature {
             r#type: CREDENTIAL_SIGNATURE_TYPE.to_string(),
             created: get_now_as_iso_string(),
             proof_purpose: CREDENTIAL_PROOF_PURPOSE.to_owned(),
             verification_method: issuer_public_key_id.to_owned(),
             required_reveal_statements: required_indices,
-            blind_signature: serde_json::to_string(&blind_signature)?,
+            blind_signature: base64::encode(blind_signature.to_bytes_compressed_form()),
         };
 
+        let credential_id = generate_uuid();
         let credential = UnfinishedBbsCredential {
             context: DEFAULT_CREDENTIAL_CONTEXTS
                 .iter()
@@ -123,6 +120,8 @@ mod tests {
     };
     use bbs::issuer::Issuer as BbsIssuer;
     use bbs::prover::Prover as BbsProver;
+    use bbs::SignatureBlinding;
+    use bbs::SignatureMessage;
     use std::collections::HashMap;
 
     fn request_credential(
@@ -141,16 +140,26 @@ mod tests {
         // Nquad-ize. Flatten the json-ld document graph.
         // This will be done by TnT for now as we currently could not find a suitable rust library
         let mut nquads = Vec::new();
-        for (key, value) in &credential_values {
-            let string = format!("{}: {}", key, value);
+        let mut keys: Vec<String> = credential_values.keys().map(|k| k.to_string()).collect();
+        keys.sort();
+        for key in &keys {
+            let val = credential_values.get(key).ok_or("AAA".to_owned())?;
+            let string = format!("{}: {}", key, val);
             nquads.insert(nquads.len(), string);
         }
 
-        let (credential_request, _) =
+        let (credential_request, blinding) =
             Prover::request_credential(offer, &schema, &secret, credential_values, pub_key)
                 .map_err(|e| format!("{}", e))?;
 
         return Ok((credential_request, schema, nquads));
+    }
+
+    fn is_base_64(input: String) -> bool {
+        match base64::decode(input) {
+            Ok(_) => true,
+            Err(_) => false,
+        }
     }
 
     fn assert_credential(
@@ -167,6 +176,10 @@ mod tests {
         assert_eq!(&cred.proof.r#type, CREDENTIAL_SIGNATURE_TYPE);
         assert_eq!(&cred.proof.proof_purpose, CREDENTIAL_PROOF_PURPOSE);
         assert_eq!(&cred.proof.verification_method, pub_key_id);
+        assert!(
+            is_base_64(cred.proof.blind_signature.to_owned()),
+            "Signature seems not to be base64 encoded"
+        );
         // Credential subject
         // Are the values correctly copied into the credentials?
         assert!(&cred
@@ -259,6 +272,39 @@ mod tests {
             schema.clone(),
             [1].to_vec(),
             nquads,
+        ) {
+            Ok(cred) => {
+                assert_credential(
+                    credential_request.clone(),
+                    cred.clone(),
+                    &key_id,
+                    &schema.id,
+                );
+            }
+            Err(e) => assert!(false, "Received error when issuing credential: {}", e),
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn can_issue_credential_five_properties_dummy() -> Result<(), Box<dyn Error>> {
+        let (dpk, sk) = BbsIssuer::new_short_keys(None);
+        let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
+        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID)?;
+        let key_id = format!("{}#key-1", ISSUER_DID);
+        let (credential_request, schema, nquads) = request_credential(&dpk, &offer, 5)?;
+
+        match Issuer::issue_credential(
+            &ISSUER_DID,
+            &HOLDER_DID,
+            &offer,
+            &credential_request,
+            &key_id,
+            &dpk,
+            &sk,
+            schema.clone(),
+            [1].to_vec(),
+            nquads.clone(),
         ) {
             Ok(cred) => {
                 assert_credential(

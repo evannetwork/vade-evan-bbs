@@ -8,8 +8,11 @@ pub const CREDENTIAL_OFFER_TYPE: &str = "EvanBbsCredentialOffering";
 pub const CREDENTIAL_SIGNATURE_TYPE: &str = "BbsBlsSignature2020";
 pub const CREDENTIAL_SCHEMA_TYPE: &str = "EvanZKPSchema";
 pub const CREDENTIAL_PROOF_PURPOSE: &str = "assertionMethod";
-pub const DEFAULT_CREDENTIAL_CONTEXTS: [&'static str; 1] =
-    [&"https://www.w3.org/2018/credentials/v1"];
+pub const DEFAULT_CREDENTIAL_CONTEXTS: [&'static str; 2] = [
+    "https://www.w3.org/2018/credentials/v1",
+    "https:://schema.org",
+];
+pub const KEY_SIZE: usize = 500;
 
 /// Message following a `BbsCredentialOffer`, sent by a potential credential prover.
 /// Provides the values that need to be signed by the issuer in both encoded/cleartext, and blinded format.
@@ -100,6 +103,33 @@ pub struct BbsCredential {
     pub credential_subject: CredentialSubject,
     pub credential_schema: CredentialSchemaReference,
     pub proof: BbsCredentialSignature,
+}
+
+impl BbsCredential {
+    pub fn new(cred: UnfinishedBbsCredential, signature: String) -> BbsCredential {
+        BbsCredential {
+            context: cred.context,
+            id: cred.id,
+            r#type: cred.r#type,
+            issuer: cred.issuer,
+            credential_subject: CredentialSubject {
+                id: cred.credential_subject.id,
+                data: cred.credential_subject.data,
+            },
+            credential_schema: CredentialSchemaReference {
+                id: cred.credential_schema.id,
+                r#type: cred.credential_schema.r#type,
+            },
+            proof: BbsCredentialSignature {
+                created: cred.proof.created,
+                proof_purpose: cred.proof.proof_purpose,
+                required_reveal_statements: cred.proof.required_reveal_statements,
+                signature: signature,
+                r#type: cred.proof.r#type,
+                verification_method: cred.proof.verification_method,
+            },
+        }
+    }
 }
 
 // A verifiable credential with a blind signature that still needs to be processed by the holder

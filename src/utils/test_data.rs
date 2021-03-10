@@ -215,3 +215,58 @@ pub mod vc_zkp {
     #[allow(dead_code)]
     pub const SUBJECT_DID: &str = "did:evan:testcore:0x0F737D1478eA29df0856169F25cA9129035d6FD2";
 }
+
+#[allow(dead_code)]
+pub mod bbs_coherent_context_test_data {
+    pub const UNFINISHED_CREDENTIAL: &str = r###"{
+        "@context": [
+            "https://www.w3.org/2018/credentials/v1",
+            "https:://schema.org"
+        ],
+        "id": "9311f783-eda0-4f2d-8287-3816868193ef",
+        "type": [
+            "VerifiableCredential"
+        ],
+        "issuer": "did:evan:testcore:0x6240cedfc840579b7fdcd686bdc65a9a8c42dea6",
+        "credentialSubject": {
+            "id": "did:evan:testcore:0x0d87204c3957d73b68ae28d0af961d3c72403901",
+            "data": {
+                "test_property_string3": "value",
+                "test_property_string4": "value",
+                "test_property_string": "value",
+                "test_property_string1": "value",
+                "test_property_string2": "value"
+            }
+        },
+        "credentialSchema": {
+            "id": "did:evan:zkp:0x123451234512345123451234512345",
+            "type": "EvanZKPSchema"
+        },
+        "proof": {
+            "type": "BbsBlsSignature2020",
+            "created": "2021-03-10T10:00:35.000Z",
+            "proofPurpose": "assertionMethod",
+            "verificationMethod": "did:evan:testcore:0x6240cedfc840579b7fdcd686bdc65a9a8c42dea6#key-1",
+            "requiredRevealStatements": [
+                1
+            ],
+            "blindSignature": "gnXpPqIUfwng9+vKO0wTOPJQixMU3GXJXhQC4nG9GvVxK1MAGWVAmYR+ahyQAr2FCtjfvcuBvkyfVMo87LrqV0z7WjlFrgU0FveR07T5XGFpgx5JGVziusqI6x26hZu3dX8M2YwEM9rhewmcH166ew=="
+        }
+    }"###;
+
+    pub const NQUADS: [&'static str; 5] = [
+        "test_property_string: value",
+        "test_property_string1: value",
+        "test_property_string2: value",
+        "test_property_string3: value",
+        "test_property_string4: value",
+    ];
+
+    pub const SECRET_KEY: &str = "Ilm14JX/ULRybFcHOq93gzDu5McYuX9L7AE052Sz5SQ=";
+
+    pub const PUB_KEY: &str = "jCv7l26izalfcsFe6j/IqtVlDolo2Y3lNld7xOG63GjSNHBVWrvZQe2O859q9JeVEV4yXtfYofGQSWrMVfgH5ySbuHpQj4fSgLu4xXyFgMidUO1sIe0NHRcXpOorP01o";
+
+    pub const MASTER_SECRET: &str = "OASkVMA8q6b3qJuabvgaN9K1mKoqptCv4SCNvRmnWuI=";
+
+    pub const SIGNATURE_BLINDING: &str = "EOMk3AbkM49POp6NgaojAWEKLK/2k3gHZQw2lCF776o=";
+}

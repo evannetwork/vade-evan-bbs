@@ -3,8 +3,11 @@ use super::datatypes::{
     UnfinishedBbsCredential, CREDENTIAL_PROPOSAL_TYPE, CREDENTIAL_REQUEST_TYPE,
 };
 use crate::crypto::crypto_prover::CryptoProver;
-use bbs::{keys::DeterministicPublicKey, SignatureBlinding, SignatureMessage};
+use bbs::{
+    keys::DeterministicPublicKey, signature::BlindSignature, SignatureBlinding, SignatureMessage,
+};
 use std::collections::HashMap;
+use std::convert::{From, TryFrom, TryInto};
 use std::error::Error;
 
 pub struct Prover {}
@@ -61,9 +64,15 @@ impl Prover {
                 return Err(Box::from(error));
             }
         }
+
+        if credential_values.len() == 0 {
+            return Err(Box::from(
+                "Cannot create blind signature context. Provided no credential values",
+            ));
+        }
+
         let (blind_signature_context, blinding) = CryptoProver::create_blind_signature_context(
             &issuer_pub_key,
-            &credential_schema,
             &master_secret,
             &credential_offering.nonce,
         )
@@ -86,14 +95,31 @@ impl Prover {
         ))
     }
 
-    // pub fn finish_credential(
-    //     unfinished_credential: &UnfinishedBbsCredential,
-    //     master_secret: &SignatureMessage,
-    // ) -> Result<BbsCredential, Box<dyn Error>> {
-    //     unfinished_credential
-    //     let signature = CryptoProver::finish_credential_signature();
-    //     Ok(())
-    // }
+    pub fn finish_credential(
+        unfinished_credential: &UnfinishedBbsCredential,
+        master_secret: &SignatureMessage,
+        nquads: &Vec<String>,
+        issuer_public_key: &DeterministicPublicKey,
+        blinding: &SignatureBlinding,
+    ) -> Result<BbsCredential, Box<dyn Error>> {
+        let raw: Box<[u8]> =
+            base64::decode(unfinished_credential.proof.blind_signature.clone())?.into_boxed_slice();
+        let blind_signature: BlindSignature = raw.try_into()?;
+
+        let final_signature = CryptoProver::finish_credential_signature(
+            nquads.clone(),
+            master_secret,
+            issuer_public_key,
+            &blind_signature,
+            blinding,
+        )?;
+
+        let credential = BbsCredential::new(
+            unfinished_credential.clone(),
+            base64::encode(final_signature.to_bytes_compressed_form()),
+        );
+        Ok(credential)
+    }
 }
 
 #[cfg(test)]
@@ -101,13 +127,20 @@ mod tests {
     use super::*;
     use crate::utils::test_data::{
         accounts::local::{HOLDER_DID, ISSUER_DID},
+        bbs_coherent_context_test_data::{
+            MASTER_SECRET, NQUADS, PUB_KEY, SIGNATURE_BLINDING, UNFINISHED_CREDENTIAL,
+        },
         vc_zkp::{EXAMPLE_CREDENTIAL_OFFERING, EXAMPLE_CREDENTIAL_SCHEMA},
     };
     use bbs::issuer::Issuer as BbsIssuer;
+    use bbs::keys::SecretKey;
     use bbs::prover::Prover as BbsProver;
+    use bbs::SignatureBlinding;
+
     fn setup_test() -> Result<
         (
             DeterministicPublicKey,
+            SecretKey,
             BbsCredentialOffer,
             CredentialSchema,
             SignatureMessage,
@@ -115,14 +148,14 @@ mod tests {
         ),
         Box<dyn Error>,
     > {
-        let (dpk, _) = BbsIssuer::new_short_keys(None);
+        let (dpk, sk) = BbsIssuer::new_short_keys(None);
         let offering: BbsCredentialOffer = serde_json::from_str(EXAMPLE_CREDENTIAL_OFFERING)?;
         let schema: CredentialSchema = serde_json::from_str(EXAMPLE_CREDENTIAL_SCHEMA)?;
         let secret = BbsProver::new_link_secret();
         let mut credential_values = HashMap::new();
         credential_values.insert("test_property_string".to_owned(), "value".to_owned());
 
-        return Ok((dpk, offering, schema, secret, credential_values));
+        return Ok((dpk, sk, offering, schema, secret, credential_values));
     }
 
     #[test]
@@ -136,7 +169,7 @@ mod tests {
 
     #[test]
     fn can_request_credential() -> Result<(), Box<dyn Error>> {
-        let (dpk, offering, schema, secret, credential_values) = setup_test()?;
+        let (dpk, _, offering, schema, secret, credential_values) = setup_test()?;
         let (credential_request, _) =
             Prover::request_credential(&offering, &schema, &secret, credential_values, &dpk)
                 .map_err(|e| format!("{}", e))?;
@@ -148,7 +181,7 @@ mod tests {
 
     #[test]
     fn throws_when_omitting_required_credential_value() -> Result<(), Box<dyn Error>> {
-        let (dpk, offering, schema, secret, mut credential_values) = setup_test()?;
+        let (dpk, _, offering, schema, secret, mut credential_values) = setup_test()?;
         credential_values.remove("test_property_string");
         match Prover::request_credential(&offering, &schema, &secret, credential_values, &dpk) {
             Ok(_) => assert!(false),
@@ -162,7 +195,30 @@ mod tests {
 
     #[test]
     fn can_finish_credential() -> Result<(), Box<dyn Error>> {
-        // Prover::finish_credential();
+        let unfinished_credential: UnfinishedBbsCredential =
+            serde_json::from_str(&UNFINISHED_CREDENTIAL)?;
+        let master_secret: SignatureMessage =
+            SignatureMessage::from(base64::decode(&MASTER_SECRET)?.into_boxed_slice());
+        let nquads: Vec<String> = NQUADS.iter().map(|q| q.to_string()).collect();
+        let public_key: DeterministicPublicKey =
+            DeterministicPublicKey::from(base64::decode(&PUB_KEY)?.into_boxed_slice());
+        let blinding: SignatureBlinding =
+            SignatureBlinding::from(base64::decode(&SIGNATURE_BLINDING)?.into_boxed_slice());
+
+        match Prover::finish_credential(
+            &unfinished_credential,
+            &master_secret,
+            &nquads,
+            &public_key,
+            &blinding,
+        ) {
+            Ok(cred) => {
+                assert!(base64::decode(cred.proof.signature).is_ok());
+            }
+            Err(e) => {
+                assert!(false, "Unexpected error when finishing credential: {}", e);
+            }
+        }
 
         Ok(())
     }
