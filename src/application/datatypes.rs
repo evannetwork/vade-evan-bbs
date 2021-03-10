@@ -1,4 +1,4 @@
-use bbs::{BlindSignatureContext, ProofNonce};
+use bbs::BlindSignatureContext;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -25,6 +25,24 @@ pub struct BbsCredentialRequest {
     pub r#type: String,
     pub blind_signature_context: BlindSignatureContext,
     pub credential_values: HashMap<String, String>,
+}
+
+/// Message sent by a verifier stating which attributes of which schema the prover is supposed to reveal.
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BbsProofRequest {
+    pub verifier: String,
+    pub created_at: String,
+    pub nonce: String,
+    pub sub_proof_requests: Vec<BbsSubProofRequest>,
+}
+
+/// Part of a proof request that requests attributes of a specific schema
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BbsSubProofRequest {
+    pub schema: String,
+    pub revealed_attributes: Vec<usize>,
 }
 
 /// Specifies the properties of a credential, as well as metadata.
@@ -75,7 +93,7 @@ pub struct BbsCredentialOffer {
     pub subject: String,
     pub r#type: String,
     pub schema: String,
-    pub nonce: ProofNonce,
+    pub nonce: String,
 }
 
 /// Message to initiate credential issuance, sent by (potential) prover.

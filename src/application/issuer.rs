@@ -13,6 +13,7 @@ use crate::{
 use bbs::{
     issuer::Issuer as BbsIssuer,
     keys::{DeterministicPublicKey, SecretKey},
+    ProofNonce,
 };
 use std::error::Error;
 
@@ -31,8 +32,8 @@ impl Issuer {
         credential_proposal: &CredentialProposal,
         issuer_did: &str,
     ) -> Result<BbsCredentialOffer, Box<dyn Error>> {
-        let nonce = BbsIssuer::generate_signing_nonce();
-
+        let mut nonce =
+            base64::encode(BbsIssuer::generate_signing_nonce().to_bytes_compressed_form());
         if credential_proposal.issuer != issuer_did {
             return Err(Box::from(
                 "Cannot offer credential: Proposal is not targeted at this issuer",
@@ -70,9 +71,10 @@ impl Issuer {
             r#type: CREDENTIAL_SCHEMA_TYPE.to_string(),
         };
 
+        let nonce = ProofNonce::from(base64::decode(&credential_offer.nonce)?.into_boxed_slice());
         let blind_signature = CryptoIssuer::create_signature(
             &credential_request.blind_signature_context,
-            &credential_offer.nonce,
+            &nonce,
             nquads.clone(),
             issuer_public_key,
             issuer_secret_key,

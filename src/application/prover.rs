@@ -4,7 +4,8 @@ use super::datatypes::{
 };
 use crate::crypto::crypto_prover::CryptoProver;
 use bbs::{
-    keys::DeterministicPublicKey, signature::BlindSignature, SignatureBlinding, SignatureMessage,
+    keys::DeterministicPublicKey, signature::BlindSignature, ProofNonce, SignatureBlinding,
+    SignatureMessage,
 };
 use std::collections::HashMap;
 use std::convert::{From, TryFrom, TryInto};
@@ -71,17 +72,16 @@ impl Prover {
             ));
         }
 
-        let (blind_signature_context, blinding) = CryptoProver::create_blind_signature_context(
-            &issuer_pub_key,
-            &master_secret,
-            &credential_offering.nonce,
-        )
-        .map_err(|e| {
-            format!(
-                "Cannot request credential: Could not create signature blinding: {}",
-                e
-            )
-        })?;
+        let nonce =
+            ProofNonce::from(base64::decode(&credential_offering.nonce)?.into_boxed_slice());
+        let (blind_signature_context, blinding) =
+            CryptoProver::create_blind_signature_context(&issuer_pub_key, &master_secret, &nonce)
+                .map_err(|e| {
+                format!(
+                    "Cannot request credential: Could not create signature blinding: {}",
+                    e
+                )
+            })?;
 
         Ok((
             BbsCredentialRequest {
@@ -213,6 +213,7 @@ mod tests {
             &blinding,
         ) {
             Ok(cred) => {
+                // There is a property 'signature' and it is base64 encoded
                 assert!(base64::decode(cred.proof.signature).is_ok());
             }
             Err(e) => {
@@ -221,5 +222,10 @@ mod tests {
         }
 
         Ok(())
+    }
+
+    #[test]
+    fn can_create_proof() -> Result<(), Box<dyn Error>> {
+        Prover::create_proof();
     }
 }

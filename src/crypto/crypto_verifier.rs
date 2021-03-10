@@ -1,0 +1,3 @@
+struct CryptoVerifier {}
+
+impl CryptoVerifier {}
