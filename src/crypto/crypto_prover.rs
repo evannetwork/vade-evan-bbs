@@ -4,12 +4,13 @@ use crate::application::datatypes::{
 use bbs::{
     keys::DeterministicPublicKey,
     messages::{HiddenMessage, ProofMessage},
-    pm_hidden, pm_revealed,
+    pm_hidden, pm_hidden_raw, pm_revealed,
     pok_sig::PoKOfSignature,
     prover::Prover as BbsProver,
     signature::{BlindSignature, Signature},
     verifier::Verifier as BbsVerifier,
     BlindSignatureContext, HashElem, ProofNonce, SignatureBlinding, SignatureMessage,
+    SignatureProof,
 };
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::error::Error;
@@ -81,8 +82,9 @@ impl CryptoProver {
             HashSet::from_iter(sub_proof_request.revealed_attributes.iter().cloned());
 
         let mut commitment_messages = Vec::new();
-        commitment_messages.insert(0, pm_hidden!(master_secret.to_bytes_compressed_form()));
-        for (i, nquad) in nquads.iter().enumerate() {
+        commitment_messages.insert(0, pm_hidden_raw!(master_secret.clone()));
+        let mut i = 1;
+        for nquad in nquads.iter() {
             let msg;
             if indices.contains(&i) {
                 msg = pm_revealed!(nquad);
@@ -90,6 +92,11 @@ impl CryptoProver {
                 msg = pm_hidden!(nquad);
             }
             commitment_messages.insert(i, msg);
+            i += 1;
+        }
+
+        for j in i..KEY_SIZE {
+            commitment_messages.insert(j, pm_hidden!(""))
         }
 
         let signature =
@@ -103,6 +110,25 @@ impl CryptoProver {
         .map_err(|e| format!("Error creating PoK during proof creation: {}", e))?;
 
         Ok(pok)
+    }
+
+    pub fn generate_proofs(
+        poks: Vec<PoKOfSignature>,
+        nonce: ProofNonce,
+    ) -> Result<Vec<SignatureProof>, Box<dyn Error>> {
+        let err = "Error creating proof: ";
+
+        let challenge = BbsProver::create_challenge_hash(poks.as_slice(), None, &nonce)
+            .map_err(|e| format!("{} {}", err, e))?;
+
+        let mut proofs = Vec::new();
+        for (i, pok) in poks.iter().enumerate() {
+            let proof = BbsProver::generate_signature_pok(pok.clone(), &challenge)
+                .map_err(|e| format!("{} {}", err, e))?;
+            proofs.insert(i, proof);
+        }
+
+        return Ok(proofs);
     }
 }
 
@@ -182,6 +208,34 @@ mod tests {
             Ok(_) => assert!(true),
             Err(e) => assert!(false, "Unexpected error: {}", e),
         }
+
+        Ok(())
+    }
+
+    #[test]
+    fn can_generate_proofs() -> Result<(), Box<dyn Error>> {
+        let credential: BbsCredential = serde_json::from_str(&FINISHED_CREDENTIAL)?;
+        let public_key: DeterministicPublicKey =
+            DeterministicPublicKey::from(base64::decode(&PUB_KEY)?.into_boxed_slice());
+        let nquads: Vec<String> = NQUADS.iter().map(|q| q.to_string()).collect();
+        let sub_proof_request = BbsSubProofRequest {
+            revealed_attributes: vec![1],
+            schema: credential.credential_schema.id.clone(),
+        };
+        let master_secret: SignatureMessage =
+            SignatureMessage::from(base64::decode(&MASTER_SECRET)?.into_boxed_slice());
+
+        let pok = CryptoProver::create_proof_of_knowledge(
+            &sub_proof_request,
+            &credential,
+            &public_key,
+            &master_secret,
+            nquads,
+        )?;
+
+        let nonce = BbsVerifier::generate_proof_nonce();
+
+        CryptoProver::generate_proofs(vec![pok], nonce);
 
         Ok(())
     }
