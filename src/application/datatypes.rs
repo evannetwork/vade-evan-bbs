@@ -199,3 +199,42 @@ pub struct BbsUnfinishedCredentialSignature {
     pub required_reveal_statements: Vec<u32>,
     pub blind_signature: String,
 }
+
+/// A collection of all proofs requested in a `ProofRequest`. Sent to a verifier as the response to
+/// a `ProofRequest`.
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProofPresentation {
+    #[serde(rename(serialize = "@context", deserialize = "@context"))]
+    pub context: Vec<String>,
+    pub id: String,
+    pub r#type: Vec<String>,
+    pub verifiable_credential: Vec<BbsPresentation>,
+    pub proof: AssertionProof,
+}
+
+/// A single proof of a schema requested in a `ProofRequest` that reveals the requested attributes.
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BbsPresentation {
+    #[serde(rename(serialize = "@context", deserialize = "@context"))]
+    pub context: Vec<String>,
+    pub id: String,
+    pub r#type: Vec<String>,
+    pub issuer: String,
+    pub issuance_date: String,
+    pub credential_subject: CredentialSubject,
+    pub credential_schema: CredentialSchemaReference,
+    pub proof: BbsPresentationProof,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BbsPresentationProof {
+    pub r#type: String,
+    pub created: String,
+    pub proof_purpose: String,
+    pub verification_method: String,
+    pub nonce: String,
+    pub proof: String,
+}

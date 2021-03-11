@@ -1,6 +1,7 @@
 use super::datatypes::{
-    BbsCredential, BbsCredentialOffer, BbsCredentialRequest, CredentialProposal, CredentialSchema,
-    UnfinishedBbsCredential, CREDENTIAL_PROPOSAL_TYPE, CREDENTIAL_REQUEST_TYPE,
+    BbsCredential, BbsCredentialOffer, BbsCredentialRequest, BbsPresentation, BbsProofRequest,
+    CredentialProposal, CredentialSchema, UnfinishedBbsCredential, CREDENTIAL_PROPOSAL_TYPE,
+    CREDENTIAL_REQUEST_TYPE, DEFAULT_CREDENTIAL_CONTEXTS,
 };
 use crate::crypto::crypto_prover::CryptoProver;
 use bbs::{
@@ -120,6 +121,80 @@ impl Prover {
         );
         Ok(credential)
     }
+
+    // pub fn present_proof(
+    //     proof_request: BbsProofRequest,
+    // ) -> Result<BbsPresentation, Box<dyn Error>> {
+    //     let mut poks = Vec::new();
+    //     for sub_proof_request in &proof_request.sub_proof_requests {
+    //         let credential: BbsCredential = credential_schema_map
+    //             .get(&sub_proof_request.schema)
+    //             .ok_or(format!(
+    //                 "Cannot create proof because credential is missing for schema {}",
+    //                 &sub_proof_request.schema
+    //             ))?
+    //             .clone();
+    //         let dpk = public_key_schema_map
+    //             .get(&sub_proof_request.schema)
+    //             .ok_or(format!(
+    //                 "Cannot create proof because public key is missing for schema {}",
+    //                 &sub_proof_request.schema
+    //             ))?;
+    //         let nquads = nquads_schema_map
+    //             .get(&sub_proof_request.schema)
+    //             .ok_or(format!(
+    //                 "Cannot create proof because nquads are missing for schema {}",
+    //                 &sub_proof_request.schema
+    //             ))?;
+
+    //         let pk = dpk
+    //             .to_public_key(KEY_SIZE)
+    //             .map_err(|e| format!("Cannot create proof: Error converting public key: {}", e))?;
+
+    //         let crypto_proof_request = BbsVerifier::new_proof_request(
+    //             &sub_proof_request.revealed_attributes.as_slice(),
+    //             &pk,
+    //         )
+    //         .unwrap();
+
+    //         let indices: HashSet<usize> =
+    //             HashSet::from_iter(sub_proof_request.revealed_attributes.iter().cloned());
+
+    //         let commitment_messages = Vec::new();
+    //         for (i, nquad) in nquads.iter().enumerate() {
+    //             let mut msg;
+    //             if indices.contains(&i) {
+    //                 msg = pm_revealed!(nquad);
+    //             } else {
+    //                 msg = pm_hidden!(nquad);
+    //             }
+    //             commitment_messages.insert(i, msg);
+    //         }
+
+    //         let signature =
+    //             Signature::from(base64::decode(&credential.proof.signature)?.into_boxed_slice());
+
+    //         let pok = BbsProver::commit_signature_pok(
+    //             &crypto_proof_request,
+    //             commitment_messages.as_slice(),
+    //             &signature,
+    //         )
+    //         .map_err(|e| format!("Error creating PoK during proof creation: {}", e))?;
+
+    //         poks.insert(poks.len(), pok);
+    //     }
+    //     let nonce = base64::decode(proof_request.nonce);
+    //     BbsProver::create_challenge_hash(&poks.as_slice(), None, &nonce)
+    //     let challenge = ProofNonce::hash(&challenge_bytes);
+
+    //     let proof = BbsProver::generate_signature_pok(pok, &challenge).unwrap();
+    //     Ok(BbsPresentation {
+    //         context: DEFAULT_CREDENTIAL_CONTEXTS
+    //             .iter()
+    //             .map(|c| c.to_string())
+    //             .collect::<Vec<String>>(),
+    //     });
+    // }
 }
 
 #[cfg(test)]
@@ -213,8 +288,8 @@ mod tests {
             &blinding,
         ) {
             Ok(cred) => {
-                // There is a property 'signature' and it is base64 encoded
-                assert!(base64::decode(cred.proof.signature).is_ok());
+                // There is now a property 'signature' and it is base64 encoded
+                assert!(base64::decode(&cred.proof.signature).is_ok());
             }
             Err(e) => {
                 assert!(false, "Unexpected error when finishing credential: {}", e);
@@ -224,8 +299,14 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn can_create_proof() -> Result<(), Box<dyn Error>> {
-        Prover::create_proof();
-    }
+    // #[test]
+    // fn can_create_proof() -> Result<(), Box<dyn Error>> {
+    // match Prover::present_proof() {
+    //     Ok(proof) => {}
+    //     Err(e) => {
+    //         assert!(false, "Unexpected error while creating proof: {}", e)
+    //     }
+    // }
+    // Ok(())
+    // }
 }

@@ -287,37 +287,4 @@ mod tests {
         }
         Ok(())
     }
-
-    #[test]
-    fn can_issue_credential_five_properties_dummy() -> Result<(), Box<dyn Error>> {
-        let (dpk, sk) = BbsIssuer::new_short_keys(None);
-        let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
-        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID)?;
-        let key_id = format!("{}#key-1", ISSUER_DID);
-        let (credential_request, schema, nquads) = request_credential(&dpk, &offer, 5)?;
-
-        match Issuer::issue_credential(
-            &ISSUER_DID,
-            &HOLDER_DID,
-            &offer,
-            &credential_request,
-            &key_id,
-            &dpk,
-            &sk,
-            schema.clone(),
-            [1].to_vec(),
-            nquads.clone(),
-        ) {
-            Ok(cred) => {
-                assert_credential(
-                    credential_request.clone(),
-                    cred.clone(),
-                    &key_id,
-                    &schema.id,
-                );
-            }
-            Err(e) => assert!(false, "Received error when issuing credential: {}", e),
-        }
-        Ok(())
-    }
 }
