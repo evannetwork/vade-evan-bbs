@@ -12,6 +12,11 @@ repository = "https://github.com/evannetwork/vade-evan-bbs"
 readme = "README.md"
 keywords = ["did", "ssi", "vc", "zkp"]
 
+[lib]
+name = "vade_evan_bbs"
+path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
