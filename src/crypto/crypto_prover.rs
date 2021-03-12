@@ -1,5 +1,5 @@
 use crate::application::datatypes::{
-    BbsCredential, BbsSubProofRequest, UnfinishedBbsCredential, KEY_SIZE,
+    BbsCredential, BbsSubProofRequest, KEY_SIZE,
 };
 use bbs::{
     keys::DeterministicPublicKey,
@@ -11,7 +11,7 @@ use bbs::{
     verifier::Verifier as BbsVerifier,
     BlindSignatureContext, HashElem, ProofNonce, SignatureBlinding, SignatureMessage,
 };
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, HashSet};
 use std::error::Error;
 use std::iter::FromIterator;
 
@@ -109,13 +109,12 @@ impl CryptoProver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::issuer::Issuer;
     use crate::utils::test_data::bbs_coherent_context_test_data::{
         FINISHED_CREDENTIAL, MASTER_SECRET, NQUADS, PUB_KEY, SIGNATURE_BLINDING,
         UNFINISHED_CREDENTIAL,
     };
+    use crate::application::datatypes::UnfinishedBbsCredential;
     use bbs::{issuer::Issuer as CryptoIssuer, prover::Prover};
-    use std::collections::HashMap;
     use std::convert::{From, TryInto};
 
     fn setup_tests() -> (DeterministicPublicKey, SignatureMessage, ProofNonce) {
@@ -148,7 +147,7 @@ mod tests {
             base64::decode(unfinished_credential.proof.blind_signature.clone())?.into_boxed_slice();
         let blind_signature: BlindSignature = raw.try_into()?;
 
-        let result = CryptoProver::finish_credential_signature(
+        let _ = CryptoProver::finish_credential_signature(
             nquads.clone(),
             &master_secret,
             &public_key,

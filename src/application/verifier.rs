@@ -42,7 +42,7 @@ impl Verifier {
 mod tests {
     use super::*;
     use crate::utils::test_data::{
-        accounts::local::VERIFIER_DID, bbs_coherent_context_test_data::PUB_KEY,
+        accounts::local::VERIFIER_DID,
         vc_zkp::EXAMPLE_CREDENTIAL_SCHEMA,
     };
     #[test]

@@ -12,6 +12,10 @@ pub const DEFAULT_CREDENTIAL_CONTEXTS: [&'static str; 2] = [
     "https://www.w3.org/2018/credentials/v1",
     "https:://schema.org",
 ];
+pub const DEFAULT_REVOCATION_CONTEXTS: [&'static str; 2] = [
+    "https://www.w3.org/2018/credentials/v1",
+    "https://w3id.org/vc-status-list-2021/v1",
+];
 pub const KEY_SIZE: usize = 500;
 
 /// Message following a `BbsCredentialOffer`, sent by a potential credential prover.
@@ -73,7 +77,7 @@ pub struct SchemaProperty {
     pub items: Option<Vec<String>>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct AssertionProof {
     pub r#type: String,
@@ -171,6 +175,14 @@ pub struct CredentialSubject {
     pub data: HashMap<String, String>,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct RevocationListCredentialSubject {
+    pub id: String,
+    pub r#type: String,
+    pub encoded_list: String,
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CredentialSchemaReference {
@@ -237,4 +249,42 @@ pub struct BbsPresentationProof {
     pub verification_method: String,
     pub nonce: String,
     pub proof: String,
+}
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct UnfinishedRevocationListCredential {
+    #[serde(rename(serialize = "@context", deserialize = "@context"))]
+    pub context: Vec<String>,
+    pub id: String,
+    pub r#type: Vec<String>,
+    pub issuer: String,
+    pub issued: String,
+    pub credential_subject: RevocationListCredentialSubject,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct RevocationListCredential {
+    #[serde(rename(serialize = "@context", deserialize = "@context"))]
+    pub context: Vec<String>,
+    pub id: String,
+    pub r#type: Vec<String>,
+    pub issuer: String,
+    pub issued: String,
+    pub credential_subject: RevocationListCredentialSubject,
+    pub proof: AssertionProof,
+}
+
+impl RevocationListCredential {
+    pub fn new(list: UnfinishedRevocationListCredential, proof: AssertionProof) -> RevocationListCredential {
+        RevocationListCredential {
+            context: list.context,
+            id: list.id,
+            r#type: list.r#type,
+            issuer: list.issuer,
+            issued: list.issued,
+            credential_subject: list.credential_subject,
+            proof,
+        }
+    }
 }

@@ -17,15 +17,23 @@ name = "vade_evan_bbs"
 path = "src/lib.rs"
 crate-type = ["cdylib", "rlib"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+async-trait = "0.1.31"
+base64 = "0.13.0"
 bbs = "0.4.1"
+flate2 = "1.0.20"
+hex = "0.4.2"
+libsecp256k1 = "0.3.5"
+reqwest = { version = "0.10.4", default-features= false, features = ["json", "rustls-tls"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0.53", features = ["preserve_order", "raw_value"] }
+sha2 = "0.8.1"
+sha3 = "0.8.2"
+tokio = { version = "0.2.22" }
 uuid = { version = "0.8.1", features = ["serde", "v4", "wasm-bindgen"] }
-base64 = "0.13.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-# shared
 chrono = { version = "0.4.11",  default-features = false, features=["wasm-bindgen", "clock", "js-sys"] }
+
+[dev-dependencies]
+tokio = { version = "0.2.21", features = ["macros", "rt-threaded"] }

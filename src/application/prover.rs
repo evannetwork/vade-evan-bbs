@@ -1,7 +1,7 @@
 use super::datatypes::{
-    BbsCredential, BbsCredentialOffer, BbsCredentialRequest, BbsPresentation, BbsProofRequest,
+    BbsCredential, BbsCredentialOffer, BbsCredentialRequest,
     CredentialProposal, CredentialSchema, UnfinishedBbsCredential, CREDENTIAL_PROPOSAL_TYPE,
-    CREDENTIAL_REQUEST_TYPE, DEFAULT_CREDENTIAL_CONTEXTS,
+    CREDENTIAL_REQUEST_TYPE,
 };
 use crate::crypto::crypto_prover::CryptoProver;
 use bbs::{
@@ -9,7 +9,7 @@ use bbs::{
     SignatureMessage,
 };
 use std::collections::HashMap;
-use std::convert::{From, TryFrom, TryInto};
+use std::convert::{From, TryInto};
 use std::error::Error;
 
 pub struct Prover {}
