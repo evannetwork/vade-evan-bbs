@@ -32,8 +32,9 @@ sha3 = "0.8.2"
 tokio = { version = "0.2.22" }
 uuid = { version = "0.8.1", features = ["serde", "v4", "wasm-bindgen"] }
 
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-chrono = { version = "0.4.11",  default-features = false, features=["wasm-bindgen", "clock", "js-sys"] }
-
 [dev-dependencies]
 tokio = { version = "0.2.21", features = ["macros", "rt-threaded"] }
+utilities = { path = "utilities" }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+chrono = { version = "0.4.11",  default-features = false, features=["wasm-bindgen", "clock", "js-sys"] }
