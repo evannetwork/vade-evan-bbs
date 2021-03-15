@@ -245,6 +245,12 @@ pub mod bbs_coherent_context_test_data {
             "id": "did:evan:zkp:0x123451234512345123451234512345",
             "type": "EvanZKPSchema"
         },
+        "credentialStatus": {
+            "id": "did:evan:zkp:0x1234512345123451234512345123456789#1",
+            "type": "RevocationList2020Status",
+            "revocationListIndex": "1",
+            "revocationListCredential": "did:evan:zkp:0x1234512345123451234512345123456789"
+        },
         "proof": {
             "type": "BbsBlsSignature2020",
             "created": "2021-03-10T10:00:35.000Z",
@@ -281,6 +287,12 @@ pub mod bbs_coherent_context_test_data {
             "id": "did:evan:zkp:0x123451234512345123451234512345",
             "type": "EvanZKPSchema"
         },
+        "credentialStatus": {
+            "id": "did:evan:zkp:0x1234512345123451234512345123456789#1",
+            "type": "RevocationList2020Status",
+            "revocationListIndex": "1",
+            "revocationListCredential": "did:evan:zkp:0x1234512345123451234512345123456789"
+        },
         "proof": {
             "type": "BbsBlsSignature2020",
             "created": "2021-03-10T10:00:35.000Z",
@@ -309,5 +321,5 @@ pub mod bbs_coherent_context_test_data {
 
     pub const SIGNATURE_BLINDING: &str = "EOMk3AbkM49POp6NgaojAWEKLK/2k3gHZQw2lCF776o=";
 
-    pub const EXAMPLE_REVOCATION_LIST_DID: &str = "did:evan:zkp:0x123451234512345123451234512345";
+    pub const EXAMPLE_REVOCATION_LIST_DID: &str = "did:evan:zkp:0x1234512345123451234512345123456789";
 }

@@ -4,7 +4,7 @@ use crate::application::{
 };
 use crate::{
     application::datatypes::{
-        BbsCredentialOffer, BbsCredentialRequest, CredentialProposal, CredentialSchema,
+        BbsCredentialOffer, BbsCredentialRequest, CredentialProposal, CredentialSchema, CredentialStatus,
         UnfinishedBbsCredential, CREDENTIAL_OFFER_TYPE, CREDENTIAL_PROOF_PURPOSE,
         CREDENTIAL_SCHEMA_TYPE, CREDENTIAL_SIGNATURE_TYPE, DEFAULT_CREDENTIAL_CONTEXTS,
         DEFAULT_REVOCATION_CONTEXTS,
@@ -72,7 +72,23 @@ impl Issuer {
         credential_schema: CredentialSchema,
         required_indices: Vec<u32>,
         nquads: Vec<String>,
+        revocation_list_did: &str,
+        revocation_list_id: &str,
     ) -> Result<UnfinishedBbsCredential, Box<dyn Error>> {
+
+        let revocation_list_index_number = revocation_list_id
+            .parse::<usize>()
+            .map_err(|e| format!("Error parsing revocation_list_id: {}", e))?;
+
+        if revocation_list_index_number > MAX_REVOCATION_ENTRIES {
+            let error = format!(
+                "Cannot issue credential: revocation_list_id {} is larger than {}",
+                revocation_list_index_number,
+                MAX_REVOCATION_ENTRIES
+            );
+            return Err(Box::from(error));
+        }
+
         let credential_subject = CredentialSubject {
             id: subject_did.to_owned(),
             data: credential_request.credential_values.clone(),
@@ -113,6 +129,12 @@ impl Issuer {
             issuer: issuer_did.to_owned(),
             credential_subject,
             credential_schema: schema_reference,
+            credential_status: CredentialStatus {
+                id: format!("{}#{}", revocation_list_did ,revocation_list_id),
+                r#type: "RevocationList2021Status".to_string(),
+                revocation_list_index: revocation_list_id.to_string(),
+                revocation_list_credential: revocation_list_did.to_string(),
+            },
             proof: vc_signature,
         };
         Ok(credential)
@@ -378,6 +400,8 @@ mod tests {
             schema.clone(),
             [1].to_vec(),
             nquads,
+            EXAMPLE_REVOCATION_LIST_DID,
+            "0"
         ) {
             Ok(cred) => {
                 assert_credential(
@@ -411,6 +435,8 @@ mod tests {
             schema.clone(),
             [1].to_vec(),
             nquads,
+            EXAMPLE_REVOCATION_LIST_DID,
+            "0"
         ) {
             Ok(cred) => {
                 assert_credential(
@@ -422,6 +448,35 @@ mod tests {
             }
             Err(e) => assert!(false, "Received error when issuing credential: {}", e),
         }
+        Ok(())
+    }
+
+    #[test]
+    fn cannot_issue_credential_larger_revocation_id() -> Result<(), Box<dyn Error>> {
+        let (dpk, sk) = BbsIssuer::new_short_keys(None);
+        let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
+        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID)?;
+        let key_id = format!("{}#key-1", ISSUER_DID);
+        let (credential_request, schema, nquads) = request_credential(&dpk, &offer, 5)?;
+
+        let result = Issuer::issue_credential(
+            &ISSUER_DID,
+            &HOLDER_DID,
+            &offer,
+            &credential_request,
+            &key_id,
+            &dpk,
+            &sk,
+            schema.clone(),
+            [1].to_vec(),
+            nquads,
+            EXAMPLE_REVOCATION_LIST_DID,
+            &(MAX_REVOCATION_ENTRIES + 1).to_string()
+        ).map_err(|e| format!("{}", e)).err();
+        assert_eq!(
+            result,
+            Some(format!("Cannot issue credential: revocation_list_id {} is larger than {}", MAX_REVOCATION_ENTRIES + 1, MAX_REVOCATION_ENTRIES))
+        );
         Ok(())
     }
 
@@ -454,6 +509,7 @@ mod tests {
             ISSUER_PRIVATE_KEY,
             &signer
         ).await?;
+
         let result = Issuer::revoke_credential(
             ISSUER_DID,
             revocation_list.clone(),
@@ -480,6 +536,7 @@ mod tests {
             ISSUER_PRIVATE_KEY,
             &signer
         ).await?;
+
         let updated_revocation_list = Issuer::revoke_credential(
             ISSUER_DID,
             revocation_list.clone(),
