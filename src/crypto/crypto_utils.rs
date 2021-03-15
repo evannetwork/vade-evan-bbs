@@ -145,7 +145,7 @@ pub fn check_assertion_proof(
         }
 
         let address = format!("0x{}", address);
-        let key_to_use = vc_proof["verificationMethod"]
+        let _key_to_use = vc_proof["verificationMethod"]
             .as_str()
             .ok_or("could not get verificationMethod from proof")?;
         if address != signer_address {
