@@ -8,7 +8,7 @@ use crate::{
         UnfinishedBbsCredential, CREDENTIAL_OFFER_TYPE, CREDENTIAL_PROOF_PURPOSE,
         CREDENTIAL_SCHEMA_TYPE, CREDENTIAL_SIGNATURE_TYPE, DEFAULT_CREDENTIAL_CONTEXTS,
         DEFAULT_REVOCATION_CONTEXTS,
-        UnfinishedRevocationListCredential, RevocationListCredential, RevocationListCredentialSubject
+        UnproofedRevocationListCredential, RevocationListCredential, RevocationListCredentialSubject
     },
     crypto::crypto_issuer::CryptoIssuer,
     crypto::crypto_utils::create_assertion_proof,
@@ -167,7 +167,7 @@ impl Issuer {
         let mut gzip_encoder = GzEncoder::new(Vec::new(), Compression::default());
         gzip_encoder.write_all(&available_bytes)?;
         let compressed_bytes = gzip_encoder.finish();
-        let unfinished_revocation_list = UnfinishedRevocationListCredential {
+        let unfinished_revocation_list = UnproofedRevocationListCredential {
             context: DEFAULT_REVOCATION_CONTEXTS
                 .iter()
                 .map(|c| String::from(c.to_owned()))

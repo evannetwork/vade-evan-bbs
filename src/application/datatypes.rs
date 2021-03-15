@@ -271,7 +271,7 @@ pub struct BbsPresentationProof {
 }
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct UnfinishedRevocationListCredential {
+pub struct UnproofedRevocationListCredential {
     #[serde(rename(serialize = "@context", deserialize = "@context"))]
     pub context: Vec<String>,
     pub id: String,
@@ -295,7 +295,7 @@ pub struct RevocationListCredential {
 }
 
 impl RevocationListCredential {
-    pub fn new(list: UnfinishedRevocationListCredential, proof: AssertionProof) -> RevocationListCredential {
+    pub fn new(list: UnproofedRevocationListCredential, proof: AssertionProof) -> RevocationListCredential {
         RevocationListCredential {
             context: list.context,
             id: list.id,
