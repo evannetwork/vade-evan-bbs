@@ -1,5 +1,5 @@
 use crate::application::datatypes::{
-    BbsCredential, BbsSubProofRequest, UnfinishedBbsCredential, KEY_SIZE,
+    BbsCredential, BbsCredentialSignature, BbsSubProofRequest, UnfinishedBbsCredential, KEY_SIZE,
 };
 use bbs::{
     keys::DeterministicPublicKey,
@@ -65,7 +65,7 @@ impl CryptoProver {
 
     pub fn create_proof_of_knowledge(
         sub_proof_request: &BbsSubProofRequest,
-        credential: &BbsCredential,
+        credential_signature: &str,
         public_key: &DeterministicPublicKey,
         master_secret: &SignatureMessage,
         nquads: Vec<String>,
@@ -99,8 +99,7 @@ impl CryptoProver {
             commitment_messages.insert(j, pm_hidden!(""))
         }
 
-        let signature =
-            Signature::from(base64::decode(&credential.proof.signature)?.into_boxed_slice());
+        let signature = Signature::from(base64::decode(credential_signature)?.into_boxed_slice());
 
         let pok = BbsProver::commit_signature_pok(
             &crypto_proof_request,
@@ -113,19 +112,27 @@ impl CryptoProver {
     }
 
     pub fn generate_proofs(
-        poks: Vec<PoKOfSignature>,
+        pok_to_schema_map: HashMap<String, PoKOfSignature>,
         nonce: ProofNonce,
-    ) -> Result<Vec<SignatureProof>, Box<dyn Error>> {
+    ) -> Result<HashMap<String, SignatureProof>, Box<dyn Error>> {
         let err = "Error creating proof: ";
 
-        let challenge = BbsProver::create_challenge_hash(poks.as_slice(), None, &nonce)
-            .map_err(|e| format!("{} {}", err, e))?;
+        let challenge = BbsProver::create_challenge_hash(
+            pok_to_schema_map
+                .values()
+                .cloned()
+                .collect::<Vec<PoKOfSignature>>()
+                .as_slice(),
+            None,
+            &nonce,
+        )
+        .map_err(|e| format!("{} {}", err, e))?;
 
-        let mut proofs = Vec::new();
-        for (i, pok) in poks.iter().enumerate() {
+        let mut proofs = HashMap::new();
+        for (schema, pok) in pok_to_schema_map {
             let proof = BbsProver::generate_signature_pok(pok.clone(), &challenge)
                 .map_err(|e| format!("{} {}", err, e))?;
-            proofs.insert(i, proof);
+            proofs.insert(schema, proof);
         }
 
         return Ok(proofs);
@@ -200,7 +207,7 @@ mod tests {
 
         match CryptoProver::create_proof_of_knowledge(
             &sub_proof_request,
-            &credential,
+            &credential.proof.signature,
             &public_key,
             &master_secret,
             nquads,
@@ -227,15 +234,17 @@ mod tests {
 
         let pok = CryptoProver::create_proof_of_knowledge(
             &sub_proof_request,
-            &credential,
+            &credential.proof.signature,
             &public_key,
             &master_secret,
             nquads,
         )?;
-
         let nonce = BbsVerifier::generate_proof_nonce();
 
-        CryptoProver::generate_proofs(vec![pok], nonce);
+        let mut poks = HashMap::new();
+        poks.insert(credential.credential_schema.id.clone(), pok);
+
+        CryptoProver::generate_proofs(poks, nonce);
 
         Ok(())
     }

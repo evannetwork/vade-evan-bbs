@@ -1,12 +1,14 @@
 use super::datatypes::{
     BbsCredential, BbsCredentialOffer, BbsCredentialRequest, BbsPresentation, BbsProofRequest,
-    CredentialProposal, CredentialSchema, UnfinishedBbsCredential, CREDENTIAL_PROPOSAL_TYPE,
-    CREDENTIAL_REQUEST_TYPE,
+    CredentialProposal, CredentialSchema, CredentialSubject, UnfinishedBbsCredential,
+    UnfinishedProofPresentation, CREDENTIAL_PROPOSAL_TYPE, CREDENTIAL_REQUEST_TYPE,
+    DEFAULT_CREDENTIAL_CONTEXTS,
 };
+use super::utils::{generate_uuid, get_now_as_iso_string};
 use crate::crypto::crypto_prover::CryptoProver;
 use bbs::{
-    keys::DeterministicPublicKey, signature::BlindSignature, ProofNonce, SignatureBlinding,
-    SignatureMessage,
+    keys::DeterministicPublicKey, pok_sig::PoKOfSignature, signature::BlindSignature, ProofNonce,
+    SignatureBlinding, SignatureMessage,
 };
 use std::collections::HashMap;
 use std::convert::{From, TryFrom, TryInto};
@@ -125,11 +127,12 @@ impl Prover {
     pub fn present_proof(
         proof_request: BbsProofRequest,
         credential_schema_map: HashMap<String, BbsCredential>,
+        revealed_properties_schema_map: HashMap<String, CredentialSubject>,
         public_key_schema_map: HashMap<String, DeterministicPublicKey>,
         nquads_schema_map: HashMap<String, Vec<String>>,
         master_secret: SignatureMessage,
     ) -> Result<(), Box<dyn Error>> {
-        let mut poks = Vec::new();
+        let mut poks: HashMap<String, PoKOfSignature> = HashMap::new();
         for sub_proof_request in &proof_request.sub_proof_requests {
             let credential: BbsCredential = credential_schema_map
                 .get(&sub_proof_request.schema)
@@ -154,24 +157,47 @@ impl Prover {
 
             let proof_of_knowledge = CryptoProver::create_proof_of_knowledge(
                 sub_proof_request,
-                &credential,
+                &credential.proof.signature,
                 &dpk,
                 &master_secret,
                 nquads,
             )?;
 
-            poks.insert(poks.len(), proof_of_knowledge);
+            poks.insert(sub_proof_request.schema.clone(), proof_of_knowledge);
         }
         let nonce = ProofNonce::from(base64::decode(proof_request.nonce)?.into_boxed_slice());
-        let proofs = CryptoProver::generate_proofs(poks, nonce);
+        let proofs = CryptoProver::generate_proofs(poks, nonce)?;
 
-        // Ok(BbsPresentation {
-        //     context: DEFAULT_CREDENTIAL_CONTEXTS
-        //         .iter()
-        //         .map(|c| c.to_string())
-        //         .collect::<Vec<String>>(),
-        // });
-        panic!("Unimplemented");
+        let mut presentation_credentials: Vec<BbsPresentation> = Vec::new();
+        for (schema, proof) in proofs {
+            let data_to_proof: BbsCredential = credential_schema_map
+                .get(&schema)
+                .ok_or(format!("Missing credential for schema {}", &schema))?
+                .clone();
+            let revealed_subject = revealed_properties_schema_map
+                .get(&schema)
+                .ok_or(format!(
+                    "Missing revealed properties for schema {}",
+                    &schema
+                ))?
+                .clone();
+            let issuance_date = get_now_as_iso_string();
+            let proof_cred =
+                BbsPresentation::new(data_to_proof, issuance_date, proof, revealed_subject, nonce);
+
+            presentation_credentials.insert(presentation_credentials.len(), proof_cred);
+        }
+
+        let signatureless_presentation = UnfinishedProofPresentation {
+            context: DEFAULT_CREDENTIAL_CONTEXTS
+                .iter()
+                .map(|c| String::from(c.to_owned()))
+                .collect::<Vec<_>>(),
+            id: generate_uuid(),
+            r#type: vec!["VerifiablePresentation".to_string()],
+            verifiable_credential: presentation_credentials.clone(),
+        };
+
         Ok(())
     }
 }

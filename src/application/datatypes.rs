@@ -1,4 +1,4 @@
-use bbs::BlindSignatureContext;
+use bbs::{BlindSignatureContext, ProofNonce, SignatureProof, ToVariableLengthBytes};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -202,7 +202,7 @@ pub struct BbsUnfinishedCredentialSignature {
 
 /// A collection of all proofs requested in a `ProofRequest`. Sent to a verifier as the response to
 /// a `ProofRequest`.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ProofPresentation {
     #[serde(rename(serialize = "@context", deserialize = "@context"))]
@@ -213,8 +213,18 @@ pub struct ProofPresentation {
     pub proof: AssertionProof,
 }
 
-/// A single proof of a schema requested in a `ProofRequest` that reveals the requested attributes.
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UnfinishedProofPresentation {
+    #[serde(rename(serialize = "@context", deserialize = "@context"))]
+    pub context: Vec<String>,
+    pub id: String,
+    pub r#type: Vec<String>,
+    pub verifiable_credential: Vec<BbsPresentation>,
+}
+
+/// A single proof of a schema requested in a `ProofRequest` that reveals the requested attributes.
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct BbsPresentation {
     #[serde(rename(serialize = "@context", deserialize = "@context"))]
@@ -226,6 +236,37 @@ pub struct BbsPresentation {
     pub credential_subject: CredentialSubject,
     pub credential_schema: CredentialSchemaReference,
     pub proof: BbsPresentationProof,
+}
+
+impl BbsPresentation {
+    pub fn new(
+        cred: BbsCredential,
+        issuance_date: String,
+        proof: SignatureProof,
+        revealed_properties: CredentialSubject,
+        nonce: ProofNonce,
+    ) -> BbsPresentation {
+        BbsPresentation {
+            context: cred.context,
+            id: cred.id,
+            issuance_date: issuance_date,
+            r#type: cred.r#type,
+            issuer: cred.issuer,
+            credential_subject: revealed_properties,
+            credential_schema: CredentialSchemaReference {
+                id: cred.credential_schema.id,
+                r#type: cred.credential_schema.r#type,
+            },
+            proof: BbsPresentationProof {
+                created: cred.proof.created,
+                proof_purpose: cred.proof.proof_purpose,
+                proof: base64::encode(proof.to_bytes_compressed_form()),
+                r#type: cred.proof.r#type,
+                verification_method: cred.proof.verification_method,
+                nonce: base64::encode(nonce.to_bytes_compressed_form()),
+            },
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]
