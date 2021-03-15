@@ -82,7 +82,7 @@ impl Issuer {
 
         if revocation_list_index_number > MAX_REVOCATION_ENTRIES {
             let error = format!(
-                "Cannot issue credential: revocation_list_id {} is larger than {}",
+                "Cannot issue credential: revocation_list_id {} is larger than list limit of {}",
                 revocation_list_index_number,
                 MAX_REVOCATION_ENTRIES
             );
@@ -200,7 +200,7 @@ impl Issuer {
 
 
     /// Revokes a credential by flipping the specific index in the given revocation list.
-    ///
+    /// See https://w3c-ccg.github.io/vc-status-rl-2020/#revocationlist2020credential for reference
     /// # Arguments
     /// * `issuer` - DID of the issuer
     /// * `revocation_list` - Revocation list the credential belongs to
@@ -222,7 +222,7 @@ impl Issuer {
 
         if revocation_id > MAX_REVOCATION_ENTRIES {
             let error = format!(
-                "Cannot revoke credential: revocation_id {} is larger than {}",
+                "Cannot revoke credential: revocation_id {} is larger than list limit of {}",
                 revocation_id,
                 MAX_REVOCATION_ENTRIES
             );
@@ -478,7 +478,7 @@ mod tests {
         ).map_err(|e| format!("{}", e)).err();
         assert_eq!(
             result,
-            Some(format!("Cannot issue credential: revocation_list_id {} is larger than {}", MAX_REVOCATION_ENTRIES + 1, MAX_REVOCATION_ENTRIES))
+            Some(format!("Cannot issue credential: revocation_list_id {} is larger than list limit of {}", MAX_REVOCATION_ENTRIES + 1, MAX_REVOCATION_ENTRIES))
         );
         Ok(())
     }
@@ -516,7 +516,7 @@ mod tests {
 
         assert_eq!(
             result,
-            Some(format!("Cannot revoke credential: revocation_id {} is larger than {}", MAX_REVOCATION_ENTRIES + 1, MAX_REVOCATION_ENTRIES))
+            Some(format!("Cannot revoke credential: revocation_id {} is larger than list limit of {}", MAX_REVOCATION_ENTRIES + 1, MAX_REVOCATION_ENTRIES))
         );
         Ok(())
     }
