@@ -304,4 +304,7 @@ pub mod vc_zkp {
         pub const MASTER_SECRET: &str = "OASkVMA8q6b3qJuabvgaN9K1mKoqptCv4SCNvRmnWuI=";
     
         pub const SIGNATURE_BLINDING: &str = "EOMk3AbkM49POp6NgaojAWEKLK/2k3gHZQw2lCF776o=";
+
+        pub const EXAMPLE_REVOCATION_LIST_DID: &str =
+        "did:evan:zkp:0x1234512345123451234512345123456789";
 }
