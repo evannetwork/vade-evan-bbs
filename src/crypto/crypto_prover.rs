@@ -1,15 +1,19 @@
-use crate::application::datatypes::{
-    BbsCredential, BbsSubProofRequest, KEY_SIZE,
-};
+use crate::application::datatypes::{BbsCredential, BbsSubProofRequest, KEY_SIZE};
 use bbs::{
     keys::DeterministicPublicKey,
     messages::{HiddenMessage, ProofMessage},
-    pm_hidden, pm_hidden_raw, pm_revealed,
+    pm_hidden,
+    pm_hidden_raw,
+    pm_revealed,
     pok_sig::PoKOfSignature,
     prover::Prover as BbsProver,
     signature::{BlindSignature, Signature},
     verifier::Verifier as BbsVerifier,
-    BlindSignatureContext, HashElem, ProofNonce, SignatureBlinding, SignatureMessage,
+    BlindSignatureContext,
+    HashElem,
+    ProofNonce,
+    SignatureBlinding,
+    SignatureMessage,
     SignatureProof,
 };
 use std::collections::{BTreeMap, HashSet};
@@ -135,15 +139,17 @@ impl CryptoProver {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::application::datatypes::UnfinishedBbsCredential;
     use crate::utils::test_data::bbs_coherent_context_test_data::{
-        FINISHED_CREDENTIAL, MASTER_SECRET, NQUADS, PUB_KEY, SIGNATURE_BLINDING,
+        FINISHED_CREDENTIAL,
+        MASTER_SECRET,
+        NQUADS,
+        PUB_KEY,
+        SIGNATURE_BLINDING,
         UNFINISHED_CREDENTIAL,
     };
     use bbs::{issuer::Issuer as CryptoIssuer, prover::Prover};
     use std::convert::{From, TryInto};
-    use crate::application::datatypes::{
-        UnfinishedBbsCredential
-    };
 
     fn setup_tests() -> (DeterministicPublicKey, SignatureMessage, ProofNonce) {
         let (dpk, _) = CryptoIssuer::new_short_keys(None);

@@ -78,7 +78,7 @@ pub struct SchemaProperty {
     pub items: Option<Vec<String>>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct AssertionProof {
     pub r#type: String,
@@ -193,8 +193,7 @@ pub struct CredentialStatus {
     pub revocation_list_credential: String,
 }
 
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RevocationListCredentialSubject {
     pub id: String,
@@ -281,7 +280,7 @@ pub struct UnproofedRevocationListCredential {
     pub credential_subject: RevocationListCredentialSubject,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RevocationListCredential {
     #[serde(rename(serialize = "@context", deserialize = "@context"))]
@@ -295,7 +294,10 @@ pub struct RevocationListCredential {
 }
 
 impl RevocationListCredential {
-    pub fn new(list: UnproofedRevocationListCredential, proof: AssertionProof) -> RevocationListCredential {
+    pub fn new(
+        list: UnproofedRevocationListCredential,
+        proof: AssertionProof,
+    ) -> RevocationListCredential {
         RevocationListCredential {
             context: list.context,
             id: list.id,

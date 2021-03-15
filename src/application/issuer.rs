@@ -4,11 +4,11 @@ use crate::application::{
 };
 use crate::{
     application::datatypes::{
-        BbsCredentialOffer, BbsCredentialRequest, CredentialProposal, CredentialSchema, CredentialStatus,
-        UnfinishedBbsCredential, CREDENTIAL_OFFER_TYPE, CREDENTIAL_PROOF_PURPOSE,
-        CREDENTIAL_SCHEMA_TYPE, CREDENTIAL_SIGNATURE_TYPE, DEFAULT_CREDENTIAL_CONTEXTS,
-        DEFAULT_REVOCATION_CONTEXTS,
-        UnproofedRevocationListCredential, RevocationListCredential, RevocationListCredentialSubject
+        BbsCredentialOffer, BbsCredentialRequest, CredentialProposal, CredentialSchema,
+        CredentialStatus, RevocationListCredential, RevocationListCredentialSubject,
+        UnfinishedBbsCredential, UnproofedRevocationListCredential, CREDENTIAL_OFFER_TYPE,
+        CREDENTIAL_PROOF_PURPOSE, CREDENTIAL_SCHEMA_TYPE, CREDENTIAL_SIGNATURE_TYPE,
+        DEFAULT_CREDENTIAL_CONTEXTS, DEFAULT_REVOCATION_CONTEXTS,
     },
     crypto::crypto_issuer::CryptoIssuer,
     crypto::crypto_utils::create_assertion_proof,
@@ -19,14 +19,9 @@ use bbs::{
     keys::{DeterministicPublicKey, SecretKey},
     ProofNonce,
 };
-use std::io::prelude::*;
-use flate2::Compression;
-use flate2::write::GzEncoder;
-use flate2::read::GzDecoder;
+use flate2::{read::GzDecoder, write::GzEncoder, Compression};
 
-use std::error::Error;
-
-#[derive(Debug, PartialEq)]
+use std::{error::Error, io::prelude::*};
 pub struct Issuer {}
 
 const MAX_REVOCATION_ENTRIES: usize = 131072;
@@ -44,8 +39,7 @@ impl Issuer {
         credential_proposal: &CredentialProposal,
         issuer_did: &str,
     ) -> Result<BbsCredentialOffer, Box<dyn Error>> {
-        let nonce =
-            base64::encode(BbsIssuer::generate_signing_nonce().to_bytes_compressed_form());
+        let nonce = base64::encode(BbsIssuer::generate_signing_nonce().to_bytes_compressed_form());
         if credential_proposal.issuer != issuer_did {
             return Err(Box::from(
                 "Cannot offer credential: Proposal is not targeted at this issuer",
@@ -75,7 +69,6 @@ impl Issuer {
         revocation_list_did: &str,
         revocation_list_id: &str,
     ) -> Result<UnfinishedBbsCredential, Box<dyn Error>> {
-
         let revocation_list_index_number = revocation_list_id
             .parse::<usize>()
             .map_err(|e| format!("Error parsing revocation_list_id: {}", e))?;
@@ -83,8 +76,7 @@ impl Issuer {
         if revocation_list_index_number > MAX_REVOCATION_ENTRIES {
             let error = format!(
                 "Cannot issue credential: revocation_list_id {} is larger than {}",
-                revocation_list_index_number,
-                MAX_REVOCATION_ENTRIES
+                revocation_list_index_number, MAX_REVOCATION_ENTRIES
             );
             return Err(Box::from(error));
         }
@@ -130,7 +122,7 @@ impl Issuer {
             credential_subject,
             credential_schema: schema_reference,
             credential_status: CredentialStatus {
-                id: format!("{}#{}", revocation_list_did ,revocation_list_id),
+                id: format!("{}#{}", revocation_list_did, revocation_list_id),
                 r#type: "RevocationList2021Status".to_string(),
                 revocation_list_index: revocation_list_id.to_string(),
                 revocation_list_credential: revocation_list_did.to_string(),
@@ -139,7 +131,6 @@ impl Issuer {
         };
         Ok(credential)
     }
-
 
     /// Creates a new revocation list. This list is used to store the revocation stat of a given credential id.
     /// It needs to be publicly published and updated after every revocation. The definition is signed by the issuer.
@@ -159,10 +150,7 @@ impl Issuer {
         issuer_public_key_did: &str,
         issuer_proving_key: &str,
         signer: &Box<dyn Signer>,
-    ) -> Result<
-        RevocationListCredential,
-        Box<dyn Error>,
-    > {
+    ) -> Result<RevocationListCredential, Box<dyn Error>> {
         let available_bytes = [0u8; MAX_REVOCATION_ENTRIES / 8];
         let mut gzip_encoder = GzEncoder::new(Vec::new(), Compression::default());
         gzip_encoder.write_all(&available_bytes)?;
@@ -173,13 +161,16 @@ impl Issuer {
                 .map(|c| String::from(c.to_owned()))
                 .collect::<Vec<_>>(),
             id: assigned_did.to_owned(),
-            r#type: vec!["VerifiableCredential".to_string(), "StatusList2021Credential".to_string()],
+            r#type: vec![
+                "VerifiableCredential".to_string(),
+                "StatusList2021Credential".to_string(),
+            ],
             issuer: issuer_public_key_did.to_owned(),
             issued: get_now_as_iso_string(),
             credential_subject: RevocationListCredentialSubject {
                 id: format!("{}#{}", assigned_did, "list"),
                 r#type: "RevocationList2021".to_string(),
-                encoded_list: base64::encode_config(&compressed_bytes?,base64::URL_SAFE)
+                encoded_list: base64::encode_config(&compressed_bytes?, base64::URL_SAFE),
             },
         };
 
@@ -197,7 +188,6 @@ impl Issuer {
 
         Ok(revocation_list)
     }
-
 
     /// Revokes a credential by flipping the specific index in the given revocation list.
     ///
@@ -219,21 +209,21 @@ impl Issuer {
         issuer_proving_key: &str,
         signer: &Box<dyn Signer>,
     ) -> Result<RevocationListCredential, Box<dyn Error>> {
-
         if revocation_id > MAX_REVOCATION_ENTRIES {
             let error = format!(
                 "Cannot revoke credential: revocation_id {} is larger than {}",
-                revocation_id,
-                MAX_REVOCATION_ENTRIES
+                revocation_id, MAX_REVOCATION_ENTRIES
             );
             return Err(Box::from(error));
         }
 
-        let encoded_list = base64::decode_config(revocation_list.credential_subject.encoded_list.to_string(),base64::URL_SAFE)?;
+        let encoded_list = base64::decode_config(
+            revocation_list.credential_subject.encoded_list.to_string(),
+            base64::URL_SAFE,
+        )?;
         let mut decoder = GzDecoder::new(&encoded_list[..]);
         let mut decoded_list = Vec::new();
         decoder.read_to_end(&mut decoded_list)?;
-
 
         let byte_index_float: f32 = (revocation_id / 8) as f32;
         let bit: u8 = 1 << (revocation_id % 8);
@@ -244,7 +234,8 @@ impl Issuer {
         gzip_encoder.write_all(&decoded_list)?;
         let compressed_bytes = gzip_encoder.finish()?;
 
-        revocation_list.credential_subject.encoded_list = base64::encode_config(&compressed_bytes,base64::URL_SAFE);
+        revocation_list.credential_subject.encoded_list =
+            base64::encode_config(&compressed_bytes, base64::URL_SAFE);
         revocation_list.issued = get_now_as_iso_string();
 
         let document_to_sign = serde_json::to_value(&revocation_list)?;
@@ -271,17 +262,13 @@ mod tests {
             datatypes::{BbsCredentialOffer, BbsCredentialRequest, UnfinishedBbsCredential},
             prover::Prover,
         },
+        signing::{LocalSigner, Signer},
         utils::test_data::{
-            accounts::local::{HOLDER_DID, ISSUER_DID, ISSUER_PUBLIC_KEY_DID, ISSUER_PRIVATE_KEY},
-            vc_zkp::{EXAMPLE_CREDENTIAL_PROPOSAL, EXAMPLE_CREDENTIAL_SCHEMA},
+            accounts::local::{HOLDER_DID, ISSUER_DID, ISSUER_PRIVATE_KEY, ISSUER_PUBLIC_KEY_DID},
             bbs_coherent_context_test_data::{
-                EXAMPLE_REVOCATION_LIST_DID,
-                REVOCATION_LIST_CREDENTIAL,
-            }
-        },
-        signing::{
-            Signer,
-            LocalSigner
+                EXAMPLE_REVOCATION_LIST_DID, REVOCATION_LIST_CREDENTIAL,
+            },
+            vc_zkp::{EXAMPLE_CREDENTIAL_PROPOSAL, EXAMPLE_CREDENTIAL_SCHEMA},
         },
     };
     use bbs::issuer::Issuer as BbsIssuer;
@@ -404,7 +391,7 @@ mod tests {
             [1].to_vec(),
             nquads,
             EXAMPLE_REVOCATION_LIST_DID,
-            "0"
+            "0",
         ) {
             Ok(cred) => {
                 assert_credential(
@@ -439,7 +426,7 @@ mod tests {
             [1].to_vec(),
             nquads,
             EXAMPLE_REVOCATION_LIST_DID,
-            "0"
+            "0",
         ) {
             Ok(cred) => {
                 assert_credential(
@@ -474,18 +461,23 @@ mod tests {
             [1].to_vec(),
             nquads,
             EXAMPLE_REVOCATION_LIST_DID,
-            &(MAX_REVOCATION_ENTRIES + 1).to_string()
-        ).map_err(|e| format!("{}", e)).err();
+            &(MAX_REVOCATION_ENTRIES + 1).to_string(),
+        )
+        .map_err(|e| format!("{}", e))
+        .err();
         assert_eq!(
             result,
-            Some(format!("Cannot issue credential: revocation_list_id {} is larger than {}", MAX_REVOCATION_ENTRIES + 1, MAX_REVOCATION_ENTRIES))
+            Some(format!(
+                "Cannot issue credential: revocation_list_id {} is larger than {}",
+                MAX_REVOCATION_ENTRIES + 1,
+                MAX_REVOCATION_ENTRIES
+            ))
         );
         Ok(())
     }
 
     #[tokio::test]
     async fn revocation_can_create_revocation_registry() -> Result<(), Box<dyn Error>> {
-
         let signer: Box<dyn Signer> = Box::new(LocalSigner::new());
 
         Issuer::create_revocation_list(
@@ -493,8 +485,9 @@ mod tests {
             ISSUER_DID,
             ISSUER_PUBLIC_KEY_DID,
             ISSUER_PRIVATE_KEY,
-            &signer
-        ).await?;
+            &signer,
+        )
+        .await?;
 
         Ok(())
     }
@@ -503,7 +496,8 @@ mod tests {
     async fn revocation_throws_error_when_max_count_reached() -> Result<(), Box<dyn Error>> {
         let signer: Box<dyn Signer> = Box::new(LocalSigner::new());
 
-        let revocation_list: RevocationListCredential = serde_json::from_str(&REVOCATION_LIST_CREDENTIAL)?;
+        let revocation_list: RevocationListCredential =
+            serde_json::from_str(&REVOCATION_LIST_CREDENTIAL)?;
 
         let result = Issuer::revoke_credential(
             ISSUER_DID,
@@ -511,12 +505,19 @@ mod tests {
             MAX_REVOCATION_ENTRIES + 1,
             ISSUER_PUBLIC_KEY_DID,
             ISSUER_PRIVATE_KEY,
-            &signer
-        ).await.map_err(|e| format!("{}", e)).err();
+            &signer,
+        )
+        .await
+        .map_err(|e| format!("{}", e))
+        .err();
 
         assert_eq!(
             result,
-            Some(format!("Cannot revoke credential: revocation_id {} is larger than {}", MAX_REVOCATION_ENTRIES + 1, MAX_REVOCATION_ENTRIES))
+            Some(format!(
+                "Cannot revoke credential: revocation_id {} is larger than {}",
+                MAX_REVOCATION_ENTRIES + 1,
+                MAX_REVOCATION_ENTRIES
+            ))
         );
         Ok(())
     }
@@ -525,7 +526,8 @@ mod tests {
     async fn revocation_can_set_revoked_status() -> Result<(), Box<dyn Error>> {
         let signer: Box<dyn Signer> = Box::new(LocalSigner::new());
 
-        let revocation_list: RevocationListCredential = serde_json::from_str(&REVOCATION_LIST_CREDENTIAL)?;
+        let revocation_list: RevocationListCredential =
+            serde_json::from_str(&REVOCATION_LIST_CREDENTIAL)?;
 
         let updated_revocation_list = Issuer::revoke_credential(
             ISSUER_DID,
@@ -533,10 +535,14 @@ mod tests {
             1,
             ISSUER_PUBLIC_KEY_DID,
             ISSUER_PRIVATE_KEY,
-            &signer
-        ).await?;
+            &signer,
+        )
+        .await?;
 
-        assert_ne!(&revocation_list.credential_subject.encoded_list, &updated_revocation_list.credential_subject.encoded_list);
+        assert_ne!(
+            &revocation_list.credential_subject.encoded_list,
+            &updated_revocation_list.credential_subject.encoded_list
+        );
 
         Ok(())
     }

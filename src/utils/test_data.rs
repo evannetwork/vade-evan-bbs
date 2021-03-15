@@ -321,7 +321,8 @@ pub mod bbs_coherent_context_test_data {
 
     pub const SIGNATURE_BLINDING: &str = "EOMk3AbkM49POp6NgaojAWEKLK/2k3gHZQw2lCF776o=";
 
-    pub const EXAMPLE_REVOCATION_LIST_DID: &str = "did:evan:zkp:0x1234512345123451234512345123456789";
+    pub const EXAMPLE_REVOCATION_LIST_DID: &str =
+        "did:evan:zkp:0x1234512345123451234512345123456789";
 
     pub const REVOCATION_LIST_CREDENTIAL: &str = r###"{
         "@context":[

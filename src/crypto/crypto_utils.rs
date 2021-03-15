@@ -51,7 +51,7 @@ pub async fn create_assertion_proof(
 ) -> Result<AssertionProof, Box<dyn Error>> {
     // create to-be-signed jwt
     let header_str = r#"{"typ":"JWT","alg":"ES256K-R"}"#;
-    let padded = base64::encode_config(header_str.as_bytes(),base64::URL_SAFE);
+    let padded = base64::encode_config(header_str.as_bytes(), base64::URL_SAFE);
     let header_encoded = padded.trim_end_matches('=');
 
     #[cfg(target_arch = "wasm32")]
@@ -65,7 +65,7 @@ pub async fn create_assertion_proof(
     data_json["iat"] = Value::from(now.clone());
     data_json["doc"] = doc_clone;
     data_json["iss"] = Value::from(issuer);
-    let padded = base64::encode_config(format!("{}", &data_json).as_bytes(),base64::URL_SAFE);
+    let padded = base64::encode_config(format!("{}", &data_json).as_bytes(), base64::URL_SAFE);
     let data_encoded = padded.trim_end_matches('=');
 
     // create hash of data (including header)
@@ -78,7 +78,7 @@ pub async fn create_assertion_proof(
     let hash_arr: [u8; 32] = hash.try_into().map_err(|_| "slice with incorrect length")?;
     let message = format!("0x{}", &hex::encode(hash_arr));
     let (sig_and_rec, _): ([u8; 65], _) = signer.sign_message(&message, &private_key).await?;
-    let padded = base64::encode_config(&sig_and_rec,base64::URL_SAFE);
+    let padded = base64::encode_config(&sig_and_rec, base64::URL_SAFE);
     let sig_base64url = padded.trim_end_matches('=');
 
     // build proof property as serde object
@@ -176,10 +176,14 @@ pub fn recover_address_and_data(jwt: &str) -> Result<(String, String), Box<dyn E
         Ok(decoded) => decoded,
         Err(_) => match base64::decode_config(format!("{}=", data).as_bytes(), base64::URL_SAFE) {
             Ok(decoded) => decoded,
-            Err(_) => match base64::decode_config(format!("{}==", data).as_bytes(), base64::URL_SAFE) {
-                Ok(decoded) => decoded,
-                Err(_) => base64::decode_config(format!("{}===", data).as_bytes(), base64::URL_SAFE)?,
-            },
+            Err(_) => {
+                match base64::decode_config(format!("{}==", data).as_bytes(), base64::URL_SAFE) {
+                    Ok(decoded) => decoded,
+                    Err(_) => {
+                        base64::decode_config(format!("{}===", data).as_bytes(), base64::URL_SAFE)?
+                    }
+                }
+            }
         },
     };
     let data_string = String::from_utf8(data_decoded)?;
@@ -187,10 +191,14 @@ pub fn recover_address_and_data(jwt: &str) -> Result<(String, String), Box<dyn E
     // decode signature for validation
     let signature_decoded = match base64::decode_config(signature.as_bytes(), base64::URL_SAFE) {
         Ok(decoded) => decoded,
-        Err(_) => match base64::decode_config(format!("{}=", signature).as_bytes(), base64::URL_SAFE) {
-            Ok(decoded) => decoded,
-            Err(_) => base64::decode_config(format!("{}==", signature).as_bytes(), base64::URL_SAFE)?,
-        },
+        Err(_) => {
+            match base64::decode_config(format!("{}=", signature).as_bytes(), base64::URL_SAFE) {
+                Ok(decoded) => decoded,
+                Err(_) => {
+                    base64::decode_config(format!("{}==", signature).as_bytes(), base64::URL_SAFE)?
+                }
+            }
+        }
     };
 
     // create hash of data (including header)
