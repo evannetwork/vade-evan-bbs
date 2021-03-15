@@ -12,7 +12,7 @@ use std::error::Error;
 use utilities::test_data::{
     accounts::local::{ HOLDER_DID, ISSUER_DID},
     bbs_coherent_context_test_data::{
-        MASTER_SECRET, NQUADS, PUB_KEY, SIGNATURE_BLINDING, SECRET_KEY,
+        MASTER_SECRET, NQUADS, PUB_KEY, SIGNATURE_BLINDING, SECRET_KEY, EXAMPLE_REVOCATION_LIST_DID,
     },
     vc_zkp::{ EXAMPLE_CREDENTIAL_SCHEMA}};
 #[test]
@@ -64,6 +64,8 @@ fn test_issuance_workflow() -> Result<(), Box<dyn Error>>{
         schema.clone(),
         [1].to_vec(),
         nquads,
+        &EXAMPLE_REVOCATION_LIST_DID,
+        "0",
     )?;
     
     // Finish credential
