@@ -274,7 +274,10 @@ mod tests {
         utils::test_data::{
             accounts::local::{HOLDER_DID, ISSUER_DID, ISSUER_PUBLIC_KEY_DID, ISSUER_PRIVATE_KEY},
             vc_zkp::{EXAMPLE_CREDENTIAL_PROPOSAL, EXAMPLE_CREDENTIAL_SCHEMA},
-            bbs_coherent_context_test_data::{EXAMPLE_REVOCATION_LIST_DID}
+            bbs_coherent_context_test_data::{
+                EXAMPLE_REVOCATION_LIST_DID,
+                REVOCATION_LIST_CREDENTIAL,
+            }
         },
         signing::{
             Signer,
@@ -485,30 +488,22 @@ mod tests {
 
         let signer: Box<dyn Signer> = Box::new(LocalSigner::new());
 
-        let revocation_list = Issuer::create_revocation_list(
+        Issuer::create_revocation_list(
             EXAMPLE_REVOCATION_LIST_DID,
             ISSUER_DID,
             ISSUER_PUBLIC_KEY_DID,
             ISSUER_PRIVATE_KEY,
             &signer
         ).await?;
-
-
 
         Ok(())
     }
 
     #[tokio::test]
-    async fn revocation_can_set_revoked_status() -> Result<(), Box<dyn Error>> {
+    async fn revocation_throws_error_when_max_count_reached() -> Result<(), Box<dyn Error>> {
         let signer: Box<dyn Signer> = Box::new(LocalSigner::new());
 
-        let revocation_list = Issuer::create_revocation_list(
-            EXAMPLE_REVOCATION_LIST_DID,
-            ISSUER_DID,
-            ISSUER_PUBLIC_KEY_DID,
-            ISSUER_PRIVATE_KEY,
-            &signer
-        ).await?;
+        let revocation_list: RevocationListCredential = serde_json::from_str(&REVOCATION_LIST_CREDENTIAL)?;
 
         let result = Issuer::revoke_credential(
             ISSUER_DID,
@@ -518,6 +513,7 @@ mod tests {
             ISSUER_PRIVATE_KEY,
             &signer
         ).await.map_err(|e| format!("{}", e)).err();
+
         assert_eq!(
             result,
             Some(format!("Cannot revoke credential: revocation_id {} is larger than {}", MAX_REVOCATION_ENTRIES + 1, MAX_REVOCATION_ENTRIES))
@@ -526,16 +522,10 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn revocation_throws_error_when_max_count_reached() -> Result<(), Box<dyn Error>> {
+    async fn revocation_can_set_revoked_status() -> Result<(), Box<dyn Error>> {
         let signer: Box<dyn Signer> = Box::new(LocalSigner::new());
 
-        let revocation_list = Issuer::create_revocation_list(
-            EXAMPLE_REVOCATION_LIST_DID,
-            ISSUER_DID,
-            ISSUER_PUBLIC_KEY_DID,
-            ISSUER_PRIVATE_KEY,
-            &signer
-        ).await?;
+        let revocation_list: RevocationListCredential = serde_json::from_str(&REVOCATION_LIST_CREDENTIAL)?;
 
         let updated_revocation_list = Issuer::revoke_credential(
             ISSUER_DID,
@@ -547,6 +537,7 @@ mod tests {
         ).await?;
 
         assert_ne!(&revocation_list.credential_subject.encoded_list, &updated_revocation_list.credential_subject.encoded_list);
+
         Ok(())
     }
 }
