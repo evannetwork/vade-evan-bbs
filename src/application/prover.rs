@@ -7,6 +7,7 @@ use super::datatypes::{
     CredentialProposal,
     CredentialSchema,
     CredentialSubject,
+    ProofPresentation,
     UnfinishedBbsCredential,
     UnfinishedProofPresentation,
     CREDENTIAL_PROPOSAL_TYPE,
@@ -14,7 +15,8 @@ use super::datatypes::{
     DEFAULT_CREDENTIAL_CONTEXTS,
 };
 use super::utils::{generate_uuid, get_now_as_iso_string};
-use crate::crypto::crypto_prover::CryptoProver;
+use crate::crypto::{crypto_prover::CryptoProver, crypto_utils::create_assertion_proof};
+use crate::signing::Signer;
 use bbs::{
     keys::DeterministicPublicKey,
     pok_sig::PoKOfSignature,
@@ -137,14 +139,18 @@ impl Prover {
         Ok(credential)
     }
 
-    pub fn present_proof(
+    pub async fn present_proof(
         proof_request: BbsProofRequest,
         credential_schema_map: HashMap<String, BbsCredential>,
         revealed_properties_schema_map: HashMap<String, CredentialSubject>,
         public_key_schema_map: HashMap<String, DeterministicPublicKey>,
         nquads_schema_map: HashMap<String, Vec<String>>,
         master_secret: SignatureMessage,
-    ) -> Result<(), Box<dyn Error>> {
+        prover_did: &str,
+        prover_public_key_did: &str,
+        prover_proving_key: &str,
+        signer: &Box<dyn Signer>,
+    ) -> Result<ProofPresentation, Box<dyn Error>> {
         let mut poks: HashMap<String, PoKOfSignature> = HashMap::new();
         for sub_proof_request in &proof_request.sub_proof_requests {
             let credential: BbsCredential = credential_schema_map
@@ -211,7 +217,17 @@ impl Prover {
             verifiable_credential: presentation_credentials.clone(),
         };
 
-        Ok(())
+        let document_to_sign = serde_json::to_value(&signatureless_presentation)?;
+        let proof = create_assertion_proof(
+            &document_to_sign,
+            &prover_public_key_did,
+            &prover_did,
+            &prover_proving_key,
+            &signer,
+        )
+        .await?;
+
+        Ok(ProofPresentation::new(signatureless_presentation, proof))
     }
 }
 
@@ -323,12 +339,12 @@ mod tests {
 
     #[test]
     fn can_create_proof() -> Result<(), Box<dyn Error>> {
-        // match Prover::present_proof() {
-        //     Ok(proof) => {}
-        //     Err(e) => {
-        //         assert!(false, "Unexpected error while creating proof: {}", e)
-        //     }
-        // }
+        match Prover::present_proof() {
+            Ok(proof) => {}
+            Err(e) => {
+                assert!(false, "Unexpected error while creating proof: {}", e)
+            }
+        }
         panic!("Unimplemented");
         Ok(())
     }

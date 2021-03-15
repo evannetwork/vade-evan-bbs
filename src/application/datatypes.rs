@@ -243,6 +243,21 @@ pub struct ProofPresentation {
     pub proof: AssertionProof,
 }
 
+impl ProofPresentation {
+    pub fn new(
+        unsigned_proof_presentation: UnfinishedProofPresentation,
+        proof: AssertionProof,
+    ) -> ProofPresentation {
+        return ProofPresentation {
+            context: unsigned_proof_presentation.context,
+            id: unsigned_proof_presentation.id,
+            r#type: unsigned_proof_presentation.r#type,
+            verifiable_credential: unsigned_proof_presentation.verifiable_credential,
+            proof: proof,
+        };
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UnfinishedProofPresentation {
