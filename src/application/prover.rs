@@ -1,15 +1,24 @@
 use super::datatypes::{
-    BbsCredential, BbsCredentialOffer, BbsCredentialRequest, BbsPresentation, BbsProofRequest,
-    CredentialProposal, CredentialSchema, UnfinishedBbsCredential, CREDENTIAL_PROPOSAL_TYPE,
+    BbsCredential,
+    BbsCredentialOffer,
+    BbsCredentialRequest,
+    BbsProofRequest,
+    CredentialProposal,
+    CredentialSchema,
+    UnfinishedBbsCredential,
+    CREDENTIAL_PROPOSAL_TYPE,
     CREDENTIAL_REQUEST_TYPE,
 };
 use crate::crypto::crypto_prover::CryptoProver;
 use bbs::{
-    keys::DeterministicPublicKey, signature::BlindSignature, ProofNonce, SignatureBlinding,
+    keys::DeterministicPublicKey,
+    signature::BlindSignature,
+    ProofNonce,
+    SignatureBlinding,
     SignatureMessage,
 };
 use std::collections::HashMap;
-use std::convert::{From, TryFrom, TryInto};
+use std::convert::{From, TryInto};
 use std::error::Error;
 
 pub struct Prover {}
@@ -182,7 +191,11 @@ mod tests {
     use crate::utils::test_data::{
         accounts::local::{HOLDER_DID, ISSUER_DID},
         bbs_coherent_context_test_data::{
-            MASTER_SECRET, NQUADS, PUB_KEY, SIGNATURE_BLINDING, UNFINISHED_CREDENTIAL,
+            MASTER_SECRET,
+            NQUADS,
+            PUB_KEY,
+            SIGNATURE_BLINDING,
+            UNFINISHED_CREDENTIAL,
         },
         vc_zkp::{EXAMPLE_CREDENTIAL_OFFERING, EXAMPLE_CREDENTIAL_SCHEMA},
     };
