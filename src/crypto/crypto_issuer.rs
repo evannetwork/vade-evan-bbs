@@ -3,7 +3,10 @@ use bbs::{
     issuer::Issuer as BbsIssuer,
     keys::{DeterministicPublicKey, SecretKey},
     signature::BlindSignature,
-    BlindSignatureContext, HashElem, ProofNonce, SignatureMessage,
+    BlindSignatureContext,
+    HashElem,
+    ProofNonce,
+    SignatureMessage,
 };
 use std::collections::BTreeMap;
 use std::error::Error;

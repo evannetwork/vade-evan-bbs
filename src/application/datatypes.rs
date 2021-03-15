@@ -8,9 +8,14 @@ pub const CREDENTIAL_OFFER_TYPE: &str = "EvanBbsCredentialOffering";
 pub const CREDENTIAL_SIGNATURE_TYPE: &str = "BbsBlsSignature2020";
 pub const CREDENTIAL_SCHEMA_TYPE: &str = "EvanZKPSchema";
 pub const CREDENTIAL_PROOF_PURPOSE: &str = "assertionMethod";
-pub const DEFAULT_CREDENTIAL_CONTEXTS: [&'static str; 2] = [
+pub const DEFAULT_CREDENTIAL_CONTEXTS: [&'static str; 3] = [
     "https://www.w3.org/2018/credentials/v1",
     "https:://schema.org",
+    "https://w3id.org/vc-status-list-2021/v1",
+];
+pub const DEFAULT_REVOCATION_CONTEXTS: [&'static str; 2] = [
+    "https://www.w3.org/2018/credentials/v1",
+    "https://w3id.org/vc-status-list-2021/v1",
 ];
 pub const KEY_SIZE: usize = 500;
 
@@ -120,6 +125,7 @@ pub struct BbsCredential {
     pub issuer: String,
     pub credential_subject: CredentialSubject,
     pub credential_schema: CredentialSchemaReference,
+    pub credential_status: CredentialStatus,
     pub proof: BbsCredentialSignature,
 }
 
@@ -137,6 +143,12 @@ impl BbsCredential {
             credential_schema: CredentialSchemaReference {
                 id: cred.credential_schema.id,
                 r#type: cred.credential_schema.r#type,
+            },
+            credential_status: CredentialStatus {
+                id: cred.credential_status.id,
+                r#type: cred.credential_status.r#type,
+                revocation_list_index: cred.credential_status.revocation_list_index,
+                revocation_list_credential: cred.credential_status.revocation_list_credential,
             },
             proof: BbsCredentialSignature {
                 created: cred.proof.created,
@@ -161,6 +173,7 @@ pub struct UnfinishedBbsCredential {
     pub issuer: String,
     pub credential_subject: CredentialSubject,
     pub credential_schema: CredentialSchemaReference,
+    pub credential_status: CredentialStatus,
     pub proof: BbsUnfinishedCredentialSignature,
 }
 
@@ -169,6 +182,23 @@ pub struct UnfinishedBbsCredential {
 pub struct CredentialSubject {
     pub id: String,
     pub data: HashMap<String, String>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct CredentialStatus {
+    pub id: String,
+    pub r#type: String,
+    pub revocation_list_index: String,
+    pub revocation_list_credential: String,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct RevocationListCredentialSubject {
+    pub id: String,
+    pub r#type: String,
+    pub encoded_list: String,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -278,4 +308,45 @@ pub struct BbsPresentationProof {
     pub verification_method: String,
     pub nonce: String,
     pub proof: String,
+}
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct UnproofedRevocationListCredential {
+    #[serde(rename(serialize = "@context", deserialize = "@context"))]
+    pub context: Vec<String>,
+    pub id: String,
+    pub r#type: Vec<String>,
+    pub issuer: String,
+    pub issued: String,
+    pub credential_subject: RevocationListCredentialSubject,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct RevocationListCredential {
+    #[serde(rename(serialize = "@context", deserialize = "@context"))]
+    pub context: Vec<String>,
+    pub id: String,
+    pub r#type: Vec<String>,
+    pub issuer: String,
+    pub issued: String,
+    pub credential_subject: RevocationListCredentialSubject,
+    pub proof: AssertionProof,
+}
+
+impl RevocationListCredential {
+    pub fn new(
+        list: UnproofedRevocationListCredential,
+        proof: AssertionProof,
+    ) -> RevocationListCredential {
+        RevocationListCredential {
+            context: list.context,
+            id: list.id,
+            r#type: list.r#type,
+            issuer: list.issuer,
+            issued: list.issued,
+            credential_subject: list.credential_subject,
+            proof,
+        }
+    }
 }

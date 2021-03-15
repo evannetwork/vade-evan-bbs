@@ -16,4 +16,5 @@
 // vc-zkp
 pub mod application;
 pub mod crypto;
+pub mod signing;
 mod utils;
