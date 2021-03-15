@@ -1,5 +1,5 @@
 use super::datatypes::{
-    BbsCredential, BbsCredentialOffer, BbsCredentialRequest,
+    BbsCredential, BbsCredentialOffer, BbsCredentialRequest, BbsProofRequest,
     CredentialProposal, CredentialSchema, UnfinishedBbsCredential, CREDENTIAL_PROPOSAL_TYPE,
     CREDENTIAL_REQUEST_TYPE,
 };
