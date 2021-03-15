@@ -122,79 +122,58 @@ impl Prover {
         Ok(credential)
     }
 
-    // pub fn present_proof(
-    //     proof_request: BbsProofRequest,
-    // ) -> Result<BbsPresentation, Box<dyn Error>> {
-    //     let mut poks = Vec::new();
-    //     for sub_proof_request in &proof_request.sub_proof_requests {
-    //         let credential: BbsCredential = credential_schema_map
-    //             .get(&sub_proof_request.schema)
-    //             .ok_or(format!(
-    //                 "Cannot create proof because credential is missing for schema {}",
-    //                 &sub_proof_request.schema
-    //             ))?
-    //             .clone();
-    //         let dpk = public_key_schema_map
-    //             .get(&sub_proof_request.schema)
-    //             .ok_or(format!(
-    //                 "Cannot create proof because public key is missing for schema {}",
-    //                 &sub_proof_request.schema
-    //             ))?;
-    //         let nquads = nquads_schema_map
-    //             .get(&sub_proof_request.schema)
-    //             .ok_or(format!(
-    //                 "Cannot create proof because nquads are missing for schema {}",
-    //                 &sub_proof_request.schema
-    //             ))?;
+    pub fn present_proof(
+        proof_request: BbsProofRequest,
+        credential_schema_map: HashMap<String, BbsCredential>,
+        public_key_schema_map: HashMap<String, DeterministicPublicKey>,
+        nquads_schema_map: HashMap<String, Vec<String>>,
+        master_secret: SignatureMessage,
+    ) -> Result<(), Box<dyn Error>> {
+        let mut poks = Vec::new();
+        for sub_proof_request in &proof_request.sub_proof_requests {
+            let credential: BbsCredential = credential_schema_map
+                .get(&sub_proof_request.schema)
+                .ok_or(format!(
+                    "Cannot create proof because credential is missing for schema {}",
+                    &sub_proof_request.schema
+                ))?
+                .clone();
+            let dpk = public_key_schema_map
+                .get(&sub_proof_request.schema)
+                .ok_or(format!(
+                    "Cannot create proof because public key is missing for schema {}",
+                    &sub_proof_request.schema
+                ))?;
+            let nquads = nquads_schema_map
+                .get(&sub_proof_request.schema)
+                .ok_or(format!(
+                    "Cannot create proof because nquads are missing for schema {}",
+                    &sub_proof_request.schema
+                ))?
+                .clone();
 
-    //         let pk = dpk
-    //             .to_public_key(KEY_SIZE)
-    //             .map_err(|e| format!("Cannot create proof: Error converting public key: {}", e))?;
+            let proof_of_knowledge = CryptoProver::create_proof_of_knowledge(
+                sub_proof_request,
+                &credential,
+                &dpk,
+                &master_secret,
+                nquads,
+            )?;
 
-    //         let crypto_proof_request = BbsVerifier::new_proof_request(
-    //             &sub_proof_request.revealed_attributes.as_slice(),
-    //             &pk,
-    //         )
-    //         .unwrap();
+            poks.insert(poks.len(), proof_of_knowledge);
+        }
+        let nonce = ProofNonce::from(base64::decode(proof_request.nonce)?.into_boxed_slice());
+        let proofs = CryptoProver::generate_proofs(poks, nonce);
 
-    //         let indices: HashSet<usize> =
-    //             HashSet::from_iter(sub_proof_request.revealed_attributes.iter().cloned());
-
-    //         let commitment_messages = Vec::new();
-    //         for (i, nquad) in nquads.iter().enumerate() {
-    //             let mut msg;
-    //             if indices.contains(&i) {
-    //                 msg = pm_revealed!(nquad);
-    //             } else {
-    //                 msg = pm_hidden!(nquad);
-    //             }
-    //             commitment_messages.insert(i, msg);
-    //         }
-
-    //         let signature =
-    //             Signature::from(base64::decode(&credential.proof.signature)?.into_boxed_slice());
-
-    //         let pok = BbsProver::commit_signature_pok(
-    //             &crypto_proof_request,
-    //             commitment_messages.as_slice(),
-    //             &signature,
-    //         )
-    //         .map_err(|e| format!("Error creating PoK during proof creation: {}", e))?;
-
-    //         poks.insert(poks.len(), pok);
-    //     }
-    //     let nonce = base64::decode(proof_request.nonce);
-    //     BbsProver::create_challenge_hash(&poks.as_slice(), None, &nonce)
-    //     let challenge = ProofNonce::hash(&challenge_bytes);
-
-    //     let proof = BbsProver::generate_signature_pok(pok, &challenge).unwrap();
-    //     Ok(BbsPresentation {
-    //         context: DEFAULT_CREDENTIAL_CONTEXTS
-    //             .iter()
-    //             .map(|c| c.to_string())
-    //             .collect::<Vec<String>>(),
-    //     });
-    // }
+        // Ok(BbsPresentation {
+        //     context: DEFAULT_CREDENTIAL_CONTEXTS
+        //         .iter()
+        //         .map(|c| c.to_string())
+        //         .collect::<Vec<String>>(),
+        // });
+        panic!("Unimplemented");
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -299,14 +278,15 @@ mod tests {
         Ok(())
     }
 
-    // #[test]
-    // fn can_create_proof() -> Result<(), Box<dyn Error>> {
-    // match Prover::present_proof() {
-    //     Ok(proof) => {}
-    //     Err(e) => {
-    //         assert!(false, "Unexpected error while creating proof: {}", e)
-    //     }
-    // }
-    // Ok(())
-    // }
+    #[test]
+    fn can_create_proof() -> Result<(), Box<dyn Error>> {
+        // match Prover::present_proof() {
+        //     Ok(proof) => {}
+        //     Err(e) => {
+        //         assert!(false, "Unexpected error while creating proof: {}", e)
+        //     }
+        // }
+        panic!("Unimplemented");
+        Ok(())
+    }
 }
