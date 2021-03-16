@@ -28,7 +28,7 @@ use bbs::{
 use std::collections::HashMap;
 use std::convert::{From, TryInto};
 use std::error::Error;
-
+use crate::utils::test_data::{accounts::local::{HOLDER_DID, ISSUER_DID}};
 pub struct Prover {}
 
 // TODO: Add error class

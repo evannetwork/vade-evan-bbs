@@ -1473,6 +1473,9 @@ dependencies = [
 [[package]]
 name = "utilities"
 version = "0.0.1"
+dependencies = [
+ "vade-evan-bbs",
+]
 
 [[package]]
 name = "uuid"
