@@ -4,3 +4,6 @@ version = "0.0.1"
 authors = ["evan GmbH"]
 edition = "2018"
 license = "Apache-2.0"
+
+[dependencies]
+vade-evan-bbs = { path = ".." }
