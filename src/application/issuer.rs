@@ -4,11 +4,21 @@ use crate::application::{
 };
 use crate::{
     application::datatypes::{
-        BbsCredentialOffer, BbsCredentialRequest, CredentialProposal, CredentialSchema,
-        CredentialStatus, RevocationListCredential, RevocationListCredentialSubject,
-        UnfinishedBbsCredential, UnproofedRevocationListCredential, CREDENTIAL_OFFER_TYPE,
-        CREDENTIAL_PROOF_PURPOSE, CREDENTIAL_SCHEMA_TYPE, CREDENTIAL_SIGNATURE_TYPE,
-        DEFAULT_CREDENTIAL_CONTEXTS, DEFAULT_REVOCATION_CONTEXTS,
+        BbsCredentialOffer,
+        BbsCredentialRequest,
+        CredentialProposal,
+        CredentialSchema,
+        CredentialStatus,
+        RevocationListCredential,
+        RevocationListCredentialSubject,
+        UnfinishedBbsCredential,
+        UnproofedRevocationListCredential,
+        CREDENTIAL_OFFER_TYPE,
+        CREDENTIAL_PROOF_PURPOSE,
+        CREDENTIAL_SCHEMA_TYPE,
+        CREDENTIAL_SIGNATURE_TYPE,
+        DEFAULT_CREDENTIAL_CONTEXTS,
+        DEFAULT_REVOCATION_CONTEXTS,
     },
     crypto::crypto_issuer::CryptoIssuer,
     crypto::crypto_utils::create_assertion_proof,
@@ -261,13 +271,14 @@ mod tests {
         application::{
             datatypes::{BbsCredentialOffer, BbsCredentialRequest, UnfinishedBbsCredential},
             prover::Prover,
-            utils_test::{ assert_credential },
+            utils_test::assert_credential,
         },
         signing::{LocalSigner, Signer},
         utils::test_data::{
             accounts::local::{HOLDER_DID, ISSUER_DID, ISSUER_PRIVATE_KEY, ISSUER_PUBLIC_KEY_DID},
             bbs_coherent_context_test_data::{
-                EXAMPLE_REVOCATION_LIST_DID, REVOCATION_LIST_CREDENTIAL,
+                EXAMPLE_REVOCATION_LIST_DID,
+                REVOCATION_LIST_CREDENTIAL,
             },
             vc_zkp::{EXAMPLE_CREDENTIAL_PROPOSAL, EXAMPLE_CREDENTIAL_SCHEMA},
         },
@@ -342,7 +353,6 @@ mod tests {
     //             && credential_request.credential_values.get(key)
     //                 == cred.credential_subject.data.get(key)));
     // }
-    
     #[test]
     fn can_offer_credential() -> Result<(), Box<dyn Error>> {
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
@@ -436,6 +446,7 @@ mod tests {
                     &key_id,
                     &schema.id,
                 );
+                // assert!(false, serde_json::to_string(&cred)?);
             }
             Err(e) => assert!(false, "Received error when issuing credential: {}", e),
         }

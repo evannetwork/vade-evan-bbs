@@ -39,6 +39,7 @@ impl CryptoVerifier {
         let revoked = decoded_list[byte_index] & (1 << (revocation_list_index_number % 8)) != 0;
         Ok(revoked)
     }
+
 }
 
 #[cfg(test)]

@@ -425,4 +425,51 @@ pub mod bbs_coherent_context_test_data {
             }
         ]
     }"###;
+
+    pub const BLAAAA_BLINDING: &str = "T7AnWPspRhzu8cBR3ewp2mm18iOAYLIXk1k81uIVTaA=";
+
+    pub const BLAAAA: &str = r###"
+    {
+        "@context": [
+            "https://www.w3.org/2018/credentials/v1",
+            "https:://schema.org",
+            "https://w3id.org/vc-status-list-2021/v1"
+        ],
+        "id": "f1659f6d-45cf-4021-b4b7-fcd8cca27556",
+        "type": [
+            "VerifiableCredential"
+        ],
+        "issuer": "did:evan:testcore:0x6240cedfc840579b7fdcd686bdc65a9a8c42dea6",
+        "credentialSubject": {
+            "id": "did:evan:testcore:0x0d87204c3957d73b68ae28d0af961d3c72403901",
+            "data": {
+                "test_property_string3": "value",
+                "test_property_string": "value",
+                "test_property_string4": "value",
+                "test_property_string2": "value",
+                "test_property_string1": "value"
+            }
+        },
+        "credentialSchema": {
+            "id": "did:evan:zkp:0x6240cedfc840579b7fdcd686bdc65a9a8c42dea6",
+            "type": "EvanZKPSchema"
+        },
+        "credentialStatus": {
+            "id": "did:evan:zkp:0x1234512345123451234512345123456789#0",
+            "type": "RevocationList2021Status",
+            "revocationListIndex": "0",
+            "revocationListCredential": "did:evan:zkp:0x1234512345123451234512345123456789"
+        },
+        "proof": {
+            "type": "BbsBlsSignature2020",
+            "created": "2021-03-16T14:55:42.000Z",
+            "proofPurpose": "assertionMethod",
+            "verificationMethod": "did:evan:testcore:0x6240cedfc840579b7fdcd686bdc65a9a8c42dea6#key-1",
+            "requiredRevealStatements": [
+                1
+            ],
+            "blindSignature": "gilsq3gbasMlP1RDj8m5xaU8obp9WGKKkyHm+p7YpxAlvugbnwM02vXG7zAgZK1jHXuHeshHdVHKXrJjk8wZb9n2smVew9s6HGLIy+P9xjIDknkm2Ussf5grIUiUKBR8T6rnFeFgbQN9yBibwz1Clg=="
+        }
+    }
+    "###;
 }

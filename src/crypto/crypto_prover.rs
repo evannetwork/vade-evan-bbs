@@ -106,7 +106,7 @@ impl CryptoProver {
         }
 
         for j in i..KEY_SIZE {
-            commitment_messages.insert(j, pm_hidden!(""))
+            commitment_messages.insert(j, pm_revealed!(""))
         }
 
         let signature = Signature::from(base64::decode(credential_signature)?.into_boxed_slice());

@@ -30,6 +30,8 @@ use crate::utils::test_data::{
         VERIFIER_DID,
     },
     bbs_coherent_context_test_data::{
+        BLAAAA,
+        BLAAAA_BLINDING,
         CREDENTIAL_REQUEST_SCHEMA_FIVE_PROPERTIES,
         FINISHED_CREDENTIAL,
     },
@@ -400,12 +402,16 @@ mod tests {
     #[test]
     fn can_request_credential() -> Result<(), Box<dyn Error>> {
         let (dpk, _, offering, schema, secret, credential_values) = setup_test()?;
-        let (credential_request, _) =
+        let (credential_request, blinding) =
             Prover::request_credential(&offering, &schema, &secret, credential_values, &dpk)
                 .map_err(|e| format!("{}", e))?;
         assert_eq!(credential_request.schema, schema.id);
         assert_eq!(credential_request.subject, offering.subject);
         assert_eq!(credential_request.r#type, CREDENTIAL_REQUEST_TYPE);
+        assert!(
+            false,
+            serde_json::to_string(&base64::encode(blinding.to_bytes_compressed_form()))?
+        );
         Ok(())
     }
 
@@ -445,6 +451,7 @@ mod tests {
             Ok(cred) => {
                 // There is now a property 'signature' and it is base64 encoded
                 assert!(base64::decode(&cred.proof.signature).is_ok());
+                assert!(false, serde_json::to_string(&cred)?);
             }
             Err(e) => {
                 assert!(false, "Unexpected error when finishing credential: {}", e);
@@ -484,7 +491,8 @@ mod tests {
         )
         .await?;
 
-        assert_proof(proof, proof_request, revealed_properties_map)?;
+        assert_proof(proof.clone(), proof_request, revealed_properties_map)?;
+        assert!(false, serde_json::to_string(&proof.clone())?);
 
         Ok(())
     }
