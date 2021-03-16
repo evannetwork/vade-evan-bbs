@@ -1,7 +1,7 @@
 use vade_evan_bbs::application::{issuer::Issuer, prover::Prover};
 use vade_evan_bbs::application::datatypes::{
     CredentialSchema, CREDENTIAL_PROPOSAL_TYPE,
-    CREDENTIAL_REQUEST_TYPE, CREDENTIAL_OFFER_TYPE,
+    CREDENTIAL_REQUEST_TYPE, CREDENTIAL_OFFER_TYPE, CREDENTIAL_SIGNATURE_TYPE, CREDENTIAL_PROOF_PURPOSE
 };
 use bbs::{
     keys::{ DeterministicPublicKey, SecretKey }, SignatureBlinding,
@@ -12,10 +12,11 @@ use std::error::Error;
 use utilities::test_data::{
     accounts::local::{ HOLDER_DID, ISSUER_DID},
     bbs_coherent_context_test_data::{
-        MASTER_SECRET, NQUADS, PUB_KEY, SIGNATURE_BLINDING, SECRET_KEY,
+        MASTER_SECRET, NQUADS, PUB_KEY, SIGNATURE_BLINDING, SECRET_KEY, EXAMPLE_REVOCATION_LIST_DID,
     },
     vc_zkp::{ EXAMPLE_CREDENTIAL_SCHEMA}};
 #[test]
+
 fn test_issuance_workflow() -> Result<(), Box<dyn Error>>{
     // Create credential proposal
     let proposal = Prover::propose_credential(&ISSUER_DID, &HOLDER_DID, "schemadid");
@@ -64,6 +65,8 @@ fn test_issuance_workflow() -> Result<(), Box<dyn Error>>{
         schema.clone(),
         [1].to_vec(),
         nquads,
+        &EXAMPLE_REVOCATION_LIST_DID,
+        "0",
     )?;
     
     // Finish credential
@@ -78,6 +81,23 @@ fn test_issuance_workflow() -> Result<(), Box<dyn Error>>{
         &blinding,
     ) {
         Ok(cred) => {
+            assert_eq!(&cred.issuer, ISSUER_DID);
+            assert_eq!(&cred.credential_subject.id, HOLDER_DID);
+            assert_eq!(&cred.credential_schema.id, &schema.id);
+            // proof
+            assert_eq!(&cred.proof.required_reveal_statements, &[1].to_vec());
+            assert_eq!(&cred.proof.r#type, CREDENTIAL_SIGNATURE_TYPE);
+            assert_eq!(&cred.proof.proof_purpose, CREDENTIAL_PROOF_PURPOSE);
+            assert_eq!(&cred.proof.verification_method, &key_id);
+            // Credential subject
+            // Are the values correctly copied into the credentials?
+            assert!(&cred
+                .credential_subject
+                .data
+                .keys()
+                .all(|key| credential_request.credential_values.contains_key(key)
+                    && credential_request.credential_values.get(key)
+                        == cred.credential_subject.data.get(key)));
             // There is now a property 'signature' and it is base64 encoded
             assert!(base64::decode(&cred.proof.signature).is_ok());
         }
