@@ -14,7 +14,7 @@
   limitations under the License.
 */
 
-use crate::application::datatypes::AssertionProof;
+use crate::{application::datatypes::AssertionProof, signing::Signer};
 use base64;
 use secp256k1::{recover, Message, RecoveryId, Signature};
 use serde::{Deserialize, Serialize};
@@ -22,7 +22,6 @@ use serde_json::{value::RawValue, Value};
 use sha2::{Digest, Sha256};
 use sha3::Keccak256;
 use std::{convert::TryInto, error::Error};
-use vade_evan_substrate::signing::Signer;
 
 #[cfg(not(target_arch = "wasm32"))]
 use chrono::Utc;

@@ -12,15 +12,13 @@ use crate::{
     },
     crypto::crypto_issuer::CryptoIssuer,
     crypto::crypto_utils::create_assertion_proof,
+    signing::Signer,
 };
 use bbs::{
     issuer::Issuer as BbsIssuer,
     keys::{DeterministicPublicKey, SecretKey},
     ProofNonce,
 };
-
-use vade_evan_substrate::signing::Signer;
-
 use flate2::{read::GzDecoder, write::GzEncoder, Compression};
 
 use std::{error::Error, io::prelude::*};
@@ -265,6 +263,7 @@ mod tests {
             prover::Prover,
             utils_test::{ assert_credential },
         },
+        signing::{LocalSigner, Signer},
         utils::test_data::{
             accounts::local::{HOLDER_DID, ISSUER_DID, ISSUER_PRIVATE_KEY, ISSUER_PUBLIC_KEY_DID},
             bbs_coherent_context_test_data::{
@@ -276,7 +275,6 @@ mod tests {
     use bbs::issuer::Issuer as BbsIssuer;
     use bbs::prover::Prover as BbsProver;
     use std::collections::HashMap;
-    use vade_evan_substrate::signing::{LocalSigner, Signer};
 
     fn request_credential(
         pub_key: &DeterministicPublicKey,
