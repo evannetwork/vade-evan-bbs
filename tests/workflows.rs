@@ -1,29 +1,29 @@
-use vade_evan_bbs::application::{issuer::Issuer, prover::Prover};
-use vade_evan_bbs::application::datatypes::{
-    CredentialSchema, CREDENTIAL_PROPOSAL_TYPE,
-    CREDENTIAL_REQUEST_TYPE, CREDENTIAL_OFFER_TYPE,
-};
 use bbs::{
-    keys::{ DeterministicPublicKey, SecretKey }, SignatureBlinding,
-    SignatureMessage,
+    keys::{DeterministicPublicKey, SecretKey},
+    SignatureBlinding, SignatureMessage,
 };
 use std::collections::HashMap;
 use std::error::Error;
 use utilities::test_data::{
-    accounts::local::{ HOLDER_DID, ISSUER_DID},
+    accounts::local::{HOLDER_DID, ISSUER_DID},
     bbs_coherent_context_test_data::{
-        MASTER_SECRET, NQUADS, PUB_KEY, SIGNATURE_BLINDING, SECRET_KEY,
+        MASTER_SECRET, NQUADS, PUB_KEY, SECRET_KEY, SIGNATURE_BLINDING, REVOCATION_LIST_CREDENTIAL,
     },
-    vc_zkp::{ EXAMPLE_CREDENTIAL_SCHEMA}};
+    vc_zkp::EXAMPLE_CREDENTIAL_SCHEMA,
+};
+use vade_evan_bbs::application::datatypes::{
+    CredentialSchema, CREDENTIAL_OFFER_TYPE, CREDENTIAL_PROPOSAL_TYPE, CREDENTIAL_REQUEST_TYPE,
+};
+use vade_evan_bbs::application::{issuer::Issuer, prover::Prover};
 #[test]
-fn test_issuance_workflow() -> Result<(), Box<dyn Error>>{
+fn test_issuance_workflow() -> Result<(), Box<dyn Error>> {
     // Create credential proposal
     let proposal = Prover::propose_credential(&ISSUER_DID, &HOLDER_DID, "schemadid");
     assert_eq!(&proposal.subject, &HOLDER_DID);
     assert_eq!(&proposal.issuer, &ISSUER_DID);
     assert_eq!(&proposal.schema, "schemadid");
     assert_eq!(&proposal.r#type, CREDENTIAL_PROPOSAL_TYPE);
-    
+
     // Create credential offering
     let offering = Issuer::offer_credential(&proposal, &ISSUER_DID)?;
     assert_eq!(&offering.issuer, &ISSUER_DID);
@@ -34,16 +34,23 @@ fn test_issuance_workflow() -> Result<(), Box<dyn Error>>{
     // Create credential request
     let mut credential_values = HashMap::new();
     credential_values.insert("test_property_string".to_owned(), "value".to_owned());
-    
+
     let schema: CredentialSchema = serde_json::from_str(EXAMPLE_CREDENTIAL_SCHEMA)?;
 
     let master_secret: SignatureMessage =
-    SignatureMessage::from(base64::decode(&MASTER_SECRET)?.into_boxed_slice());
+        SignatureMessage::from(base64::decode(&MASTER_SECRET)?.into_boxed_slice());
 
     let public_key: DeterministicPublicKey =
-    DeterministicPublicKey::from(base64::decode(&PUB_KEY)?.into_boxed_slice());
+        DeterministicPublicKey::from(base64::decode(&PUB_KEY)?.into_boxed_slice());
 
-    let (credential_request, _) = Prover::request_credential(&offering, &schema, &master_secret, credential_values, &public_key)
+    let revocation_list: RevocationListCredential = serde_json::from_str(REVOCATION_LIST_CREDENTIAL)?
+    let (credential_request, _) = Prover::request_credential(
+        &offering,
+        &schema,
+        &master_secret,
+        credential_values,
+        &public_key,
+    )
     .map_err(|e| format!("{}", e))?;
     assert_eq!(credential_request.schema, schema.id);
     assert_eq!(credential_request.subject, offering.subject);
@@ -65,11 +72,11 @@ fn test_issuance_workflow() -> Result<(), Box<dyn Error>>{
         [1].to_vec(),
         nquads,
     )?;
-    
+
     // Finish credential
     let nquads: Vec<String> = NQUADS.iter().map(|q| q.to_string()).collect();
     let blinding: SignatureBlinding =
-    SignatureBlinding::from(base64::decode(&SIGNATURE_BLINDING)?.into_boxed_slice());
+        SignatureBlinding::from(base64::decode(&SIGNATURE_BLINDING)?.into_boxed_slice());
     match Prover::finish_credential(
         &unfinished_credential,
         &master_secret,
