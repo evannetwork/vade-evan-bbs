@@ -44,10 +44,12 @@ mod tests {
     use crate::utils::test_data::{
         accounts::local::VERIFIER_DID,
         vc_zkp::EXAMPLE_CREDENTIAL_SCHEMA,
+        vc_zkp::EXAMPLE_CREDENTIAL_SCHEMA_FIVE_PROPERTIES,
     };
     #[test]
     fn can_create_proof_request_for_one_schema() -> Result<(), Box<dyn Error>> {
-        let schema: CredentialSchema = serde_json::from_str(&EXAMPLE_CREDENTIAL_SCHEMA)?;
+        let schema: CredentialSchema =
+            serde_json::from_str(&EXAMPLE_CREDENTIAL_SCHEMA_FIVE_PROPERTIES)?;
         let schemas: Vec<CredentialSchema> = vec![schema.clone()];
         let mut reveal_attributes = HashMap::new();
         reveal_attributes.insert(schema.clone().id, vec![1]);
@@ -66,7 +68,7 @@ mod tests {
                 );
                 assert_eq!(proof_request.sub_proof_requests[0].schema, schema.id);
                 // Nonce properly encoded
-                assert!(base64::decode(proof_request.nonce).is_ok());
+                assert!(base64::decode(&proof_request.nonce).is_ok());
             }
             Err(e) => assert!(false, "Test unexpectedly failed with error: {}", e),
         }

@@ -2,23 +2,31 @@
 mod workflow_tests {
     use bbs::{
         keys::{DeterministicPublicKey, SecretKey},
-        SignatureBlinding, SignatureMessage,
+        SignatureBlinding,
+        SignatureMessage,
     };
     use std::collections::HashMap;
     use std::error::Error;
     use utilities::test_data::{
         accounts::local::{HOLDER_DID, ISSUER_DID},
         bbs_coherent_context_test_data::{
-            EXAMPLE_REVOCATION_LIST_DID, MASTER_SECRET, NQUADS, PUB_KEY, SECRET_KEY,
+            EXAMPLE_REVOCATION_LIST_DID,
+            MASTER_SECRET,
+            NQUADS,
+            PUB_KEY,
+            SECRET_KEY,
             SIGNATURE_BLINDING,
         },
         vc_zkp::EXAMPLE_CREDENTIAL_SCHEMA,
     };
     use vade_evan_bbs::application::datatypes::{
-        CredentialSchema, CREDENTIAL_OFFER_TYPE, CREDENTIAL_PROOF_PURPOSE,
-        CREDENTIAL_PROPOSAL_TYPE, CREDENTIAL_REQUEST_TYPE, CREDENTIAL_SIGNATURE_TYPE,
+        CredentialSchema,
+        CREDENTIAL_OFFER_TYPE,
+        CREDENTIAL_PROOF_PURPOSE,
+        CREDENTIAL_PROPOSAL_TYPE,
+        CREDENTIAL_REQUEST_TYPE,
+        CREDENTIAL_SIGNATURE_TYPE,
     };
-    use vade_evan_bbs::application::utils_test::assert_credential;
     use vade_evan_bbs::application::{issuer::Issuer, prover::Prover};
     #[test]
 

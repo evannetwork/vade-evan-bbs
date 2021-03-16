@@ -15,8 +15,25 @@ use super::datatypes::{
     DEFAULT_CREDENTIAL_CONTEXTS,
 };
 use super::utils::{generate_uuid, get_now_as_iso_string};
-use crate::crypto::{crypto_prover::CryptoProver, crypto_utils::create_assertion_proof};
+use crate::crypto::{
+    crypto_prover::CryptoProver,
+    crypto_utils::{check_assertion_proof, create_assertion_proof},
+};
+use crate::signing::LocalSigner;
 use crate::signing::Signer;
+use crate::utils::test_data::{
+    accounts::local::{
+        HOLDER_DID,
+        ISSUER_DID,
+        SIGNER_1_ADDRESS,
+        SIGNER_1_PRIVATE_KEY,
+        VERIFIER_DID,
+    },
+    bbs_coherent_context_test_data::{
+        CREDENTIAL_REQUEST_SCHEMA_FIVE_PROPERTIES,
+        FINISHED_CREDENTIAL,
+    },
+};
 use bbs::{
     keys::DeterministicPublicKey,
     pok_sig::PoKOfSignature,
@@ -28,7 +45,7 @@ use bbs::{
 use std::collections::HashMap;
 use std::convert::{From, TryInto};
 use std::error::Error;
-use crate::utils::test_data::{accounts::local::{HOLDER_DID, ISSUER_DID}};
+
 pub struct Prover {}
 
 // TODO: Add error class
@@ -140,12 +157,12 @@ impl Prover {
     }
 
     pub async fn present_proof(
-        proof_request: BbsProofRequest,
-        credential_schema_map: HashMap<String, BbsCredential>,
-        revealed_properties_schema_map: HashMap<String, CredentialSubject>,
-        public_key_schema_map: HashMap<String, DeterministicPublicKey>,
-        nquads_schema_map: HashMap<String, Vec<String>>,
-        master_secret: SignatureMessage,
+        proof_request: &BbsProofRequest,
+        credential_schema_map: &HashMap<String, BbsCredential>,
+        revealed_properties_schema_map: &HashMap<String, CredentialSubject>,
+        public_key_schema_map: &HashMap<String, DeterministicPublicKey>,
+        nquads_schema_map: &HashMap<String, Vec<String>>,
+        master_secret: &SignatureMessage,
         prover_did: &str,
         prover_public_key_did: &str,
         prover_proving_key: &str,
@@ -184,7 +201,8 @@ impl Prover {
 
             poks.insert(sub_proof_request.schema.clone(), proof_of_knowledge);
         }
-        let nonce = ProofNonce::from(base64::decode(proof_request.nonce)?.into_boxed_slice());
+        let nonce =
+            ProofNonce::from(base64::decode(proof_request.nonce.clone())?.into_boxed_slice());
         let proofs = CryptoProver::generate_proofs(poks, nonce)?;
 
         let mut presentation_credentials: Vec<BbsPresentation> = Vec::new();
@@ -271,6 +289,105 @@ mod tests {
         return Ok((dpk, sk, offering, schema, secret, credential_values));
     }
 
+    fn get_creat_proof_data() -> Result<
+        (
+            BbsProofRequest,
+            HashMap<String, BbsCredential>,
+            HashMap<String, CredentialSubject>,
+            HashMap<String, DeterministicPublicKey>,
+            HashMap<String, Vec<String>>,
+        ),
+        Box<dyn Error>,
+    > {
+        let credential: BbsCredential = serde_json::from_str(&FINISHED_CREDENTIAL)?;
+        let proof_request: BbsProofRequest =
+            serde_json::from_str(&CREDENTIAL_REQUEST_SCHEMA_FIVE_PROPERTIES)?;
+        let schema_id = &proof_request.sub_proof_requests[0].schema;
+
+        let mut credential_map = HashMap::new();
+        credential_map.insert(schema_id.clone(), credential.clone());
+
+        // Just reveal properties 1 and 2
+        let mut revealed_data = credential.credential_subject.data.clone();
+        revealed_data.remove("test_property_string2");
+        revealed_data.remove("test_property_string3");
+        revealed_data.remove("test_property_string4");
+
+        let revealed = CredentialSubject {
+            id: HOLDER_DID.to_string(),
+            data: revealed_data,
+        };
+        let mut revealed_properties_map = HashMap::new();
+        revealed_properties_map.insert(schema_id.clone(), revealed);
+
+        let nquads: Vec<String> = NQUADS
+            .iter()
+            .map(|q| q.to_string())
+            .collect::<Vec<String>>();
+        let mut nquads_schema_map = HashMap::new();
+        nquads_schema_map.insert(schema_id.clone(), nquads);
+
+        let public_key: DeterministicPublicKey =
+            DeterministicPublicKey::from(base64::decode(&PUB_KEY)?.into_boxed_slice());
+        let mut public_key_schema_map = HashMap::new();
+        public_key_schema_map.insert(schema_id.clone(), public_key);
+
+        Ok((
+            proof_request,
+            credential_map,
+            revealed_properties_map,
+            public_key_schema_map,
+            nquads_schema_map,
+        ))
+    }
+
+    fn assert_proof(
+        proof: ProofPresentation,
+        proof_request: BbsProofRequest,
+        revealed_properties_map: HashMap<String, CredentialSubject>,
+    ) -> Result<(), Box<dyn Error>> {
+        let without_proof = UnfinishedProofPresentation {
+            id: proof.id,
+            context: proof.context.clone(),
+            r#type: proof.r#type.clone(),
+            verifiable_credential: proof.verifiable_credential.clone(),
+        };
+
+        // Assert proof frame
+        assert_eq!(
+            proof.context.clone().as_slice(),
+            DEFAULT_CREDENTIAL_CONTEXTS
+        );
+        assert_eq!(proof.r#type.clone(), vec!["VerifiablePresentation"]);
+        check_assertion_proof(&serde_json::to_string(&without_proof)?, SIGNER_1_ADDRESS)?;
+        assert_eq!(proof.verifiable_credential.len(), 1);
+
+        // Assert proof credential
+        let proof_cred = &proof.verifiable_credential[0];
+        let schema_id = &proof_request.sub_proof_requests[0].schema;
+        let new_credential_subject = revealed_properties_map
+            .get(schema_id)
+            .ok_or("Error!")?
+            .clone();
+        assert_eq!(proof_cred.credential_subject.id, new_credential_subject.id);
+        // Only reveals the provided subject data, not the credential's original subject data
+        assert_eq!(
+            proof_cred.credential_subject.data,
+            new_credential_subject.data
+        );
+        assert_eq!(proof_cred.credential_schema.id, schema_id.to_string());
+        assert_eq!(proof_cred.issuer, ISSUER_DID);
+
+        // proof object of proof credential is okay
+        assert_eq!(
+            proof_cred.proof.r#type,
+            "BbsBlsSignatureProof2020".to_owned()
+        );
+        assert_eq!(proof_cred.proof.nonce, proof_request.nonce);
+
+        Ok(())
+    }
+
     #[test]
     fn can_propose_credential() {
         let proposal = Prover::propose_credential(&ISSUER_DID, &HOLDER_DID, "schemadid");
@@ -337,15 +454,38 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn can_create_proof() -> Result<(), Box<dyn Error>> {
-        match Prover::present_proof() {
-            Ok(proof) => {}
-            Err(e) => {
-                assert!(false, "Unexpected error while creating proof: {}", e)
-            }
-        }
-        panic!("Unimplemented");
+    #[tokio::test]
+    async fn can_create_proof_presentation() -> Result<(), Box<dyn Error>> {
+        let (
+            proof_request,
+            credential_map,
+            revealed_properties_map,
+            public_key_schema_map,
+            nquads_schema_map,
+        ) = get_creat_proof_data()?;
+
+        let master_secret: SignatureMessage =
+            SignatureMessage::from(base64::decode(&MASTER_SECRET)?.into_boxed_slice());
+        let holder_secret_key = SIGNER_1_PRIVATE_KEY;
+
+        let signer: Box<dyn Signer> = Box::new(LocalSigner::new());
+
+        let proof = Prover::present_proof(
+            &proof_request,
+            &credential_map,
+            &revealed_properties_map,
+            &public_key_schema_map,
+            &nquads_schema_map,
+            &master_secret,
+            &VERIFIER_DID,
+            &format!("{}#key-1", VERIFIER_DID),
+            holder_secret_key,
+            &signer,
+        )
+        .await?;
+
+        assert_proof(proof, proof_request, revealed_properties_map)?;
+
         Ok(())
     }
 }

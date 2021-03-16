@@ -6,6 +6,7 @@ pub const CREDENTIAL_REQUEST_TYPE: &str = "EvanBbsCredentialRequest";
 pub const CREDENTIAL_PROPOSAL_TYPE: &str = "EvanCredentialProposal";
 pub const CREDENTIAL_OFFER_TYPE: &str = "EvanBbsCredentialOffering";
 pub const CREDENTIAL_SIGNATURE_TYPE: &str = "BbsBlsSignature2020";
+pub const PROOF_SIGNATURE_TYPE: &str = "BbsBlsSignatureProof2020";
 pub const CREDENTIAL_SCHEMA_TYPE: &str = "EvanZKPSchema";
 pub const CREDENTIAL_PROOF_PURPOSE: &str = "assertionMethod";
 pub const DEFAULT_CREDENTIAL_CONTEXTS: [&'static str; 3] = [
@@ -177,7 +178,7 @@ pub struct UnfinishedBbsCredential {
     pub proof: BbsUnfinishedCredentialSignature,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct CredentialSubject {
     pub id: String,
@@ -306,7 +307,7 @@ impl BbsPresentation {
                 created: cred.proof.created,
                 proof_purpose: cred.proof.proof_purpose,
                 proof: base64::encode(proof.to_bytes_compressed_form()),
-                r#type: cred.proof.r#type,
+                r#type: PROOF_SIGNATURE_TYPE.to_owned(),
                 verification_method: cred.proof.verification_method,
                 nonce: base64::encode(nonce.to_bytes_compressed_form()),
             },
