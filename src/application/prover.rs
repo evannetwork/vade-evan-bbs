@@ -32,8 +32,8 @@ use crate::utils::test_data::{
     bbs_coherent_context_test_data::{
         BLAAAA,
         BLAAAA_BLINDING,
-        CREDENTIAL_REQUEST_SCHEMA_FIVE_PROPERTIES,
         FINISHED_CREDENTIAL,
+        PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES,
     },
 };
 use bbs::{
@@ -303,7 +303,7 @@ mod tests {
     > {
         let credential: BbsCredential = serde_json::from_str(&FINISHED_CREDENTIAL)?;
         let proof_request: BbsProofRequest =
-            serde_json::from_str(&CREDENTIAL_REQUEST_SCHEMA_FIVE_PROPERTIES)?;
+            serde_json::from_str(&PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES)?;
         let schema_id = &proof_request.sub_proof_requests[0].schema;
 
         let mut credential_map = HashMap::new();

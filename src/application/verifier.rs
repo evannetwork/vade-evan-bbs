@@ -8,6 +8,8 @@ use crate::application::{
     },
     utils::get_now_as_iso_string,
 };
+use crate::crypto::crypto_verifier::CryptoVerifier;
+
 use bbs::verifier::Verifier as BbsVerifier;
 use bbs::{keys::DeterministicPublicKey, ProofNonce, SignatureProof};
 use std::collections::HashMap;
@@ -49,49 +51,9 @@ impl Verifier {
         proof_request: BbsProofRequest,
         keys_to_schema_map: HashMap<String, DeterministicPublicKey>,
     ) -> Result<(), Box<dyn Error>> {
-        let mut proofs = Vec::new();
-        let mut proof_requests = Vec::new();
-        let mut revealed_messages_per_schema = HashMap::new();
-
-        for sub_request in proof_request.sub_proof_requests {
-            revealed_messages_per_schema
-                .insert(sub_request.schema, sub_request.revealed_attributes);
-        }
-
-        for cred in presentation.verifiable_credential {
-            let signature =
-                SignatureProof::from(base64::decode(cred.proof.proof)?.into_boxed_slice());
-            proofs.insert(proofs.len(), signature);
-
-            let revealed_messages = revealed_messages_per_schema
-                .get(&cred.credential_schema.id)
-                .ok_or(format!(
-                    "Missing revealed messages for schema {}",
-                    cred.credential_schema.id
-                ))?;
-            let key = keys_to_schema_map
-                .get(&cred.credential_schema.id)
-                .ok_or(format!(
-                    "Missing key for schema {}",
-                    cred.credential_schema.id
-                ))?
-                .to_public_key(KEY_SIZE)
-                .map_err(|e| format!("Error converting key for proof verification: {}", e))?;
-
-            proof_requests.insert(
-                proof_requests.len(),
-                BbsVerifier::new_proof_request(&revealed_messages, &key).map_err(|e| {
-                    format!(
-                        "Could not create proof request for proof verification: {}",
-                        e
-                    )
-                })?,
-            );
-        }
-
-        let nonce = ProofNonce::from(base64::decode(proof_request.nonce)?.into_boxed_slice());
         let challenge =
-            BbsVerifier::create_challenge_hash(&proofs, proof_requests.as_slice(), &nonce, None);
+            CryptoVerifier::create_challenge(presentation, proof_request, keys_to_schema_map);
+        panic!("Unimplemented");
         Ok(())
     }
 }
@@ -101,6 +63,11 @@ mod tests {
     use super::*;
     use crate::utils::test_data::{
         accounts::local::VERIFIER_DID,
+        bbs_coherent_context_test_data::{
+            PROOF_PRESENTATION,
+            PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES,
+            PUB_KEY,
+        },
         vc_zkp::EXAMPLE_CREDENTIAL_SCHEMA,
         vc_zkp::EXAMPLE_CREDENTIAL_SCHEMA_FIVE_PROPERTIES,
     };
@@ -176,8 +143,23 @@ mod tests {
 
     #[test]
     fn can_verify_proof() -> Result<(), Box<dyn Error>> {
-        // Verifier::verifiy_proof();
+        let presentation: ProofPresentation = serde_json::from_str(&PROOF_PRESENTATION)?;
+        let proof_request: BbsProofRequest =
+            serde_json::from_str(&PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES)?;
+        let key: DeterministicPublicKey =
+            DeterministicPublicKey::from(base64::decode(&PUB_KEY)?.into_boxed_slice());
 
-        panic!("Not implemented");
+        let mut keys_to_schema_map = HashMap::new();
+        keys_to_schema_map.insert(
+            presentation.verifiable_credential[0]
+                .credential_schema
+                .id
+                .clone(),
+            key,
+        );
+
+        Verifier::verify_proof(presentation, proof_request, keys_to_schema_map);
+
+        Ok(())
     }
 }
