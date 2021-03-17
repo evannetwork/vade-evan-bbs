@@ -1,9 +1,12 @@
-use crate::application::datatypes::{
-    BbsCredential,
-    BbsProofRequest,
-    ProofPresentation,
-    RevocationListCredential,
-    KEY_SIZE,
+use crate::application::{
+    datatypes::{
+        BbsCredential,
+        BbsProofRequest,
+        ProofPresentation,
+        RevocationListCredential,
+        KEY_SIZE,
+    },
+    utils::get_nonce_from_string,
 };
 use std::collections::HashMap;
 use std::error::Error;
@@ -18,6 +21,8 @@ use bbs::{
 };
 
 use flate2::read::GzDecoder;
+use std::convert::TryFrom;
+use std::panic;
 
 pub struct CryptoVerifier {}
 
@@ -72,8 +77,11 @@ impl CryptoVerifier {
         }
 
         for cred in &presentation.verifiable_credential {
+            let proof_bytes = base64::decode(&cred.proof.proof)?.into_boxed_slice();
             let signature =
-                SignatureProof::from(base64::decode(&cred.proof.proof)?.into_boxed_slice());
+                panic::catch_unwind(|| SignatureProof::from(proof_bytes)).map_err(|_| {
+                    format!("Error parsing signature proof for credential {}", &cred.id)
+                })?;
             proofs.insert(proofs.len(), signature);
 
             let revealed_messages = revealed_messages_per_schema
@@ -102,7 +110,7 @@ impl CryptoVerifier {
             );
         }
 
-        let nonce = ProofNonce::from(base64::decode(&proof_request.nonce)?.into_boxed_slice());
+        let nonce = get_nonce_from_string(&proof_request.nonce)?;
         let challenge =
             BbsVerifier::create_challenge_hash(&proofs, proof_requests.as_slice(), &nonce, None)
                 .map_err(|e| {

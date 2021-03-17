@@ -1,6 +1,6 @@
 use crate::application::{
     datatypes::{BbsUnfinishedCredentialSignature, CredentialSchemaReference, CredentialSubject},
-    utils::{generate_uuid, get_now_as_iso_string},
+    utils::{generate_uuid, get_nonce_from_string, get_now_as_iso_string},
 };
 use crate::{
     application::datatypes::{
@@ -30,7 +30,7 @@ use bbs::{
     ProofNonce,
 };
 use flate2::{read::GzDecoder, write::GzEncoder, Compression};
-
+use std::panic;
 use std::{error::Error, io::prelude::*};
 pub struct Issuer {}
 
@@ -101,7 +101,7 @@ impl Issuer {
             r#type: CREDENTIAL_SCHEMA_TYPE.to_string(),
         };
 
-        let nonce = ProofNonce::from(base64::decode(&credential_offer.nonce)?.into_boxed_slice());
+        let nonce = get_nonce_from_string(&credential_offer.nonce)?;
         let blind_signature = CryptoIssuer::create_signature(
             &credential_request.blind_signature_context,
             &nonce,

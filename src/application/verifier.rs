@@ -7,7 +7,7 @@ use crate::application::{
         UnfinishedProofPresentation,
         KEY_SIZE,
     },
-    utils::get_now_as_iso_string,
+    utils::{get_dpk_from_string, get_now_as_iso_string},
 };
 use crate::crypto::{crypto_utils::check_assertion_proof, crypto_verifier::CryptoVerifier};
 
@@ -20,6 +20,7 @@ use bbs::{
 };
 use std::collections::HashMap;
 use std::error::Error;
+use std::panic;
 
 pub struct Verifier {}
 
@@ -81,7 +82,11 @@ impl Verifier {
                         e
                     )
                 })?;
-            let proof = SignatureProof::from(base64::decode(&cred.proof.proof)?.into_boxed_slice());
+
+            let proof_bytes = base64::decode(&cred.proof.proof)?.into_boxed_slice();
+            let proof = panic::catch_unwind(|| SignatureProof::from(proof_bytes))
+                .map_err(|_| "Error parsing signature")?;
+
             let valid = proof
                 .proof
                 .verify(&key, &proof.revealed_messages, &challenge)
@@ -195,8 +200,7 @@ mod tests {
         let presentation: ProofPresentation = serde_json::from_str(&PROOF_PRESENTATION)?;
         let proof_request: BbsProofRequest =
             serde_json::from_str(&PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES)?;
-        let key: DeterministicPublicKey =
-            DeterministicPublicKey::from(base64::decode(&PUB_KEY)?.into_boxed_slice());
+        let key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;
 
         let mut keys_to_schema_map = HashMap::new();
         keys_to_schema_map.insert(
@@ -235,8 +239,7 @@ mod tests {
         // assert!(false, serde_json::to_string(&presentation)?);
         let proof_request: BbsProofRequest =
             serde_json::from_str(&PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES)?;
-        let key: DeterministicPublicKey =
-            DeterministicPublicKey::from(base64::decode(&PUB_KEY)?.into_boxed_slice());
+        let key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;
 
         let mut keys_to_schema_map = HashMap::new();
         keys_to_schema_map.insert(
@@ -256,7 +259,7 @@ mod tests {
             Ok(_) => assert!(false, "This test should have failed"),
             Err(e) => assert_eq!(
                 format!(
-                    "Invalid proof for credential {}",
+                    "Error parsing signature proof for credential {}",
                     presentation.verifiable_credential[0].id.clone()
                 ),
                 format!("{}", e)
@@ -278,8 +281,7 @@ mod tests {
 
         let proof_request: BbsProofRequest =
             serde_json::from_str(&PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES)?;
-        let key: DeterministicPublicKey =
-            DeterministicPublicKey::from(base64::decode(&PUB_KEY)?.into_boxed_slice());
+        let key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;
 
         let mut keys_to_schema_map = HashMap::new();
         keys_to_schema_map.insert(

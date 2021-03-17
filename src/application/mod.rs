@@ -1,7 +1,7 @@
 pub mod datatypes;
 pub mod issuer;
 pub mod prover;
-mod utils;
+pub mod utils;
 #[cfg(test)]
 pub mod utils_test;
 pub mod verifier;

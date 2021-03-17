@@ -5,6 +5,7 @@ use crate::application::datatypes::{
     UnfinishedBbsCredential,
     KEY_SIZE,
 };
+use crate::application::utils::get_dpk_from_string;
 use bbs::{
     keys::DeterministicPublicKey,
     messages::{HiddenMessage, ProofMessage},
@@ -25,6 +26,7 @@ use bbs::{
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::error::Error;
 use std::iter::FromIterator;
+use std::panic;
 
 pub struct CryptoProver {}
 
@@ -109,7 +111,9 @@ impl CryptoProver {
             commitment_messages.insert(j, pm_revealed!(""))
         }
 
-        let signature = Signature::from(base64::decode(credential_signature)?.into_boxed_slice());
+        let signature_bytes = base64::decode(credential_signature)?.into_boxed_slice();
+        let signature = panic::catch_unwind(|| Signature::from(signature_bytes))
+            .map_err(|_| "Error parsing signature")?;
 
         let pok = BbsProver::commit_signature_pok(
             &crypto_proof_request,
@@ -185,8 +189,7 @@ mod tests {
         let master_secret: SignatureMessage =
             SignatureMessage::from(base64::decode(&MASTER_SECRET)?.into_boxed_slice());
         let nquads: Vec<String> = NQUADS.iter().map(|q| q.to_string()).collect();
-        let public_key: DeterministicPublicKey =
-            DeterministicPublicKey::from(base64::decode(&PUB_KEY)?.into_boxed_slice());
+        let public_key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;
         let blinding: SignatureBlinding =
             SignatureBlinding::from(base64::decode(&SIGNATURE_BLINDING)?.into_boxed_slice());
 
@@ -208,8 +211,7 @@ mod tests {
     #[test]
     fn can_create_proof_of_knowledge() -> Result<(), Box<dyn Error>> {
         let credential: BbsCredential = serde_json::from_str(&FINISHED_CREDENTIAL)?;
-        let public_key: DeterministicPublicKey =
-            DeterministicPublicKey::from(base64::decode(&PUB_KEY)?.into_boxed_slice());
+        let public_key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;
         let nquads: Vec<String> = NQUADS.iter().map(|q| q.to_string()).collect();
         let sub_proof_request = BbsSubProofRequest {
             revealed_attributes: vec![1],
@@ -235,8 +237,7 @@ mod tests {
     #[test]
     fn can_generate_proofs() -> Result<(), Box<dyn Error>> {
         let credential: BbsCredential = serde_json::from_str(&FINISHED_CREDENTIAL)?;
-        let public_key: DeterministicPublicKey =
-            DeterministicPublicKey::from(base64::decode(&PUB_KEY)?.into_boxed_slice());
+        let public_key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;
         let nquads: Vec<String> = NQUADS.iter().map(|q| q.to_string()).collect();
         let sub_proof_request = BbsSubProofRequest {
             revealed_attributes: vec![1],

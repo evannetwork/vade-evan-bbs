@@ -14,7 +14,7 @@ use super::datatypes::{
     CREDENTIAL_REQUEST_TYPE,
     DEFAULT_CREDENTIAL_CONTEXTS,
 };
-use super::utils::{generate_uuid, get_now_as_iso_string};
+use super::utils::{generate_uuid, get_nonce_from_string, get_now_as_iso_string};
 use crate::crypto::{
     crypto_prover::CryptoProver,
     crypto_utils::{check_assertion_proof, create_assertion_proof},
@@ -109,8 +109,7 @@ impl Prover {
             ));
         }
 
-        let nonce =
-            ProofNonce::from(base64::decode(&credential_offering.nonce)?.into_boxed_slice());
+        let nonce = get_nonce_from_string(&credential_offering.nonce)?;
         let (blind_signature_context, blinding) =
             CryptoProver::create_blind_signature_context(&issuer_pub_key, &master_secret, &nonce)
                 .map_err(|e| {
@@ -203,8 +202,7 @@ impl Prover {
 
             poks.insert(sub_proof_request.schema.clone(), proof_of_knowledge);
         }
-        let nonce =
-            ProofNonce::from(base64::decode(proof_request.nonce.clone())?.into_boxed_slice());
+        let nonce = get_nonce_from_string(&proof_request.nonce)?;
         let proofs = CryptoProver::generate_proofs(poks, nonce)?;
 
         let mut presentation_credentials: Vec<BbsPresentation> = Vec::new();
@@ -254,6 +252,7 @@ impl Prover {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::application::utils::{get_dpk_from_string, get_signature_message_from_string};
     use crate::utils::test_data::{
         accounts::local::{HOLDER_DID, ISSUER_DID},
         bbs_coherent_context_test_data::{
@@ -329,8 +328,7 @@ mod tests {
         let mut nquads_schema_map = HashMap::new();
         nquads_schema_map.insert(schema_id.clone(), nquads);
 
-        let public_key: DeterministicPublicKey =
-            DeterministicPublicKey::from(base64::decode(&PUB_KEY)?.into_boxed_slice());
+        let public_key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;
         let mut public_key_schema_map = HashMap::new();
         public_key_schema_map.insert(schema_id.clone(), public_key);
 
@@ -422,11 +420,9 @@ mod tests {
     fn can_finish_credential() -> Result<(), Box<dyn Error>> {
         let unfinished_credential: UnfinishedBbsCredential =
             serde_json::from_str(&UNFINISHED_CREDENTIAL)?;
-        let master_secret: SignatureMessage =
-            SignatureMessage::from(base64::decode(&MASTER_SECRET)?.into_boxed_slice());
+        let master_secret: SignatureMessage = get_signature_message_from_string(&MASTER_SECRET)?;
         let nquads: Vec<String> = NQUADS.iter().map(|q| q.to_string()).collect();
-        let public_key: DeterministicPublicKey =
-            DeterministicPublicKey::from(base64::decode(&PUB_KEY)?.into_boxed_slice());
+        let public_key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;
         let blinding: SignatureBlinding =
             SignatureBlinding::from(base64::decode(&SIGNATURE_BLINDING)?.into_boxed_slice());
 
@@ -480,7 +476,7 @@ mod tests {
         .await?;
 
         assert_proof(proof.clone(), proof_request, revealed_properties_map)?;
-        assert!(false, serde_json::to_string(&proof)?);
+
         Ok(())
     }
 }
