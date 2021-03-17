@@ -65,9 +65,8 @@ pub struct CreateRevocationListPayload {
 pub struct IssueCredentialPayload {
     pub issuer: String,
     pub issuer_public_key_id: String,
-    pub issuer_public_key: DeterministicPublicKey,
-    pub issuer_secret_key: SecretKey,
-    pub issuance_date: Option<String>,
+    pub issuer_public_key: String,
+    pub issuer_secret_key: String,
     pub subject: String,
     pub schema: String,
     pub credential_request: BbsCredentialRequest,
@@ -384,6 +383,12 @@ impl VadePlugin for VadeEvanBbs {
     ) -> Result<VadePluginResultValue<Option<String>>, Box<dyn Error>> {
         ignore_unrelated!(method, options);
         let payload: IssueCredentialPayload = parse!(&payload, "payload");
+        let public_key: DeterministicPublicKey = DeterministicPublicKey::from(
+            base64::decode(&payload.issuer_public_key)?.into_boxed_slice(),
+        );
+        let sk: SecretKey =
+            SecretKey::from(base64::decode(&payload.issuer_secret_key)?.into_boxed_slice());
+
         let schema: CredentialSchema = get_document!(&mut self.vade, &payload.schema, "schema");
         let unfinished_credential = Issuer::issue_credential(
             &payload.issuer,
@@ -391,8 +396,8 @@ impl VadePlugin for VadeEvanBbs {
             &payload.credential_offer,
             &payload.credential_request,
             &payload.issuer_public_key_id,
-            &payload.issuer_public_key,
-            &payload.issuer_secret_key,
+            &public_key,
+            &sk,
             schema,
             payload.required_indices,
             payload.nquads,
