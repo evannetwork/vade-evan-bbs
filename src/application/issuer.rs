@@ -1,3 +1,4 @@
+use crate::application::datatypes::BbsCredentialRequestSerialized;
 use crate::application::{
     datatypes::{BbsUnfinishedCredentialSignature, CredentialSchemaReference, CredentialSubject},
     utils::{generate_uuid, get_nonce_from_string, get_now_as_iso_string},
@@ -17,6 +18,7 @@ use crate::{
 use bbs::{
     issuer::Issuer as BbsIssuer,
     keys::{DeterministicPublicKey, SecretKey},
+    BlindSignatureContext, ProofNonce,
 };
 use flate2::{read::GzDecoder, write::GzEncoder, Compression};
 
@@ -138,7 +140,7 @@ impl Issuer {
         issuer_did: &str,
         subject_did: &str,
         credential_offer: &BbsCredentialOffer,
-        credential_request: &BbsCredentialRequest,
+        credential_request: &BbsCredentialRequestSerialized,
         issuer_public_key_id: &str,
         issuer_public_key: &DeterministicPublicKey,
         issuer_secret_key: &SecretKey,
@@ -170,9 +172,13 @@ impl Issuer {
             r#type: CREDENTIAL_SCHEMA_TYPE.to_string(),
         };
 
-        let nonce = get_nonce_from_string(&credential_offer.nonce)?;
+        let blind_signature_decoded = BlindSignatureContext::from(
+            base64::decode(&credential_request.blind_signature_context)?.into_boxed_slice(),
+        );
+
+        let nonce = ProofNonce::from(base64::decode(&credential_offer.nonce)?.into_boxed_slice());
         let blind_signature = CryptoIssuer::create_signature(
-            &credential_request.blind_signature_context,
+            &blind_signature_decoded,
             &nonce,
             nquads.clone(),
             issuer_public_key,
@@ -336,6 +342,7 @@ impl Issuer {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::application::datatypes::BbsCredentialRequestSerialized;
     use crate::{
         application::{
             datatypes::{BbsCredentialOffer, BbsCredentialRequest},
@@ -359,7 +366,14 @@ mod tests {
         pub_key: &DeterministicPublicKey,
         offer: &BbsCredentialOffer,
         amount_of_values: u8,
-    ) -> Result<(BbsCredentialRequest, CredentialSchema, Vec<String>), Box<dyn Error>> {
+    ) -> Result<
+        (
+            BbsCredentialRequestSerialized,
+            CredentialSchema,
+            Vec<String>,
+        ),
+        Box<dyn Error>,
+    > {
         let schema: CredentialSchema = serde_json::from_str(EXAMPLE_CREDENTIAL_SCHEMA)?;
         let secret = BbsProver::new_link_secret();
         let mut credential_values = HashMap::new();
@@ -386,41 +400,42 @@ mod tests {
         return Ok((credential_request, schema, nquads));
     }
 
-    // fn is_base_64(input: String) -> bool {
-    //     match base64::decode(input) {
-    //         Ok(_) => true,
-    //         Err(_) => false,
-    //     }
-    // }
+    fn is_base_64(input: String) -> bool {
+        match base64::decode(input) {
+            Ok(_) => true,
+            Err(_) => false,
+        }
+    }
 
-    // fn assert_credential(
-    //     credential_request: BbsCredentialRequest,
-    //     cred: UnfinishedBbsCredential,
-    //     pub_key_id: &str,
-    //     schema_id: &str,
-    // ) {
-    //     assert_eq!(&cred.issuer, ISSUER_DID);
-    //     assert_eq!(&cred.credential_subject.id, HOLDER_DID);
-    //     assert_eq!(&cred.credential_schema.id, schema_id);
-    //     // proof
-    //     assert_eq!(&cred.proof.required_reveal_statements, &[1].to_vec());
-    //     assert_eq!(&cred.proof.r#type, CREDENTIAL_SIGNATURE_TYPE);
-    //     assert_eq!(&cred.proof.proof_purpose, CREDENTIAL_PROOF_PURPOSE);
-    //     assert_eq!(&cred.proof.verification_method, pub_key_id);
-    //     assert!(
-    //         is_base_64(cred.proof.blind_signature.to_owned()),
-    //         "Signature seems not to be base64 encoded"
-    //     );
-    //     // Credential subject
-    //     // Are the values correctly copied into the credentials?
-    //     assert!(&cred
-    //         .credential_subject
-    //         .data
-    //         .keys()
-    //         .all(|key| credential_request.credential_values.contains_key(key)
-    //             && credential_request.credential_values.get(key)
-    //                 == cred.credential_subject.data.get(key)));
-    // }
+    fn assert_credential(
+        credential_request: BbsCredentialRequestSerialized,
+        cred: UnfinishedBbsCredential,
+        pub_key_id: &str,
+        schema_id: &str,
+    ) {
+        assert_eq!(&cred.issuer, ISSUER_DID);
+        assert_eq!(&cred.credential_subject.id, HOLDER_DID);
+        assert_eq!(&cred.credential_schema.id, schema_id);
+        // proof
+        assert_eq!(&cred.proof.required_reveal_statements, &[1].to_vec());
+        assert_eq!(&cred.proof.r#type, CREDENTIAL_SIGNATURE_TYPE);
+        assert_eq!(&cred.proof.proof_purpose, CREDENTIAL_PROOF_PURPOSE);
+        assert_eq!(&cred.proof.verification_method, pub_key_id);
+        assert!(
+            is_base_64(cred.proof.blind_signature.to_owned()),
+            "Signature seems not to be base64 encoded"
+        );
+        // Credential subject
+        // Are the values correctly copied into the credentials?
+        assert!(&cred
+            .credential_subject
+            .data
+            .keys()
+            .all(|key| credential_request.credential_values.contains_key(key)
+                && credential_request.credential_values.get(key)
+                    == cred.credential_subject.data.get(key)));
+    }
+
     #[test]
     fn can_offer_credential() -> Result<(), Box<dyn Error>> {
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;

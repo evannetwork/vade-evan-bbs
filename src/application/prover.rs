@@ -1,32 +1,21 @@
 use super::datatypes::{
-    BbsCredential,
-    BbsCredentialOffer,
-    BbsCredentialRequest,
-    BbsPresentation,
-    BbsProofRequest,
-    CredentialProposal,
-    CredentialSchema,
-    CredentialSubject,
-    ProofPresentation,
-    UnfinishedBbsCredential,
-    UnfinishedProofPresentation,
-    CREDENTIAL_PROPOSAL_TYPE,
-    CREDENTIAL_REQUEST_TYPE,
-    DEFAULT_CREDENTIAL_CONTEXTS,
+    BbsCredential, BbsCredentialOffer, BbsCredentialRequest, BbsPresentation, BbsProofRequest,
+    CredentialProposal, CredentialSchema, CredentialSubject, ProofPresentation,
+    UnfinishedBbsCredential, UnfinishedProofPresentation, CREDENTIAL_PROPOSAL_TYPE,
+    CREDENTIAL_REQUEST_TYPE, DEFAULT_CREDENTIAL_CONTEXTS,
 };
-use super::utils::{generate_uuid, get_nonce_from_string, get_now_as_iso_string};
-use crate::crypto::{crypto_prover::CryptoProver, crypto_utils::create_assertion_proof};
-use crate::signing::Signer;
+use crate::application::datatypes::BbsCredentialRequestSerialized;
+use crate::application::utils::{generate_uuid, get_nonce_from_string, get_now_as_iso_string};
+use crate::crypto::crypto_prover::CryptoProver;
+use crate::crypto::crypto_utils::create_assertion_proof;
 use bbs::{
-    keys::DeterministicPublicKey,
-    pok_sig::PoKOfSignature,
-    signature::BlindSignature,
-    SignatureBlinding,
-    SignatureMessage,
+    keys::DeterministicPublicKey, signature::BlindSignature, PoKOfSignature, ProofNonce,
+    SignatureBlinding, SignatureMessage, ToVariableLengthBytes,
 };
 use std::collections::HashMap;
 use std::convert::{From, TryInto};
 use std::error::Error;
+use vade_evan_substrate::{signing::LocalSigner, Signer};
 
 pub struct Prover {}
 
@@ -71,7 +60,7 @@ impl Prover {
         master_secret: &SignatureMessage,
         credential_values: HashMap<String, String>,
         issuer_pub_key: &DeterministicPublicKey,
-    ) -> Result<(BbsCredentialRequest, SignatureBlinding), Box<dyn Error>> {
+    ) -> Result<(BbsCredentialRequestSerialized, SignatureBlinding), Box<dyn Error>> {
         for required in &credential_schema.required {
             if credential_values.get(required).is_none() {
                 let error = format!(
@@ -99,12 +88,14 @@ impl Prover {
             })?;
 
         Ok((
-            BbsCredentialRequest {
+            BbsCredentialRequestSerialized {
                 schema: credential_schema.id.clone(),
                 subject: credential_offering.subject.clone(),
                 r#type: CREDENTIAL_REQUEST_TYPE.to_string(),
                 credential_values: credential_values,
-                blind_signature_context: blind_signature_context,
+                blind_signature_context: base64::encode(
+                    blind_signature_context.to_bytes_compressed_form(),
+                ),
             },
             blinding,
         ))
@@ -131,7 +122,7 @@ impl Prover {
         let raw: Box<[u8]> =
             base64::decode(unfinished_credential.proof.blind_signature.clone())?.into_boxed_slice();
         let blind_signature: BlindSignature = raw.try_into()?;
-
+        println!("I am here!!!!");
         let final_signature = CryptoProver::finish_credential_signature(
             nquads.clone(),
             master_secret,
@@ -260,23 +251,17 @@ mod tests {
     use super::*;
     use crate::application::utils::{get_dpk_from_string, get_signature_message_from_string};
     use crate::crypto::crypto_utils::check_assertion_proof;
-    use crate::signing::LocalSigner;
     use crate::utils::test_data::{
         accounts::local::{HOLDER_DID, ISSUER_DID},
         bbs_coherent_context_test_data::{
-            MASTER_SECRET,
-            NQUADS,
-            PUB_KEY,
-            SIGNATURE_BLINDING,
-            UNFINISHED_CREDENTIAL,
+            MASTER_SECRET, NQUADS, PUB_KEY, SIGNATURE_BLINDING, UNFINISHED_CREDENTIAL,
         },
         vc_zkp::{EXAMPLE_CREDENTIAL_OFFERING, EXAMPLE_CREDENTIAL_SCHEMA},
     };
     use crate::utils::test_data::{
         accounts::local::{SIGNER_1_ADDRESS, SIGNER_1_PRIVATE_KEY, VERIFIER_DID},
         bbs_coherent_context_test_data::{
-            FINISHED_CREDENTIAL,
-            PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES,
+            FINISHED_CREDENTIAL, PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES,
         },
     };
     use bbs::issuer::Issuer as BbsIssuer;

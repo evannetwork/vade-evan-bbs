@@ -33,6 +33,16 @@ pub struct BbsCredentialRequest {
     pub credential_values: HashMap<String, String>,
 }
 
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BbsCredentialRequestSerialized {
+    pub subject: String,
+    pub schema: String,
+    pub r#type: String,
+    pub blind_signature_context: String,
+    pub credential_values: HashMap<String, String>,
+}
+
 /// Message sent by a verifier stating which attributes of which schema the prover is supposed to reveal.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]

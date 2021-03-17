@@ -14,6 +14,7 @@
   limitations under the License.
 */
 
+use crate::application::datatypes::BbsCredentialRequestSerialized;
 use crate::application::{
     datatypes::{
         BbsCredential, BbsCredentialOffer, BbsCredentialRequest, BbsProofRequest,
@@ -25,6 +26,7 @@ use crate::application::{
     verifier::Verifier,
 };
 use async_trait::async_trait;
+use bbs::BlindSignatureContext;
 use bbs::{
     keys::{DeterministicPublicKey, SecretKey},
     SignatureBlinding, SignatureMessage,
@@ -69,7 +71,7 @@ pub struct IssueCredentialPayload {
     pub issuer_secret_key: String,
     pub subject: String,
     pub schema: String,
-    pub credential_request: BbsCredentialRequest,
+    pub credential_request: BbsCredentialRequestSerialized,
     pub credential_offer: BbsCredentialOffer,
     pub required_indices: Vec<u32>,
     pub nquads: Vec<String>,
@@ -381,6 +383,8 @@ impl VadePlugin for VadeEvanBbs {
         options: &str,
         payload: &str,
     ) -> Result<VadePluginResultValue<Option<String>>, Box<dyn Error>> {
+        println!("---------------------------------------------1");
+
         ignore_unrelated!(method, options);
         let payload: IssueCredentialPayload = parse!(&payload, "payload");
         let public_key: DeterministicPublicKey = DeterministicPublicKey::from(
@@ -390,6 +394,8 @@ impl VadePlugin for VadeEvanBbs {
             SecretKey::from(base64::decode(&payload.issuer_secret_key)?.into_boxed_slice());
 
         let schema: CredentialSchema = get_document!(&mut self.vade, &payload.schema, "schema");
+        // println!("---------------------------------------------1");
+
         let unfinished_credential = Issuer::issue_credential(
             &payload.issuer,
             &payload.subject,
@@ -675,7 +681,7 @@ impl VadePlugin for VadeEvanBbs {
         let public_key: DeterministicPublicKey = DeterministicPublicKey::from(
             base64::decode(&payload.issuer_public_key)?.into_boxed_slice(),
         );
-
+        println!("I am here!!!!");
         let credential = Prover::finish_credential(
             &payload.credential,
             &master_secret,
