@@ -1,6 +1,6 @@
 use bbs::{
     keys::{DeterministicPublicKey, SecretKey},
-    SignatureBlinding, SignatureMessage,
+    SignatureMessage,
 };
 use std::collections::HashMap;
 use std::error::Error;
@@ -14,23 +14,19 @@ use utilities::test_data::{
     environment::DEFAULT_VADE_EVAN_SUBSTRATE_IP,
     vc_zkp::{EXAMPLE_CREDENTIAL_PROPOSAL, EXAMPLE_CREDENTIAL_SCHEMA},
 };
-use vade::{Vade, VadePlugin, VadePluginResultValue};
-use vade_evan_bbs::application::datatypes::BbsCredential;
-use vade_evan_bbs::application::datatypes::BbsCredentialRequest;
-use vade_evan_bbs::application::datatypes::CredentialProposal;
-use vade_evan_bbs::application::datatypes::RevocationListCredential;
-use vade_evan_bbs::application::datatypes::UnfinishedBbsCredential;
+use vade::Vade;
 use vade_evan_bbs::application::datatypes::{
-    BbsCredentialOffer, CredentialSchema, CREDENTIAL_OFFER_TYPE, CREDENTIAL_PROOF_PURPOSE,
-    CREDENTIAL_PROPOSAL_TYPE, CREDENTIAL_REQUEST_TYPE, CREDENTIAL_SIGNATURE_TYPE,
+    BbsCredential, BbsCredentialOffer, CredentialSchema, RevocationListCredential,
+    CREDENTIAL_OFFER_TYPE, CREDENTIAL_PROOF_PURPOSE, CREDENTIAL_PROPOSAL_TYPE,
+    CREDENTIAL_REQUEST_TYPE, CREDENTIAL_SIGNATURE_TYPE,
 };
-use vade_evan_bbs::FinishCredentialPayload;
-use vade_evan_bbs::IssueCredentialPayload;
-use vade_evan_bbs::OfferCredentialPayload;
-use vade_evan_bbs::RequestCredentialPayload;
 use vade_evan_bbs::{
+    self,
     application::{issuer::Issuer, prover::Prover},
-    VadeEvanBbs,
+};
+use vade_evan_bbs::{
+    application::datatypes::CredentialProposal,
+    vade_evan_bbs::{FinishCredentialPayload, OfferCredentialPayload, VadeEvanBbs},
 };
 
 use std::env;

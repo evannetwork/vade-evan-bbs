@@ -13,7 +13,6 @@ use crate::{
     },
     crypto::crypto_issuer::CryptoIssuer,
     crypto::crypto_utils::create_assertion_proof,
-    signing::Signer,
 };
 use bbs::{
     issuer::Issuer as BbsIssuer,
@@ -23,6 +22,8 @@ use bbs::{
 use flate2::{read::GzDecoder, write::GzEncoder, Compression};
 
 use std::{collections::HashMap, error::Error, io::prelude::*};
+
+use vade_evan_substrate::signing::Signer;
 
 use super::datatypes::SchemaProperty;
 pub struct Issuer {}
@@ -347,9 +348,7 @@ mod tests {
         application::{
             datatypes::{BbsCredentialOffer, BbsCredentialRequest},
             prover::Prover,
-            utils_test::assert_credential,
         },
-        signing::{LocalSigner, Signer},
         utils::test_data::{
             accounts::local::{HOLDER_DID, ISSUER_DID, ISSUER_PRIVATE_KEY, ISSUER_PUBLIC_KEY_DID},
             bbs_coherent_context_test_data::{
@@ -361,6 +360,7 @@ mod tests {
     use bbs::issuer::Issuer as BbsIssuer;
     use bbs::prover::Prover as BbsProver;
     use std::collections::HashMap;
+    use vade_evan_substrate::signing::{LocalSigner, Signer};
 
     fn request_credential(
         pub_key: &DeterministicPublicKey,

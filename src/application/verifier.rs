@@ -1,10 +1,6 @@
 use crate::application::{
     datatypes::{
-        BbsProofRequest,
-        BbsSubProofRequest,
-        CredentialSchema,
-        ProofPresentation,
-        KEY_SIZE,
+        BbsProofRequest, BbsSubProofRequest, CredentialSchema, ProofPresentation, KEY_SIZE,
     },
     utils::get_now_as_iso_string,
 };
@@ -124,20 +120,17 @@ mod tests {
     use crate::application::datatypes::{RevocationListCredential, UnfinishedProofPresentation};
     use crate::application::utils::get_dpk_from_string;
     use crate::crypto::crypto_utils::create_assertion_proof;
-    use crate::signing::{LocalSigner, Signer};
     use crate::utils::test_data::{
         accounts::local::{SIGNER_1_ADDRESS, SIGNER_1_DID, SIGNER_1_PRIVATE_KEY, VERIFIER_DID},
         bbs_coherent_context_test_data::{
-            PROOF_PRESENTATION,
-            PROOF_PRESENTATION_INVALID_SIGNATURE_AND_WITHOUT_JWS,
-            PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES,
-            PUB_KEY,
-            REVOCATION_LIST_CREDENTIAL,
+            PROOF_PRESENTATION, PROOF_PRESENTATION_INVALID_SIGNATURE_AND_WITHOUT_JWS,
+            PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES, PUB_KEY, REVOCATION_LIST_CREDENTIAL,
         },
         vc_zkp::EXAMPLE_CREDENTIAL_SCHEMA,
         vc_zkp::EXAMPLE_CREDENTIAL_SCHEMA_FIVE_PROPERTIES,
     };
     use serde_json::Value;
+    use vade_evan_substrate::signing::{LocalSigner, Signer};
 
     #[test]
     fn can_create_proof_request_for_one_schema() -> Result<(), Box<dyn Error>> {

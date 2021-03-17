@@ -9,13 +9,13 @@ use crate::application::utils::{generate_uuid, get_nonce_from_string, get_now_as
 use crate::crypto::crypto_prover::CryptoProver;
 use crate::crypto::crypto_utils::create_assertion_proof;
 use bbs::{
-    keys::DeterministicPublicKey, signature::BlindSignature, PoKOfSignature, ProofNonce,
+    keys::DeterministicPublicKey, pok_sig::PoKOfSignature, signature::BlindSignature, ProofNonce,
     SignatureBlinding, SignatureMessage, ToVariableLengthBytes,
 };
 use std::collections::HashMap;
 use std::convert::{From, TryInto};
 use std::error::Error;
-use vade_evan_substrate::{signing::LocalSigner, Signer};
+use vade_evan_substrate::signing::Signer;
 
 pub struct Prover {}
 
@@ -238,7 +238,7 @@ impl Prover {
             &prover_public_key_did,
             &prover_did,
             &prover_proving_key,
-            &signer,
+            signer,
         )
         .await?;
 
@@ -268,6 +268,7 @@ mod tests {
     use bbs::keys::SecretKey;
     use bbs::prover::Prover as BbsProver;
     use bbs::SignatureBlinding;
+    use vade_evan_substrate::signing::{LocalSigner, Signer};
 
     fn setup_test() -> Result<
         (

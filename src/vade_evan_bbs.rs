@@ -465,13 +465,14 @@ impl VadePlugin for VadeEvanBbs {
         ignore_unrelated!(method, options);
         let payload: PresentProofPayload = parse!(&payload, "payload");
 
-        let _ = Prover::present_proof(
-            payload.proof_request,
-            payload.credential_schema_map,
-            payload.public_key_schema_map,
-            payload.nquads_schema_map,
-            payload.master_secret,
-        )?;
+        // let _ = Prover::present_proof(
+        //     payload.proof_request,
+        //     payload.credential_schema_map,
+        //     payload.public_key_schema_map,
+        //     payload.nquads_schema_map,
+        //     payload.master_secret,
+        // )
+        // .await?;
 
         Err(Box::from("Not implemented"))
         // Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
