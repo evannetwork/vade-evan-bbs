@@ -23,12 +23,74 @@ use vade_evan_substrate::signing::Signer;
 
 use flate2::{read::GzDecoder, write::GzEncoder, Compression};
 
-use std::{error::Error, io::prelude::*};
+use std::{collections::HashMap, error::Error, io::prelude::*};
+
+use super::datatypes::SchemaProperty;
 pub struct Issuer {}
 
 const MAX_REVOCATION_ENTRIES: usize = 131072;
 
 impl Issuer {
+    /// Creates a new credential schema specifying properties credentials issued under this schema need to incorporate.
+    /// The schema needs to be stored in a publicly available and temper-proof way.
+    ///
+    /// # Arguments
+    /// * `assigned_did` - DID to be used to resolve this credential definition
+    /// * `issuer_did` - DID of the issuer
+    /// * `schema_name` - Name of the schema
+    /// * `description` - Description for the schema. Can be left blank
+    /// * `properties` - The properties of the schema as Key-Object pairs#
+    /// * `required_properties` - The keys of properties that need to be provided when issuing a credential under this schema.
+    /// * `allow_additional_properties` - Specifies whether a credential under this schema is considered valid if it specifies more properties than the schema specifies.
+    /// * `issuer_public_key_did` - DID of the public key to check the assertion proof of the definition document
+    /// * `issuer_proving_key` - Private key used to create the assertion proof
+    /// * `signer` - `Signer` to sign with
+    ///
+    /// # Returns
+    /// * `CredentialSchema` - The schema object to be saved in a publicly available and temper-proof way
+    pub async fn create_credential_schema(
+        assigned_did: &str,
+        issuer_did: &str,
+        schema_name: &str,
+        description: &str,
+        properties: HashMap<String, SchemaProperty>,
+        required_properties: Vec<String>,
+        allow_additional_properties: bool,
+        issuer_public_key_did: &str,
+        issuer_proving_key: &str,
+        signer: &Box<dyn Signer>,
+    ) -> Result<CredentialSchema, Box<dyn Error>> {
+        let created_at = get_now_as_iso_string();
+
+        let mut schema = CredentialSchema {
+            id: assigned_did.to_owned(),
+            r#type: "EvanVCSchema".to_string(), //TODO: Make enum
+            name: schema_name.to_owned(),
+            author: issuer_did.to_owned(),
+            created_at,
+            description: description.to_owned(),
+            properties,
+            required: required_properties,
+            additional_properties: allow_additional_properties,
+            proof: None,
+        };
+
+        let document_to_sign = serde_json::to_value(&schema)?;
+
+        let proof = create_assertion_proof(
+            &document_to_sign,
+            &issuer_public_key_did,
+            &issuer_did,
+            &issuer_proving_key,
+            &signer,
+        )
+        .await?;
+
+        schema.proof = Some(proof);
+
+        Ok(schema)
+    }
+
     /// Creates a new credential offer, as a response to a `CredentialProposal` sent by a prover.
     ///
     /// # Arguments

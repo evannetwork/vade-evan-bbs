@@ -17,7 +17,8 @@
 use crate::application::{
     datatypes::{
         BbsCredential, BbsCredentialOffer, BbsCredentialRequest, BbsProofRequest,
-        CredentialProposal, CredentialSchema, RevocationListCredential,
+        CredentialProposal, CredentialSchema, RevocationListCredential, SchemaProperty,
+        UnfinishedBbsCredential,
     },
     issuer::Issuer,
     prover::Prover,
@@ -26,7 +27,7 @@ use crate::application::{
 use async_trait::async_trait;
 use bbs::{
     keys::{DeterministicPublicKey, SecretKey},
-    SignatureMessage,
+    SignatureBlinding, SignatureMessage,
 };
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, error::Error};
@@ -128,6 +129,29 @@ pub struct RevokeCredentialPayload {
     pub revocation_id: usize,
     pub issuer_public_key_did: String,
     pub issuer_proving_key: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateCredentialSchemaPayload {
+    pub issuer: String,
+    pub schema_name: String,
+    pub description: String,
+    pub properties: HashMap<String, SchemaProperty>,
+    pub required_properties: Vec<String>,
+    pub allow_additional_properties: bool,
+    pub issuer_public_key_did: String,
+    pub issuer_proving_key: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FinishCredentialPayload {
+    pub credential: UnfinishedBbsCredential,
+    pub master_secret: String,
+    pub nquads: Vec<String>,
+    pub issuer_public_key: String,
+    pub blinding: String,
 }
 
 macro_rules! parse {
@@ -236,6 +260,58 @@ impl VadeEvanBbs {
 
 #[async_trait(?Send)]
 impl VadePlugin for VadeEvanBbs {
+    /// Creates a new zero-knowledge proof credential schema.
+    ///
+    /// Note that `options.identity` needs to be whitelisted for this function.
+    ///
+    /// # Arguments
+    ///
+    /// * `method` - method to create a credential schema for (e.g. "did:example")
+    /// * `options` - serialized [`AuthenticationOptions`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.AuthenticationOptions.html)
+    /// * `payload` - serialized [`CreateCredentialSchemaPayload`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.CreateCredentialSchemaPayload.html)
+    ///
+    /// # Returns
+    /// * `Option<String>` - The created schema as a JSON object
+    async fn vc_zkp_create_credential_schema(
+        &mut self,
+        method: &str,
+        options: &str,
+        payload: &str,
+    ) -> Result<VadePluginResultValue<Option<String>>, Box<dyn Error>> {
+        ignore_unrelated!(method, options);
+        let options: AuthenticationOptions = parse!(&options, "options");
+        let payload: CreateCredentialSchemaPayload = parse!(&payload, "payload");
+
+        let generated_did = self
+            .generate_did(&options.private_key, &options.identity)
+            .await?;
+
+        let schema = Issuer::create_credential_schema(
+            &generated_did,
+            &payload.issuer,
+            &payload.schema_name,
+            &payload.description,
+            payload.properties,
+            payload.required_properties,
+            payload.allow_additional_properties,
+            &payload.issuer_public_key_did,
+            &payload.issuer_proving_key,
+            &self.signer,
+        )
+        .await?;
+
+        let serialized = serde_json::to_string(&schema)?;
+        self.set_did_document(
+            &generated_did,
+            &serialized,
+            &options.private_key,
+            &options.identity,
+        )
+        .await?;
+
+        Ok(VadePluginResultValue::Success(Some(serialized)))
+    }
+
     /// Creates a new revocation list and stores it on-chain. The list consists of a encoded bit list which can
     /// hold up to 131,072 revokable ids. The list is GZIP encoded and will be updated on every revocation.
     /// The output is a W3C credential with a JWS signature by the given key.
@@ -564,5 +640,46 @@ impl VadePlugin for VadeEvanBbs {
         _payload: &str,
     ) -> Result<VadePluginResultValue<Option<String>>, Box<dyn Error>> {
         Err(Box::from("Not implemented"))
+    }
+
+    /// Finishes a credential, e.g. by incorporating the prover's master secret into the credential signature after issuance.
+    ///
+    /// # Arguments
+    ///
+    /// * `method` - method to update a finish credential for (e.g. "did:example")
+    /// * `options` - JSON string with additional information supporting the request (e.g. authentication data)
+    /// * `payload` - JSON string with information for the request (e.g. actual data to write)
+    ///
+    /// # Returns
+    /// * serialized [`Credential`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/application/datatypes/struct.Credential.html) consisting of the credential
+    async fn vc_zkp_finish_credential(
+        &mut self,
+        method: &str,
+        options: &str,
+        payload: &str,
+    ) -> Result<VadePluginResultValue<Option<String>>, Box<dyn std::error::Error>> {
+        ignore_unrelated!(method, options);
+
+        // let options: AuthenticationOptions = parse!(&options, "options");
+        let payload: FinishCredentialPayload = parse!(&payload, "payload");
+
+        let blinding: SignatureBlinding =
+            SignatureBlinding::from(base64::decode(&payload.blinding)?.into_boxed_slice());
+        let master_secret: SignatureMessage =
+            SignatureMessage::from(base64::decode(&payload.master_secret)?.into_boxed_slice());
+        let public_key: DeterministicPublicKey = DeterministicPublicKey::from(
+            base64::decode(&payload.issuer_public_key)?.into_boxed_slice(),
+        );
+
+        let credential = Prover::finish_credential(
+            &payload.credential,
+            &master_secret,
+            &payload.nquads,
+            &public_key,
+            &blinding,
+        )?;
+        Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
+            &credential,
+        )?)))
     }
 }
