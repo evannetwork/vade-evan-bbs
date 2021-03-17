@@ -79,6 +79,7 @@ pub struct SchemaProperty {
     pub items: Option<Vec<String>>,
 }
 
+/// AssertionProof, typically used to ensure authenticity and integrity of a VC document
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct AssertionProof {
@@ -259,6 +260,7 @@ impl ProofPresentation {
     }
 }
 
+/// Proof presentation without a proof (just for internal use)
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UnfinishedProofPresentation {
@@ -269,7 +271,7 @@ pub struct UnfinishedProofPresentation {
     pub verifiable_credential: Vec<BbsPresentation>,
 }
 
-/// A single proof of a schema requested in a `ProofRequest` that reveals the requested attributes.
+/// A verifiable credential exposing requested properties of a `BbsCredential` by providing a Bbs signature proof
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct BbsPresentation {
@@ -315,6 +317,7 @@ impl BbsPresentation {
     }
 }
 
+/// A proof object of a `BbsPresentation`
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct BbsPresentationProof {
@@ -325,6 +328,8 @@ pub struct BbsPresentationProof {
     pub nonce: String,
     pub proof: String,
 }
+
+/// `RevocationListCredential` without a proof (for internal use only).
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UnproofedRevocationListCredential {
@@ -337,6 +342,8 @@ pub struct UnproofedRevocationListCredential {
     pub credential_subject: RevocationListCredentialSubject,
 }
 
+/// A revocation list credential associating VC revocation IDs to their revocation status as a bit list. See
+/// https://w3c-ccg.github.io/vc-status-rl-2020/#revocationlist2020credential
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RevocationListCredential {

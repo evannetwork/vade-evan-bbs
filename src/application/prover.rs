@@ -15,32 +15,12 @@ use super::datatypes::{
     DEFAULT_CREDENTIAL_CONTEXTS,
 };
 use super::utils::{generate_uuid, get_nonce_from_string, get_now_as_iso_string};
-use crate::crypto::{
-    crypto_prover::CryptoProver,
-    crypto_utils::{check_assertion_proof, create_assertion_proof},
-};
-use crate::signing::LocalSigner;
+use crate::crypto::{crypto_prover::CryptoProver, crypto_utils::create_assertion_proof};
 use crate::signing::Signer;
-use crate::utils::test_data::{
-    accounts::local::{
-        HOLDER_DID,
-        ISSUER_DID,
-        SIGNER_1_ADDRESS,
-        SIGNER_1_PRIVATE_KEY,
-        VERIFIER_DID,
-    },
-    bbs_coherent_context_test_data::{
-        BLAAAA,
-        BLAAAA_BLINDING,
-        FINISHED_CREDENTIAL,
-        PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES,
-    },
-};
 use bbs::{
     keys::DeterministicPublicKey,
     pok_sig::PoKOfSignature,
     signature::BlindSignature,
-    ProofNonce,
     SignatureBlinding,
     SignatureMessage,
 };
@@ -49,8 +29,6 @@ use std::convert::{From, TryInto};
 use std::error::Error;
 
 pub struct Prover {}
-
-// TODO: Add error class
 
 impl Prover {
     /// Create a new credential proposal to send to a potential issuer.
@@ -79,13 +57,14 @@ impl Prover {
     ///
     /// # Arguments
     /// * `credential_offering` - The received credential offering sent by the potential issuer
-    /// * `credential_definition` - The credential definition that is referenced in the credential offering
-    /// * `master_secret` - The master secret to incorporate into the blinded values to be signed by the issuer
+    /// * `credential_schema` - The requested credential schema
+    /// * `master_secret` - The master secret to be incorporated as a blinded value to be signed by the issuer
     /// * `credential_values` - A mapping of property names to their stringified cleartext values
+    /// * `issuer_pub_key` - Public key of the issuer
     ///
     /// # Returns
-    /// * `CredentialRequest` - The request to be sent to the issuer
-    /// * `CredentialSecretsBlindingFactors` - Blinding factors used for blinding the credential values. Need to be stored privately at the prover's site
+    /// * `BbsCredentialRequest` - The request to be sent to the issuer
+    /// * `SignatureBlinding` - Blinding that is needed for finishing the issued credential
     pub fn request_credential(
         credential_offering: &BbsCredentialOffer,
         credential_schema: &CredentialSchema,
@@ -131,6 +110,17 @@ impl Prover {
         ))
     }
 
+    /// Incorporate values into the signature that have previously been provided as blinded values to the issuer
+    ///
+    /// # Arguments
+    /// * `unfinished_credential` - The credential received from the issuer
+    /// * `master_secret` - The master secret to be incorporated as a blinded value to be signed by the issuer
+    /// * `nquads` - The credential, minus the proof part, transformed to nquads
+    /// * `issuer_public_key` - Public key of the issuer
+    /// * `blinding` - Blinding previously created by the prover during credential request creation
+    ///
+    /// # Returns
+    /// * `BbsCredential` - The final credential that can be used to derive proofs
     pub fn finish_credential(
         unfinished_credential: &UnfinishedBbsCredential,
         master_secret: &SignatureMessage,
@@ -157,6 +147,22 @@ impl Prover {
         Ok(credential)
     }
 
+    /// Derive a proof from a `BbsCredential` revealing the requested properties
+    ///
+    /// # Arguments
+    /// * `proof_request` - A verifier's proof request
+    /// * `credential_schema_map` - Mapping of requested credential schemas (DIDs) to the relevant credentials
+    /// * `revealed_properties_schema_map` - Mapping of requested credential schemas (DIDs) to the required indices to be revealed
+    /// * `public_key_schema_map` - Mapping of requested credential schemas (DIDs) to the public keys associated to the respective signature
+    /// * `nquads_schema_map` - Mapping of requested credential schemas (DIDs) to the nquads of the respective `BbsCredential`
+    /// * `master_secret` - The master secret of the prover
+    /// * `prover_did` - DID of the prover
+    /// * `prober_public_key_did` - DID of the prover's public key to use to check the presentation's assertion proof
+    /// * `prover_proving_key` - Secret key of the prover to use to create an `AssertionProof` over the presentation
+    /// * `signer` . Signer to use to create the `AssertionProof` jws
+    ///
+    /// # Returns
+    /// * `ProofPresentation` - The requested proof presentation
     pub async fn present_proof(
         proof_request: &BbsProofRequest,
         credential_schema_map: &HashMap<String, BbsCredential>,
@@ -253,6 +259,8 @@ impl Prover {
 mod tests {
     use super::*;
     use crate::application::utils::{get_dpk_from_string, get_signature_message_from_string};
+    use crate::crypto::crypto_utils::check_assertion_proof;
+    use crate::signing::LocalSigner;
     use crate::utils::test_data::{
         accounts::local::{HOLDER_DID, ISSUER_DID},
         bbs_coherent_context_test_data::{
@@ -263,6 +271,13 @@ mod tests {
             UNFINISHED_CREDENTIAL,
         },
         vc_zkp::{EXAMPLE_CREDENTIAL_OFFERING, EXAMPLE_CREDENTIAL_SCHEMA},
+    };
+    use crate::utils::test_data::{
+        accounts::local::{SIGNER_1_ADDRESS, SIGNER_1_PRIVATE_KEY, VERIFIER_DID},
+        bbs_coherent_context_test_data::{
+            FINISHED_CREDENTIAL,
+            PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES,
+        },
     };
     use bbs::issuer::Issuer as BbsIssuer;
     use bbs::keys::SecretKey;

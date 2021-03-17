@@ -27,10 +27,8 @@ use crate::{
 use bbs::{
     issuer::Issuer as BbsIssuer,
     keys::{DeterministicPublicKey, SecretKey},
-    ProofNonce,
 };
 use flate2::{read::GzDecoder, write::GzEncoder, Compression};
-use std::panic;
 use std::{error::Error, io::prelude::*};
 pub struct Issuer {}
 
@@ -65,6 +63,24 @@ impl Issuer {
         })
     }
 
+    /// Issues a new unfinished credential, that still needs post-processing by the credential subject.
+    ///
+    /// # Arguments
+    /// * `issuer_did` - DID of the issuer
+    /// * `subject_did` - DID of the subject
+    /// * `credential_offer` - Credential offer object sent by the issuer
+    /// * `credential_request` - Credential request object sent by the subject
+    /// * `issuer_public_key_id` - DID of the public key associated with the created signature
+    /// * `issuer_public_key` - Public key associated with the created signature
+    /// * `issuer_secret_key` - Secret key to create the signature with
+    /// * `credential_schema` - Credential schema to be used as specified by the credential request
+    /// * `required_indices` - Indices of the nquads representing the properties that need to be revealed when creating proofs
+    /// * `nquads` - The properties that need to be signed as nquads. Usually should include the whole document, not only the credential_subject part.
+    /// * `revocation_list_did` - DID of the associated revocation list
+    /// * `revocation_list_id` - ID of the revoation list to assign to this credential
+    ///
+    /// # Returns
+    /// * `UnfinishedBbsCredential` - Credential including signature that needs to be post-processed by the subject
     pub fn issue_credential(
         issuer_did: &str,
         subject_did: &str,
@@ -269,7 +285,7 @@ mod tests {
     use super::*;
     use crate::{
         application::{
-            datatypes::{BbsCredentialOffer, BbsCredentialRequest, UnfinishedBbsCredential},
+            datatypes::{BbsCredentialOffer, BbsCredentialRequest},
             prover::Prover,
             utils_test::assert_credential,
         },

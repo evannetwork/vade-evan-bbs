@@ -4,20 +4,14 @@ use crate::application::{
         BbsSubProofRequest,
         CredentialSchema,
         ProofPresentation,
-        UnfinishedProofPresentation,
         KEY_SIZE,
     },
-    utils::{get_dpk_from_string, get_now_as_iso_string},
+    utils::get_now_as_iso_string,
 };
 use crate::crypto::{crypto_utils::check_assertion_proof, crypto_verifier::CryptoVerifier};
 
 use bbs::verifier::Verifier as BbsVerifier;
-use bbs::{
-    keys::DeterministicPublicKey,
-    pok_sig::PoKOfSignatureProofStatus,
-    ProofNonce,
-    SignatureProof,
-};
+use bbs::{keys::DeterministicPublicKey, SignatureProof};
 use std::collections::HashMap;
 use std::error::Error;
 use std::panic;
@@ -25,6 +19,15 @@ use std::panic;
 pub struct Verifier {}
 
 impl Verifier {
+    /// Create proof request to send to a prover
+    ///
+    /// # Attributes
+    /// * `verifier_did` - DID of the verifier issuing the proof request
+    /// * `schemas` - `Vec` of schemas to require credentials for
+    /// * `reveal_attributes` - Mapping of schema IDs to the respective required attributes to be revealed
+    ///
+    /// # Returns
+    /// `BbsProofRequest` - Proof request
     pub fn create_proof_request(
         verifier_did: String,
         schemas: Vec<CredentialSchema>,
@@ -53,6 +56,16 @@ impl Verifier {
         });
     }
 
+    /// Verify a proof received from a prover
+    ///
+    /// # Attributes
+    /// * `presentation` - Received presentation
+    /// * `proof_request` - The associated proof request that the presentation is an answer to
+    /// * `keys_to_schema_map` - Public keys of the issuer(s) mapped by the respective credential schema DID
+    /// * `signer_address` - Address of the `AssertionProof` signer (usually the prover)
+    ///
+    /// # Returns
+    /// `()` - Finishes if proof is valid, throws an `Error` otherwise
     pub fn verify_proof(
         presentation: &ProofPresentation,
         proof_request: &BbsProofRequest,
@@ -108,7 +121,8 @@ impl Verifier {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::datatypes::RevocationListCredential;
+    use crate::application::datatypes::{RevocationListCredential, UnfinishedProofPresentation};
+    use crate::application::utils::get_dpk_from_string;
     use crate::crypto::crypto_utils::create_assertion_proof;
     use crate::signing::{LocalSigner, Signer};
     use crate::utils::test_data::{
@@ -124,6 +138,7 @@ mod tests {
         vc_zkp::EXAMPLE_CREDENTIAL_SCHEMA_FIVE_PROPERTIES,
     };
     use serde_json::Value;
+
     #[test]
     fn can_create_proof_request_for_one_schema() -> Result<(), Box<dyn Error>> {
         let schema: CredentialSchema =
