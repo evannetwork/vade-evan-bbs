@@ -16,12 +16,10 @@ use bbs::{
     keys::DeterministicPublicKey,
     verifier::Verifier as BbsVerifier,
     ProofChallenge,
-    ProofNonce,
     SignatureProof,
 };
 
 use flate2::read::GzDecoder;
-use std::convert::TryFrom;
 use std::panic;
 
 pub struct CryptoVerifier {}
