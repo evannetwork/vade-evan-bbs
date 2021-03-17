@@ -107,9 +107,9 @@ pub struct CreateCredentialProposalPayload {
 pub struct RequestCredentialPayload {
     pub credential_offering: BbsCredentialOffer,
     pub credential_schema: String,
-    pub master_secret: SignatureMessage,
+    pub master_secret: String,
     pub credential_values: HashMap<String, String>,
-    pub issuer_pub_key: DeterministicPublicKey,
+    pub issuer_pub_key: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -348,6 +348,7 @@ impl VadePlugin for VadeEvanBbs {
         payload: &str,
     ) -> Result<VadePluginResultValue<Option<String>>, Box<dyn Error>> {
         ignore_unrelated!(method, options);
+
         let payload: OfferCredentialPayload = parse!(&payload, "payload");
         let result: BbsCredentialOffer =
             Issuer::offer_credential(&payload.credential_proposal, &payload.issuer)?;
@@ -438,17 +439,25 @@ impl VadePlugin for VadeEvanBbs {
         payload: &str,
     ) -> Result<VadePluginResultValue<Option<String>>, Box<dyn Error>> {
         ignore_unrelated!(method, options);
+        // println!("I am here!!!!");
+        // println!("{}", payload);
         let payload: RequestCredentialPayload = serde_json::from_str(&payload)
             .map_err(|e| format!("{} when parsing payload {}", &e, &payload))?;
+        println!("I am here!!!!");
+        let master_secret: SignatureMessage =
+            SignatureMessage::from(base64::decode(&payload.master_secret)?.into_boxed_slice());
+        let public_key: DeterministicPublicKey = DeterministicPublicKey::from(
+            base64::decode(&payload.issuer_pub_key)?.into_boxed_slice(),
+        );
         let schema: CredentialSchema =
             get_document!(&mut self.vade, &payload.credential_schema, "schema");
 
         let result = Prover::request_credential(
             &payload.credential_offering,
             &schema,
-            &payload.master_secret,
+            &master_secret,
             payload.credential_values,
-            &payload.issuer_pub_key,
+            &public_key,
         )?;
 
         Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
