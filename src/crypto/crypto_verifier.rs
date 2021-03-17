@@ -56,22 +56,24 @@ impl CryptoVerifier {
     }
 
     pub fn create_challenge(
-        presentation: ProofPresentation,
-        proof_request: BbsProofRequest,
-        keys_to_schema_map: HashMap<String, DeterministicPublicKey>,
+        presentation: &ProofPresentation,
+        proof_request: &BbsProofRequest,
+        keys_to_schema_map: &HashMap<String, DeterministicPublicKey>,
     ) -> Result<ProofChallenge, Box<dyn Error>> {
         let mut proofs = Vec::new();
         let mut proof_requests = Vec::new();
         let mut revealed_messages_per_schema = HashMap::new();
 
-        for sub_request in proof_request.sub_proof_requests {
-            revealed_messages_per_schema
-                .insert(sub_request.schema, sub_request.revealed_attributes);
+        for sub_request in &proof_request.sub_proof_requests {
+            revealed_messages_per_schema.insert(
+                sub_request.schema.clone(),
+                sub_request.revealed_attributes.clone(),
+            );
         }
 
-        for cred in presentation.verifiable_credential {
+        for cred in &presentation.verifiable_credential {
             let signature =
-                SignatureProof::from(base64::decode(cred.proof.proof)?.into_boxed_slice());
+                SignatureProof::from(base64::decode(&cred.proof.proof)?.into_boxed_slice());
             proofs.insert(proofs.len(), signature);
 
             let revealed_messages = revealed_messages_per_schema
@@ -100,7 +102,7 @@ impl CryptoVerifier {
             );
         }
 
-        let nonce = ProofNonce::from(base64::decode(proof_request.nonce)?.into_boxed_slice());
+        let nonce = ProofNonce::from(base64::decode(&proof_request.nonce)?.into_boxed_slice());
         let challenge =
             BbsVerifier::create_challenge_hash(&proofs, proof_requests.as_slice(), &nonce, None)
                 .map_err(|e| {

@@ -4,14 +4,20 @@ use crate::application::{
         BbsSubProofRequest,
         CredentialSchema,
         ProofPresentation,
+        UnfinishedProofPresentation,
         KEY_SIZE,
     },
     utils::get_now_as_iso_string,
 };
-use crate::crypto::crypto_verifier::CryptoVerifier;
+use crate::crypto::{crypto_utils::check_assertion_proof, crypto_verifier::CryptoVerifier};
 
 use bbs::verifier::Verifier as BbsVerifier;
-use bbs::{keys::DeterministicPublicKey, ProofNonce, SignatureProof};
+use bbs::{
+    keys::DeterministicPublicKey,
+    pok_sig::PoKOfSignatureProofStatus,
+    ProofNonce,
+    SignatureProof,
+};
 use std::collections::HashMap;
 use std::error::Error;
 
@@ -47,13 +53,49 @@ impl Verifier {
     }
 
     pub fn verify_proof(
-        presentation: ProofPresentation,
-        proof_request: BbsProofRequest,
-        keys_to_schema_map: HashMap<String, DeterministicPublicKey>,
+        presentation: &ProofPresentation,
+        proof_request: &BbsProofRequest,
+        keys_to_schema_map: &HashMap<String, DeterministicPublicKey>,
+        signer_address: &str,
     ) -> Result<(), Box<dyn Error>> {
+        if presentation.verifiable_credential.len() == 0 {
+            return Err(Box::from("Invalid presentation: No credentials provided"));
+        }
+
+        check_assertion_proof(&serde_json::to_string(&presentation)?, signer_address)?;
+
         let challenge =
-            CryptoVerifier::create_challenge(presentation, proof_request, keys_to_schema_map);
-        panic!("Unimplemented");
+            CryptoVerifier::create_challenge(&presentation, &proof_request, &keys_to_schema_map)?;
+
+        for cred in &presentation.verifiable_credential {
+            let key = keys_to_schema_map
+                .get(&cred.credential_schema.id)
+                .ok_or(format!(
+                    "Missing public key for schema {}",
+                    &cred.credential_schema.id
+                ))?
+                .to_public_key(KEY_SIZE)
+                .map_err(|e| {
+                    format!(
+                        "Error converting deterministic public key while verifying proof: {}",
+                        e
+                    )
+                })?;
+            let proof = SignatureProof::from(base64::decode(&cred.proof.proof)?.into_boxed_slice());
+            let valid = proof
+                .proof
+                .verify(&key, &proof.revealed_messages, &challenge)
+                .map_err(|e| format!("Error during proof verification: {}", e))?
+                .is_valid();
+
+            if !valid {
+                return Err(Box::from(format!(
+                    "Invalid proof for credential {}",
+                    &cred.id
+                )));
+            }
+        }
+
         Ok(())
     }
 }
@@ -61,16 +103,22 @@ impl Verifier {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::application::datatypes::RevocationListCredential;
+    use crate::crypto::crypto_utils::create_assertion_proof;
+    use crate::signing::{LocalSigner, Signer};
     use crate::utils::test_data::{
-        accounts::local::VERIFIER_DID,
+        accounts::local::{SIGNER_1_ADDRESS, SIGNER_1_DID, SIGNER_1_PRIVATE_KEY, VERIFIER_DID},
         bbs_coherent_context_test_data::{
             PROOF_PRESENTATION,
+            PROOF_PRESENTATION_INVALID_SIGNATURE_AND_WITHOUT_JWS,
             PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES,
             PUB_KEY,
+            REVOCATION_LIST_CREDENTIAL,
         },
         vc_zkp::EXAMPLE_CREDENTIAL_SCHEMA,
         vc_zkp::EXAMPLE_CREDENTIAL_SCHEMA_FIVE_PROPERTIES,
     };
+    use serde_json::Value;
     #[test]
     fn can_create_proof_request_for_one_schema() -> Result<(), Box<dyn Error>> {
         let schema: CredentialSchema =
@@ -143,6 +191,7 @@ mod tests {
 
     #[test]
     fn can_verify_proof() -> Result<(), Box<dyn Error>> {
+        let holder_address = SIGNER_1_ADDRESS;
         let presentation: ProofPresentation = serde_json::from_str(&PROOF_PRESENTATION)?;
         let proof_request: BbsProofRequest =
             serde_json::from_str(&PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES)?;
@@ -158,8 +207,129 @@ mod tests {
             key,
         );
 
-        Verifier::verify_proof(presentation, proof_request, keys_to_schema_map);
+        Verifier::verify_proof(
+            &presentation,
+            &proof_request,
+            &keys_to_schema_map,
+            holder_address,
+        )?;
 
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn throws_on_invalid_bbs_proof() -> Result<(), Box<dyn Error>> {
+        let proofless_presentation: UnfinishedProofPresentation =
+            serde_json::from_str(PROOF_PRESENTATION_INVALID_SIGNATURE_AND_WITHOUT_JWS)?;
+        let holder_address = SIGNER_1_ADDRESS;
+        let signer: Box<dyn Signer> = Box::new(LocalSigner::new());
+        let assertion_proof = create_assertion_proof(
+            &serde_json::to_value(&proofless_presentation)?,
+            &format!("{}#key-1", SIGNER_1_DID),
+            SIGNER_1_DID,
+            SIGNER_1_PRIVATE_KEY,
+            &signer,
+        )
+        .await?;
+        let presentation = ProofPresentation::new(proofless_presentation, assertion_proof);
+        // assert!(false, serde_json::to_string(&presentation)?);
+        let proof_request: BbsProofRequest =
+            serde_json::from_str(&PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES)?;
+        let key: DeterministicPublicKey =
+            DeterministicPublicKey::from(base64::decode(&PUB_KEY)?.into_boxed_slice());
+
+        let mut keys_to_schema_map = HashMap::new();
+        keys_to_schema_map.insert(
+            presentation.verifiable_credential[0]
+                .credential_schema
+                .id
+                .clone(),
+            key,
+        );
+
+        match Verifier::verify_proof(
+            &presentation,
+            &proof_request,
+            &keys_to_schema_map,
+            holder_address,
+        ) {
+            Ok(_) => assert!(false, "This test should have failed"),
+            Err(e) => assert_eq!(
+                format!(
+                    "Invalid proof for credential {}",
+                    presentation.verifiable_credential[0].id.clone()
+                ),
+                format!("{}", e)
+            ),
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn throws_on_invalid_assertion_proof() -> Result<(), Box<dyn Error>> {
+        let holder_address = SIGNER_1_ADDRESS;
+        // Our assertion got corrupted mysteriously
+        let mut presentation: ProofPresentation = serde_json::from_str(&PROOF_PRESENTATION)?;
+        let other_proof =
+            serde_json::from_str::<RevocationListCredential>(REVOCATION_LIST_CREDENTIAL)?
+                .proof
+                .jws;
+        presentation.proof.jws = other_proof;
+
+        let proof_request: BbsProofRequest =
+            serde_json::from_str(&PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES)?;
+        let key: DeterministicPublicKey =
+            DeterministicPublicKey::from(base64::decode(&PUB_KEY)?.into_boxed_slice());
+
+        let mut keys_to_schema_map = HashMap::new();
+        keys_to_schema_map.insert(
+            presentation.verifiable_credential[0]
+                .credential_schema
+                .id
+                .clone(),
+            key,
+        );
+
+        match Verifier::verify_proof(
+            &presentation,
+            &proof_request,
+            &keys_to_schema_map,
+            holder_address,
+        ) {
+            Ok(_) => assert!(false, "This test should have failed"),
+            Err(e) => assert_eq!(
+                "recovered VC document and given VC document do not match",
+                format!("{}", e)
+            ),
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn throws_on_invalid_presentation_structure() -> Result<(), Box<dyn Error>> {
+        let holder_address = SIGNER_1_ADDRESS;
+        // Our bbs proof got corrupted mysteriously
+        let mut presentation_doc: Value = serde_json::from_str(&PROOF_PRESENTATION)?;
+        presentation_doc["verifiableCredential"] = Value::Array(Vec::new());
+
+        let presentation: ProofPresentation = serde_json::from_value(presentation_doc)?;
+        let proof_request: BbsProofRequest =
+            serde_json::from_str(&PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES)?;
+
+        let keys_to_schema_map = HashMap::new();
+
+        match Verifier::verify_proof(
+            &presentation,
+            &proof_request,
+            &keys_to_schema_map,
+            holder_address,
+        ) {
+            Ok(_) => assert!(false, "This test should have failed"),
+            Err(e) => assert_eq!(
+                "Invalid presentation: No credentials provided",
+                format!("{}", e)
+            ),
+        }
         Ok(())
     }
 }

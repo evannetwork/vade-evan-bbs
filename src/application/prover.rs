@@ -348,20 +348,13 @@ mod tests {
         proof_request: BbsProofRequest,
         revealed_properties_map: HashMap<String, CredentialSubject>,
     ) -> Result<(), Box<dyn Error>> {
-        let without_proof = UnfinishedProofPresentation {
-            id: proof.id,
-            context: proof.context.clone(),
-            r#type: proof.r#type.clone(),
-            verifiable_credential: proof.verifiable_credential.clone(),
-        };
-
         // Assert proof frame
         assert_eq!(
             proof.context.clone().as_slice(),
             DEFAULT_CREDENTIAL_CONTEXTS
         );
         assert_eq!(proof.r#type.clone(), vec!["VerifiablePresentation"]);
-        check_assertion_proof(&serde_json::to_string(&without_proof)?, SIGNER_1_ADDRESS)?;
+        check_assertion_proof(&serde_json::to_string(&proof)?, SIGNER_1_ADDRESS)?;
         assert_eq!(proof.verifiable_credential.len(), 1);
 
         // Assert proof credential
@@ -402,16 +395,12 @@ mod tests {
     #[test]
     fn can_request_credential() -> Result<(), Box<dyn Error>> {
         let (dpk, _, offering, schema, secret, credential_values) = setup_test()?;
-        let (credential_request, blinding) =
+        let (credential_request, _) =
             Prover::request_credential(&offering, &schema, &secret, credential_values, &dpk)
                 .map_err(|e| format!("{}", e))?;
         assert_eq!(credential_request.schema, schema.id);
         assert_eq!(credential_request.subject, offering.subject);
         assert_eq!(credential_request.r#type, CREDENTIAL_REQUEST_TYPE);
-        assert!(
-            false,
-            serde_json::to_string(&base64::encode(blinding.to_bytes_compressed_form()))?
-        );
         Ok(())
     }
 
@@ -451,7 +440,6 @@ mod tests {
             Ok(cred) => {
                 // There is now a property 'signature' and it is base64 encoded
                 assert!(base64::decode(&cred.proof.signature).is_ok());
-                assert!(false, serde_json::to_string(&cred)?);
             }
             Err(e) => {
                 assert!(false, "Unexpected error when finishing credential: {}", e);
@@ -492,8 +480,7 @@ mod tests {
         .await?;
 
         assert_proof(proof.clone(), proof_request, revealed_properties_map)?;
-        assert!(false, serde_json::to_string(&proof.clone())?);
-
+        assert!(false, serde_json::to_string(&proof)?);
         Ok(())
     }
 }

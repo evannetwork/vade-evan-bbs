@@ -446,7 +446,6 @@ mod tests {
                     &key_id,
                     &schema.id,
                 );
-                // assert!(false, serde_json::to_string(&cred)?);
             }
             Err(e) => assert!(false, "Received error when issuing credential: {}", e),
         }
