@@ -236,20 +236,20 @@ impl VadeEvanBbs {
 
 #[async_trait(?Send)]
 impl VadePlugin for VadeEvanBbs {
-    /// Creates a new revocation registry definition and stores it on-chain. The definition consists of a public
-    /// and a private part. The public part holds the cryptographic material needed to create non-revocation proofs.
-    /// The private part needs to reside with the registry owner and is used to revoke credentials.
+    /// Creates a new revocation list and stores it on-chain. The list consists of a encoded bit list which can
+    /// hold up to 131,072 revokable ids. The list is GZIP encoded and will be updated on every revocation.
+    /// The output is a W3C credential with a JWS signature by the given key.
     ///
     /// Note that `options.identity` needs to be whitelisted for this function.
     ///
     /// # Arguments
     ///
-    /// * `method` - method to create a revocation registry definition for (e.g. "did:example")
-    /// * `options` - serialized [`AuthenticationOptions`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.AuthenticationOptions.html)
-    /// * `payload` - serialized [`CreateRevocationRegistryDefinitionPayload`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.CreateRevocationRegistryDefinitionPayload.html)
+    /// * `method` - method to create a revocation list for (e.g. "did:example")
+    /// * `options` - serialized [`AuthenticationOptions`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.AuthenticationOptions.html)
+    /// * `payload` - serialized [`CreateRevocationListPayload`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.CreateRevocationListPayload.html)
     ///
     /// # Returns
-    /// * created revocation registry definition as a JSON object as serialized [`CreateRevocationRegistryDefinitionResult`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.CreateRevocationRegistryDefinitionResult.html)
+    /// * created revocation list as a JSON object as serialized [`RevocationList`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.RevocationList.html)
     async fn vc_zkp_create_revocation_registry_definition(
         &mut self,
         method: &str,
@@ -288,18 +288,18 @@ impl VadePlugin for VadeEvanBbs {
         Ok(VadePluginResultValue::Success(Some(serialized_result)))
     }
 
-    /// Issues a new credential. This requires an issued schema, credential definition, an active revocation
-    /// registry and a credential request message.
+    /// Issues a new credential. This requires an issued schema, revocations list, an credential offer
+    /// and a credential request message. This method returns an unfinished credential which has to be post-processed
+    /// by the holder.
     ///
     /// # Arguments
     ///
     /// * `method` - method to issue a credential for (e.g. "did:example")
-    /// * `options` - serialized [`TypeOptions`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.TypeOptions.html)
-    /// * `payload` - serialized [`IssueCredentialPayload`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.IssueCredentialPayload.html)
+    /// * `options` - serialized [`TypeOptions`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.TypeOptions.html)
+    /// * `payload` - serialized [`IssueCredentialPayload`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.IssueCredentialPayload.html)
     ///
     /// # Returns
-    /// * serialized [`IssueCredentialResult`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.IssueCredentialResult.html) consisting of the credential, this credential's initial revocation state and
-    /// the updated revocation info, only interesting for the issuer (needs to be stored privately)
+    /// * serialized [`UnfinishedBbsCredential`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.UnfinishedBbsCredential.html)
     async fn vc_zkp_issue_credential(
         &mut self,
         method: &str,
@@ -330,14 +330,14 @@ impl VadePlugin for VadeEvanBbs {
     }
 
     /// Creates a `CredentialOffer` message. A `CredentialOffer` is sent by an issuer and is the response
-    /// to a `CredentialProposal`. The `CredentialOffer` specifies which schema and definition the issuer
+    /// to a `CredentialProposal`. The `CredentialOffer` specifies which schema the issuer
     /// is capable and willing to use for credential issuance.
     ///
     /// # Arguments
     ///
     /// * `method` - method to create a credential offer for (e.g. "did:example")
-    /// * `options` - serialized [`TypeOptions`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.TypeOptions.html)
-    /// * `payload` - serialized [`OfferCredentialPayload`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.OfferCredentialPayload.html)
+    /// * `options` - serialized [`TypeOptions`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.TypeOptions.html)
+    /// * `payload` - serialized [`OfferCredentialPayload`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.OfferCredentialPayload.html)
     ///
     /// # Returns
     /// * `Option<String>` - The offer as a JSON object
@@ -363,8 +363,8 @@ impl VadePlugin for VadeEvanBbs {
     /// # Arguments
     ///
     /// * `method` - method to presents a proof for (e.g. "did:example")
-    /// * `options` - serialized [`TypeOptions`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.TypeOptions.html)
-    /// * `payload` - serialized [`PresentProofPayload`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.PresentProofPayload.html)
+    /// * `options` - serialized [`TypeOptions`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.TypeOptions.html)
+    /// * `payload` - serialized [`PresentProofPayload`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.PresentProofPayload.html)
     ///
     /// # Returns
     /// * `Option<String>` - The offer as a JSON object
@@ -391,14 +391,14 @@ impl VadePlugin for VadeEvanBbs {
         // )?)))
     }
 
-    /// Creates a new zero-knowledge proof credential proposal. This message is the first in the
+    /// Creates a new bbs credential proposal. This message is the first in the
     /// credential issuance flow and is sent by the potential credential holder to the credential issuer.
     ///
     /// # Arguments
     ///
     /// * `method` - method to create a credential proposal for (e.g. "did:example")
-    /// * `options` - serialized [`TypeOptions`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.TypeOptions.html)
-    /// * `payload` - serialized [`CreateCredentialProposalPayload`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.CreateCredentialProposalPayload.html)
+    /// * `options` - serialized [`TypeOptions`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.TypeOptions.html)
+    /// * `payload` - serialized [`CreateCredentialProposalPayload`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.CreateCredentialProposalPayload.html)
     ///
     /// # Returns
     /// * `Option<String>` - The proposal as a JSON object
@@ -419,18 +419,18 @@ impl VadePlugin for VadeEvanBbs {
     }
 
     /// Requests a credential. This message is the response to a credential offering and is sent by the potential
-    /// credential holder. It incorporates the target schema, credential definition offered by the issuer, and
+    /// credential holder. It incorporates the target schema offered by the issuer, and
     /// the encoded values the holder wants to get signed. The credential is not stored on-chain and needs to be
     /// kept private.
     ///
     /// # Arguments
     ///
     /// * `method` - method to request a credential for (e.g. "did:example")
-    /// * `options` - serialized [`TypeOptions`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.TypeOptions.html)
-    /// * `payload` - serialized [`RequestCredentialPayload`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.RequestCredentialPayload.html)
+    /// * `options` - serialized [`TypeOptions`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.TypeOptions.html)
+    /// * `payload` - serialized [`RequestCredentialPayload`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.RequestCredentialPayload.html)
     ///
     /// # Returns
-    /// * `Option<String>` - A JSON object consisting of the `CredentialRequest` and `CredentialSecretsBlindingFactors` (to be stored at the proofer's site in a private manner)
+    /// * `Option<String>` - A JSON object consisting of the `BbsCredentialRequest` and `SignatureBlinding` (to be stored at the holder's site in a private manner)
     async fn vc_zkp_request_credential(
         &mut self,
         method: &str,
@@ -456,15 +456,15 @@ impl VadePlugin for VadeEvanBbs {
         )?)))
     }
 
-    /// Requests a zero-knowledge proof for one or more credentials issued under one or more specific schemas and
+    /// Requests a proof for one or more credentials issued under one or more specific schemas and
     /// is sent by a verifier to a prover.
     /// The proof request consists of the fields the verifier wants to be revealed per schema.
     ///
     /// # Arguments
     ///
     /// * `method` - method to request a proof for (e.g. "did:example")
-    /// * `options` - serialized [`TypeOptions`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.TypeOptions.html)
-    /// * `payload` - serialized [`RequestProofPayload`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.RequestProofPayload.html)
+    /// * `options` - serialized [`TypeOptions`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.TypeOptions.html)
+    /// * `payload` - serialized [`RequestProofPayload`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.RequestProofPayload.html)
     ///
     /// # Returns
     /// * `Option<String>` - A `ProofRequest` as JSON
@@ -487,9 +487,9 @@ impl VadePlugin for VadeEvanBbs {
         )?)))
     }
 
-    /// Revokes a credential. After revocation the published revocation registry needs to be updated with information
-    /// returned by this function. To revoke a credential, tbe revoker must be in possession of the private key associated
-    /// with the credential's revocation registry. After revocation, the published revocation registry must be updated.
+    /// Revokes a credential. After revocation the updated revocation list needs to be updated with information
+    /// returned by this function. To revoke a credential, the revoker must be in possession of the private key associated
+    /// with the credential's revocation list. After revocation, the published revocation list is updated on-chain.
     /// Only then is the credential truly revoked.
     ///
     /// Note that `options.identity` needs to be whitelisted for this function.
@@ -497,12 +497,12 @@ impl VadePlugin for VadeEvanBbs {
     /// # Arguments
     ///
     /// * `method` - method to revoke a credential for (e.g. "did:example")
-    /// * `options` - serialized [`AuthenticationOptions`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.AuthenticationOptions.html)
-    /// * `payload` - serialized [`RevokeCredentialPayload`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.RevokeCredentialPayload.html)
+    /// * `options` - serialized [`AuthenticationOptions`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.AuthenticationOptions.html)
+    /// * `payload` - serialized [`RevokeCredentialPayload`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.RevokeCredentialPayload.html)
     ///
     /// # Returns
-    /// * `Option<String>` - The updated revocation registry definition as a JSON object. Contains information
-    /// needed to update the respective revocation registry.
+    /// * `Option<String>` - The updated revocation list as a JSON object. Contains information
+    /// needed to update the respective revocation list.
     async fn vc_zkp_revoke_credential(
         &mut self,
         method: &str,
@@ -543,8 +543,8 @@ impl VadePlugin for VadeEvanBbs {
     /// # Arguments
     ///
     /// * `method` - method to verify a proof for (e.g. "did:example")
-    /// * `options` - serialized [`TypeOptions`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.TypeOptions.html)
-    /// * `payload` - serialized [`ValidateProofPayload`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.ValidateProofPayload.html)
+    /// * `options` - serialized [`TypeOptions`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.TypeOptions.html)
+    /// * `payload` - serialized [`ValidateProofPayload`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.ValidateProofPayload.html)
     ///
     /// # Returns
     /// * `Option<String>` - A JSON object representing a `ProofVerification` type, specifying whether verification was successful
