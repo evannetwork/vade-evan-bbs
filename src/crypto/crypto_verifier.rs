@@ -1,8 +1,28 @@
-use crate::application::datatypes::{BbsCredential, RevocationListCredential};
+use crate::application::{
+    datatypes::{
+        BbsCredential,
+        BbsProofRequest,
+        ProofPresentation,
+        RevocationListCredential,
+        KEY_SIZE,
+    },
+    utils::get_nonce_from_string,
+};
+use std::collections::HashMap;
 use std::error::Error;
 use std::io::prelude::*;
 
+use bbs::{
+    keys::DeterministicPublicKey,
+    verifier::Verifier as BbsVerifier,
+    ProofChallenge,
+    ProofNonce,
+    SignatureProof,
+};
+
 use flate2::read::GzDecoder;
+use std::convert::TryFrom;
+use std::panic;
 
 pub struct CryptoVerifier {}
 
@@ -38,6 +58,69 @@ impl CryptoVerifier {
         let byte_index: usize = byte_index_float.floor() as usize;
         let revoked = decoded_list[byte_index] & (1 << (revocation_list_index_number % 8)) != 0;
         Ok(revoked)
+    }
+
+    pub fn create_challenge(
+        presentation: &ProofPresentation,
+        proof_request: &BbsProofRequest,
+        keys_to_schema_map: &HashMap<String, DeterministicPublicKey>,
+    ) -> Result<ProofChallenge, Box<dyn Error>> {
+        let mut proofs = Vec::new();
+        let mut proof_requests = Vec::new();
+        let mut revealed_messages_per_schema = HashMap::new();
+
+        for sub_request in &proof_request.sub_proof_requests {
+            revealed_messages_per_schema.insert(
+                sub_request.schema.clone(),
+                sub_request.revealed_attributes.clone(),
+            );
+        }
+
+        for cred in &presentation.verifiable_credential {
+            let proof_bytes = base64::decode(&cred.proof.proof)?.into_boxed_slice();
+            let signature =
+                panic::catch_unwind(|| SignatureProof::from(proof_bytes)).map_err(|_| {
+                    format!("Error parsing signature proof for credential {}", &cred.id)
+                })?;
+            proofs.insert(proofs.len(), signature);
+
+            let revealed_messages = revealed_messages_per_schema
+                .get(&cred.credential_schema.id)
+                .ok_or(format!(
+                    "Missing revealed messages for schema {}",
+                    cred.credential_schema.id
+                ))?;
+            let key = keys_to_schema_map
+                .get(&cred.credential_schema.id)
+                .ok_or(format!(
+                    "Missing key for schema {}",
+                    cred.credential_schema.id
+                ))?
+                .to_public_key(KEY_SIZE)
+                .map_err(|e| format!("Error converting key for proof verification: {}", e))?;
+
+            proof_requests.insert(
+                proof_requests.len(),
+                BbsVerifier::new_proof_request(&revealed_messages, &key).map_err(|e| {
+                    format!(
+                        "Could not create proof request for proof verification: {}",
+                        e
+                    )
+                })?,
+            );
+        }
+
+        let nonce = get_nonce_from_string(&proof_request.nonce)?;
+        let challenge =
+            BbsVerifier::create_challenge_hash(&proofs, proof_requests.as_slice(), &nonce, None)
+                .map_err(|e| {
+                    format!(
+                        "Could not create challenge hash for proof verification: {}",
+                        e
+                    )
+                })?;
+
+        return Ok(challenge);
     }
 }
 

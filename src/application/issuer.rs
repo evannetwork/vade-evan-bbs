@@ -1,6 +1,6 @@
 use crate::application::{
     datatypes::{BbsUnfinishedCredentialSignature, CredentialSchemaReference, CredentialSubject},
-    utils::{generate_uuid, get_now_as_iso_string},
+    utils::{generate_uuid, get_nonce_from_string, get_now_as_iso_string},
 };
 use crate::{
     application::datatypes::{
@@ -12,15 +12,12 @@ use crate::{
     },
     crypto::crypto_issuer::CryptoIssuer,
     crypto::crypto_utils::create_assertion_proof,
+    signing::Signer,
 };
 use bbs::{
     issuer::Issuer as BbsIssuer,
     keys::{DeterministicPublicKey, SecretKey},
-    ProofNonce,
 };
-
-use vade_evan_substrate::signing::Signer;
-
 use flate2::{read::GzDecoder, write::GzEncoder, Compression};
 
 use std::{collections::HashMap, error::Error, io::prelude::*};
@@ -119,6 +116,24 @@ impl Issuer {
         })
     }
 
+    /// Issues a new unfinished credential, that still needs post-processing by the credential subject.
+    ///
+    /// # Arguments
+    /// * `issuer_did` - DID of the issuer
+    /// * `subject_did` - DID of the subject
+    /// * `credential_offer` - Credential offer object sent by the issuer
+    /// * `credential_request` - Credential request object sent by the subject
+    /// * `issuer_public_key_id` - DID of the public key associated with the created signature
+    /// * `issuer_public_key` - Public key associated with the created signature
+    /// * `issuer_secret_key` - Secret key to create the signature with
+    /// * `credential_schema` - Credential schema to be used as specified by the credential request
+    /// * `required_indices` - Indices of the nquads representing the properties that need to be revealed when creating proofs
+    /// * `nquads` - The properties that need to be signed as nquads. Usually should include the whole document, not only the credential_subject part.
+    /// * `revocation_list_did` - DID of the associated revocation list
+    /// * `revocation_list_id` - ID of the revoation list to assign to this credential
+    ///
+    /// # Returns
+    /// * `UnfinishedBbsCredential` - Credential including signature that needs to be post-processed by the subject
     pub fn issue_credential(
         issuer_did: &str,
         subject_did: &str,
@@ -155,7 +170,7 @@ impl Issuer {
             r#type: CREDENTIAL_SCHEMA_TYPE.to_string(),
         };
 
-        let nonce = ProofNonce::from(base64::decode(&credential_offer.nonce)?.into_boxed_slice());
+        let nonce = get_nonce_from_string(&credential_offer.nonce)?;
         let blind_signature = CryptoIssuer::create_signature(
             &credential_request.blind_signature_context,
             &nonce,
@@ -323,9 +338,11 @@ mod tests {
     use super::*;
     use crate::{
         application::{
-            datatypes::{BbsCredentialOffer, BbsCredentialRequest, UnfinishedBbsCredential},
+            datatypes::{BbsCredentialOffer, BbsCredentialRequest},
             prover::Prover,
+            utils_test::assert_credential,
         },
+        signing::{LocalSigner, Signer},
         utils::test_data::{
             accounts::local::{HOLDER_DID, ISSUER_DID, ISSUER_PRIVATE_KEY, ISSUER_PUBLIC_KEY_DID},
             bbs_coherent_context_test_data::{
@@ -337,7 +354,6 @@ mod tests {
     use bbs::issuer::Issuer as BbsIssuer;
     use bbs::prover::Prover as BbsProver;
     use std::collections::HashMap;
-    use vade_evan_substrate::signing::{LocalSigner, Signer};
 
     fn request_credential(
         pub_key: &DeterministicPublicKey,
@@ -370,42 +386,41 @@ mod tests {
         return Ok((credential_request, schema, nquads));
     }
 
-    fn is_base_64(input: String) -> bool {
-        match base64::decode(input) {
-            Ok(_) => true,
-            Err(_) => false,
-        }
-    }
+    // fn is_base_64(input: String) -> bool {
+    //     match base64::decode(input) {
+    //         Ok(_) => true,
+    //         Err(_) => false,
+    //     }
+    // }
 
-    fn assert_credential(
-        credential_request: BbsCredentialRequest,
-        cred: UnfinishedBbsCredential,
-        pub_key_id: &str,
-        schema_id: &str,
-    ) {
-        assert_eq!(&cred.issuer, ISSUER_DID);
-        assert_eq!(&cred.credential_subject.id, HOLDER_DID);
-        assert_eq!(&cred.credential_schema.id, schema_id);
-        // proof
-        assert_eq!(&cred.proof.required_reveal_statements, &[1].to_vec());
-        assert_eq!(&cred.proof.r#type, CREDENTIAL_SIGNATURE_TYPE);
-        assert_eq!(&cred.proof.proof_purpose, CREDENTIAL_PROOF_PURPOSE);
-        assert_eq!(&cred.proof.verification_method, pub_key_id);
-        assert!(
-            is_base_64(cred.proof.blind_signature.to_owned()),
-            "Signature seems not to be base64 encoded"
-        );
-        // Credential subject
-        // Are the values correctly copied into the credentials?
-        assert!(&cred
-            .credential_subject
-            .data
-            .keys()
-            .all(|key| credential_request.credential_values.contains_key(key)
-                && credential_request.credential_values.get(key)
-                    == cred.credential_subject.data.get(key)));
-    }
-
+    // fn assert_credential(
+    //     credential_request: BbsCredentialRequest,
+    //     cred: UnfinishedBbsCredential,
+    //     pub_key_id: &str,
+    //     schema_id: &str,
+    // ) {
+    //     assert_eq!(&cred.issuer, ISSUER_DID);
+    //     assert_eq!(&cred.credential_subject.id, HOLDER_DID);
+    //     assert_eq!(&cred.credential_schema.id, schema_id);
+    //     // proof
+    //     assert_eq!(&cred.proof.required_reveal_statements, &[1].to_vec());
+    //     assert_eq!(&cred.proof.r#type, CREDENTIAL_SIGNATURE_TYPE);
+    //     assert_eq!(&cred.proof.proof_purpose, CREDENTIAL_PROOF_PURPOSE);
+    //     assert_eq!(&cred.proof.verification_method, pub_key_id);
+    //     assert!(
+    //         is_base_64(cred.proof.blind_signature.to_owned()),
+    //         "Signature seems not to be base64 encoded"
+    //     );
+    //     // Credential subject
+    //     // Are the values correctly copied into the credentials?
+    //     assert!(&cred
+    //         .credential_subject
+    //         .data
+    //         .keys()
+    //         .all(|key| credential_request.credential_values.contains_key(key)
+    //             && credential_request.credential_values.get(key)
+    //                 == cred.credential_subject.data.get(key)));
+    // }
     #[test]
     fn can_offer_credential() -> Result<(), Box<dyn Error>> {
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;

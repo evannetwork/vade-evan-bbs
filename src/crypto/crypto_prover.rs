@@ -1,4 +1,11 @@
-use crate::application::datatypes::{BbsCredential, BbsSubProofRequest, KEY_SIZE};
+use crate::application::datatypes::{
+    BbsCredential,
+    BbsCredentialSignature,
+    BbsSubProofRequest,
+    UnfinishedBbsCredential,
+    KEY_SIZE,
+};
+use crate::application::utils::get_dpk_from_string;
 use bbs::{
     keys::DeterministicPublicKey,
     messages::{HiddenMessage, ProofMessage},
@@ -16,9 +23,10 @@ use bbs::{
     SignatureMessage,
     SignatureProof,
 };
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::error::Error;
 use std::iter::FromIterator;
+use std::panic;
 
 pub struct CryptoProver {}
 
@@ -69,7 +77,7 @@ impl CryptoProver {
 
     pub fn create_proof_of_knowledge(
         sub_proof_request: &BbsSubProofRequest,
-        credential: &BbsCredential,
+        credential_signature: &str,
         public_key: &DeterministicPublicKey,
         master_secret: &SignatureMessage,
         nquads: Vec<String>,
@@ -100,11 +108,12 @@ impl CryptoProver {
         }
 
         for j in i..KEY_SIZE {
-            commitment_messages.insert(j, pm_hidden!(""))
+            commitment_messages.insert(j, pm_revealed!(""))
         }
 
-        let signature =
-            Signature::from(base64::decode(&credential.proof.signature)?.into_boxed_slice());
+        let signature_bytes = base64::decode(credential_signature)?.into_boxed_slice();
+        let signature = panic::catch_unwind(|| Signature::from(signature_bytes))
+            .map_err(|_| "Error parsing signature")?;
 
         let pok = BbsProver::commit_signature_pok(
             &crypto_proof_request,
@@ -117,19 +126,27 @@ impl CryptoProver {
     }
 
     pub fn generate_proofs(
-        poks: Vec<PoKOfSignature>,
+        pok_to_schema_map: HashMap<String, PoKOfSignature>,
         nonce: ProofNonce,
-    ) -> Result<Vec<SignatureProof>, Box<dyn Error>> {
+    ) -> Result<HashMap<String, SignatureProof>, Box<dyn Error>> {
         let err = "Error creating proof: ";
 
-        let challenge = BbsProver::create_challenge_hash(poks.as_slice(), None, &nonce)
-            .map_err(|e| format!("{} {}", err, e))?;
+        let challenge = BbsProver::create_challenge_hash(
+            pok_to_schema_map
+                .values()
+                .cloned()
+                .collect::<Vec<PoKOfSignature>>()
+                .as_slice(),
+            None,
+            &nonce,
+        )
+        .map_err(|e| format!("{} {}", err, e))?;
 
-        let mut proofs = Vec::new();
-        for (i, pok) in poks.iter().enumerate() {
+        let mut proofs = HashMap::new();
+        for (schema, pok) in pok_to_schema_map {
             let proof = BbsProver::generate_signature_pok(pok.clone(), &challenge)
                 .map_err(|e| format!("{} {}", err, e))?;
-            proofs.insert(i, proof);
+            proofs.insert(schema, proof);
         }
 
         return Ok(proofs);
@@ -172,8 +189,7 @@ mod tests {
         let master_secret: SignatureMessage =
             SignatureMessage::from(base64::decode(&MASTER_SECRET)?.into_boxed_slice());
         let nquads: Vec<String> = NQUADS.iter().map(|q| q.to_string()).collect();
-        let public_key: DeterministicPublicKey =
-            DeterministicPublicKey::from(base64::decode(&PUB_KEY)?.into_boxed_slice());
+        let public_key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;
         let blinding: SignatureBlinding =
             SignatureBlinding::from(base64::decode(&SIGNATURE_BLINDING)?.into_boxed_slice());
 
@@ -195,8 +211,7 @@ mod tests {
     #[test]
     fn can_create_proof_of_knowledge() -> Result<(), Box<dyn Error>> {
         let credential: BbsCredential = serde_json::from_str(&FINISHED_CREDENTIAL)?;
-        let public_key: DeterministicPublicKey =
-            DeterministicPublicKey::from(base64::decode(&PUB_KEY)?.into_boxed_slice());
+        let public_key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;
         let nquads: Vec<String> = NQUADS.iter().map(|q| q.to_string()).collect();
         let sub_proof_request = BbsSubProofRequest {
             revealed_attributes: vec![1],
@@ -207,7 +222,7 @@ mod tests {
 
         match CryptoProver::create_proof_of_knowledge(
             &sub_proof_request,
-            &credential,
+            &credential.proof.signature,
             &public_key,
             &master_secret,
             nquads,
@@ -222,8 +237,7 @@ mod tests {
     #[test]
     fn can_generate_proofs() -> Result<(), Box<dyn Error>> {
         let credential: BbsCredential = serde_json::from_str(&FINISHED_CREDENTIAL)?;
-        let public_key: DeterministicPublicKey =
-            DeterministicPublicKey::from(base64::decode(&PUB_KEY)?.into_boxed_slice());
+        let public_key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;
         let nquads: Vec<String> = NQUADS.iter().map(|q| q.to_string()).collect();
         let sub_proof_request = BbsSubProofRequest {
             revealed_attributes: vec![1],
@@ -234,15 +248,17 @@ mod tests {
 
         let pok = CryptoProver::create_proof_of_knowledge(
             &sub_proof_request,
-            &credential,
+            &credential.proof.signature,
             &public_key,
             &master_secret,
             nquads,
         )?;
-
         let nonce = BbsVerifier::generate_proof_nonce();
 
-        CryptoProver::generate_proofs(vec![pok], nonce)?;
+        let mut poks = HashMap::new();
+        poks.insert(credential.credential_schema.id.clone(), pok);
+
+        CryptoProver::generate_proofs(poks, nonce);
 
         Ok(())
     }

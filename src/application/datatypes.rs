@@ -1,4 +1,4 @@
-use bbs::BlindSignatureContext;
+use bbs::{BlindSignatureContext, ProofNonce, SignatureProof, ToVariableLengthBytes};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -6,6 +6,7 @@ pub const CREDENTIAL_REQUEST_TYPE: &str = "EvanBbsCredentialRequest";
 pub const CREDENTIAL_PROPOSAL_TYPE: &str = "EvanCredentialProposal";
 pub const CREDENTIAL_OFFER_TYPE: &str = "EvanBbsCredentialOffering";
 pub const CREDENTIAL_SIGNATURE_TYPE: &str = "BbsBlsSignature2020";
+pub const PROOF_SIGNATURE_TYPE: &str = "BbsBlsSignatureProof2020";
 pub const CREDENTIAL_SCHEMA_TYPE: &str = "EvanZKPSchema";
 pub const CREDENTIAL_PROOF_PURPOSE: &str = "assertionMethod";
 pub const DEFAULT_CREDENTIAL_CONTEXTS: [&'static str; 3] = [
@@ -78,6 +79,7 @@ pub struct SchemaProperty {
     pub items: Option<Vec<String>>,
 }
 
+/// AssertionProof, typically used to ensure authenticity and integrity of a VC document
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct AssertionProof {
@@ -177,7 +179,7 @@ pub struct UnfinishedBbsCredential {
     pub proof: BbsUnfinishedCredentialSignature,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct CredentialSubject {
     pub id: String,
@@ -232,7 +234,7 @@ pub struct BbsUnfinishedCredentialSignature {
 
 /// A collection of all proofs requested in a `ProofRequest`. Sent to a verifier as the response to
 /// a `ProofRequest`.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ProofPresentation {
     #[serde(rename(serialize = "@context", deserialize = "@context"))]
@@ -243,8 +245,34 @@ pub struct ProofPresentation {
     pub proof: AssertionProof,
 }
 
-/// A single proof of a schema requested in a `ProofRequest` that reveals the requested attributes.
+impl ProofPresentation {
+    pub fn new(
+        unsigned_proof_presentation: UnfinishedProofPresentation,
+        proof: AssertionProof,
+    ) -> ProofPresentation {
+        return ProofPresentation {
+            context: unsigned_proof_presentation.context,
+            id: unsigned_proof_presentation.id,
+            r#type: unsigned_proof_presentation.r#type,
+            verifiable_credential: unsigned_proof_presentation.verifiable_credential,
+            proof: proof,
+        };
+    }
+}
+
+/// Proof presentation without a proof (just for internal use)
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UnfinishedProofPresentation {
+    #[serde(rename(serialize = "@context", deserialize = "@context"))]
+    pub context: Vec<String>,
+    pub id: String,
+    pub r#type: Vec<String>,
+    pub verifiable_credential: Vec<BbsPresentation>,
+}
+
+/// A verifiable credential exposing requested properties of a `BbsCredential` by providing a Bbs signature proof
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct BbsPresentation {
     #[serde(rename(serialize = "@context", deserialize = "@context"))]
@@ -258,6 +286,38 @@ pub struct BbsPresentation {
     pub proof: BbsPresentationProof,
 }
 
+impl BbsPresentation {
+    pub fn new(
+        cred: BbsCredential,
+        issuance_date: String,
+        proof: SignatureProof,
+        revealed_properties: CredentialSubject,
+        nonce: ProofNonce,
+    ) -> BbsPresentation {
+        BbsPresentation {
+            context: cred.context,
+            id: cred.id,
+            issuance_date: issuance_date,
+            r#type: cred.r#type,
+            issuer: cred.issuer,
+            credential_subject: revealed_properties,
+            credential_schema: CredentialSchemaReference {
+                id: cred.credential_schema.id,
+                r#type: cred.credential_schema.r#type,
+            },
+            proof: BbsPresentationProof {
+                created: cred.proof.created,
+                proof_purpose: cred.proof.proof_purpose,
+                proof: base64::encode(proof.to_bytes_compressed_form()),
+                r#type: PROOF_SIGNATURE_TYPE.to_owned(),
+                verification_method: cred.proof.verification_method,
+                nonce: base64::encode(nonce.to_bytes_compressed_form()),
+            },
+        }
+    }
+}
+
+/// A proof object of a `BbsPresentation`
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct BbsPresentationProof {
@@ -268,6 +328,8 @@ pub struct BbsPresentationProof {
     pub nonce: String,
     pub proof: String,
 }
+
+/// `RevocationListCredential` without a proof (for internal use only).
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UnproofedRevocationListCredential {
@@ -280,6 +342,8 @@ pub struct UnproofedRevocationListCredential {
     pub credential_subject: RevocationListCredentialSubject,
 }
 
+/// A revocation list credential associating VC revocation IDs to their revocation status as a bit list. See
+/// https://w3c-ccg.github.io/vc-status-rl-2020/#revocationlist2020credential
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RevocationListCredential {
