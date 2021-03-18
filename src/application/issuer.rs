@@ -1,7 +1,6 @@
-use crate::application::datatypes::BbsCredentialRequestSerialized;
 use crate::application::{
     datatypes::{BbsUnfinishedCredentialSignature, CredentialSchemaReference, CredentialSubject},
-    utils::{generate_uuid, get_nonce_from_string, get_now_as_iso_string},
+    utils::{generate_uuid, get_now_as_iso_string},
 };
 use crate::{
     application::datatypes::{
@@ -141,7 +140,7 @@ impl Issuer {
         issuer_did: &str,
         subject_did: &str,
         credential_offer: &BbsCredentialOffer,
-        credential_request: &BbsCredentialRequestSerialized,
+        credential_request: &BbsCredentialRequest,
         issuer_public_key_id: &str,
         issuer_public_key: &DeterministicPublicKey,
         issuer_secret_key: &SecretKey,
@@ -343,7 +342,6 @@ impl Issuer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::datatypes::BbsCredentialRequestSerialized;
     use crate::{
         application::{
             datatypes::{BbsCredentialOffer, BbsCredentialRequest},
@@ -366,14 +364,7 @@ mod tests {
         pub_key: &DeterministicPublicKey,
         offer: &BbsCredentialOffer,
         amount_of_values: u8,
-    ) -> Result<
-        (
-            BbsCredentialRequestSerialized,
-            CredentialSchema,
-            Vec<String>,
-        ),
-        Box<dyn Error>,
-    > {
+    ) -> Result<(BbsCredentialRequest, CredentialSchema, Vec<String>), Box<dyn Error>> {
         let schema: CredentialSchema = serde_json::from_str(EXAMPLE_CREDENTIAL_SCHEMA)?;
         let secret = BbsProver::new_link_secret();
         let mut credential_values = HashMap::new();
@@ -408,7 +399,7 @@ mod tests {
     }
 
     fn assert_credential(
-        credential_request: BbsCredentialRequestSerialized,
+        credential_request: BbsCredentialRequest,
         cred: UnfinishedBbsCredential,
         pub_key_id: &str,
         schema_id: &str,

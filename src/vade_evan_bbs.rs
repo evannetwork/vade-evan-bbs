@@ -14,7 +14,6 @@
   limitations under the License.
 */
 
-use crate::application::datatypes::BbsCredentialRequestSerialized;
 use crate::application::{
     datatypes::{
         BbsCredential, BbsCredentialOffer, BbsCredentialRequest, BbsProofRequest,
@@ -23,10 +22,10 @@ use crate::application::{
     },
     issuer::Issuer,
     prover::Prover,
+    utils::get_dpk_from_string,
     verifier::Verifier,
 };
 use async_trait::async_trait;
-use bbs::BlindSignatureContext;
 use bbs::{
     keys::{DeterministicPublicKey, SecretKey},
     SignatureBlinding, SignatureMessage,
@@ -71,7 +70,7 @@ pub struct IssueCredentialPayload {
     pub issuer_secret_key: String,
     pub subject: String,
     pub schema: String,
-    pub credential_request: BbsCredentialRequestSerialized,
+    pub credential_request: BbsCredentialRequest,
     pub credential_offer: BbsCredentialOffer,
     pub required_indices: Vec<u32>,
     pub nquads: Vec<String>,
@@ -463,7 +462,7 @@ impl VadePlugin for VadeEvanBbs {
         payload: &str,
     ) -> Result<VadePluginResultValue<Option<String>>, Box<dyn Error>> {
         ignore_unrelated!(method, options);
-        let payload: PresentProofPayload = parse!(&payload, "payload");
+        let _payload: PresentProofPayload = parse!(&payload, "payload");
 
         // let _ = Prover::present_proof(
         //     payload.proof_request,
@@ -539,18 +538,21 @@ impl VadePlugin for VadeEvanBbs {
         );
         let schema: CredentialSchema =
             get_document!(&mut self.vade, &payload.credential_schema, "schema");
-
-        let result = Prover::request_credential(
-            &payload.credential_offering,
-            &schema,
-            &master_secret,
-            payload.credential_values,
-            &public_key,
-        )?;
-
-        Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
-            &result,
-        )?)))
+        println!("schema");
+        let (credential_request, signature_blinding): (BbsCredentialRequest, SignatureBlinding) =
+            Prover::request_credential(
+                &payload.credential_offering,
+                &schema,
+                &master_secret,
+                payload.credential_values,
+                &public_key,
+            )?;
+        let result = serde_json::to_string(&(
+            credential_request,
+            base64::encode(signature_blinding.to_bytes_compressed_form()),
+        ))?;
+        println!("result");
+        Ok(VadePluginResultValue::Success(Some(result)))
     }
 
     /// Requests a proof for one or more credentials issued under one or more specific schemas and
@@ -679,9 +681,8 @@ impl VadePlugin for VadeEvanBbs {
             SignatureBlinding::from(base64::decode(&payload.blinding)?.into_boxed_slice());
         let master_secret: SignatureMessage =
             SignatureMessage::from(base64::decode(&payload.master_secret)?.into_boxed_slice());
-        let public_key: DeterministicPublicKey = DeterministicPublicKey::from(
-            base64::decode(&payload.issuer_public_key)?.into_boxed_slice(),
-        );
+
+        let public_key: DeterministicPublicKey = get_dpk_from_string(&payload.issuer_public_key)?;
         println!("I am here!!!!");
         let credential = Prover::finish_credential(
             &payload.credential,

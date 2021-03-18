@@ -1,4 +1,4 @@
-use bbs::{BlindSignatureContext, ProofNonce, SignatureProof, ToVariableLengthBytes};
+use bbs::{ProofNonce, SignatureProof, ToVariableLengthBytes};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -26,16 +26,6 @@ pub const KEY_SIZE: usize = 500;
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct BbsCredentialRequest {
-    pub subject: String,
-    pub schema: String,
-    pub r#type: String,
-    pub blind_signature_context: BlindSignatureContext,
-    pub credential_values: HashMap<String, String>,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct BbsCredentialRequestSerialized {
     pub subject: String,
     pub schema: String,
     pub r#type: String,

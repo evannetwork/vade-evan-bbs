@@ -1,10 +1,6 @@
 use crate::application::{
     datatypes::{
-        BbsCredential,
-        BbsProofRequest,
-        ProofPresentation,
-        RevocationListCredential,
-        KEY_SIZE,
+        BbsCredential, BbsProofRequest, ProofPresentation, RevocationListCredential, KEY_SIZE,
     },
     utils::get_nonce_from_string,
 };
@@ -13,15 +9,10 @@ use std::error::Error;
 use std::io::prelude::*;
 
 use bbs::{
-    keys::DeterministicPublicKey,
-    verifier::Verifier as BbsVerifier,
-    ProofChallenge,
-    ProofNonce,
-    SignatureProof,
+    keys::DeterministicPublicKey, verifier::Verifier as BbsVerifier, ProofChallenge, SignatureProof,
 };
 
 use flate2::read::GzDecoder;
-use std::convert::TryFrom;
 use std::panic;
 
 pub struct CryptoVerifier {}
@@ -128,9 +119,7 @@ impl CryptoVerifier {
 mod tests {
     use super::*;
     use crate::utils::test_data::bbs_coherent_context_test_data::{
-        FINISHED_CREDENTIAL,
-        REVOCATION_LIST_CREDENTIAL,
-        REVOCATION_LIST_CREDENTIAL_REVOKED_ID_1,
+        FINISHED_CREDENTIAL, REVOCATION_LIST_CREDENTIAL, REVOCATION_LIST_CREDENTIAL_REVOKED_ID_1,
     };
 
     #[test]

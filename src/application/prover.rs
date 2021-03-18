@@ -4,12 +4,11 @@ use super::datatypes::{
     UnfinishedBbsCredential, UnfinishedProofPresentation, CREDENTIAL_PROPOSAL_TYPE,
     CREDENTIAL_REQUEST_TYPE, DEFAULT_CREDENTIAL_CONTEXTS,
 };
-use crate::application::datatypes::BbsCredentialRequestSerialized;
 use crate::application::utils::{generate_uuid, get_nonce_from_string, get_now_as_iso_string};
 use crate::crypto::crypto_prover::CryptoProver;
 use crate::crypto::crypto_utils::create_assertion_proof;
 use bbs::{
-    keys::DeterministicPublicKey, pok_sig::PoKOfSignature, signature::BlindSignature, ProofNonce,
+    keys::DeterministicPublicKey, pok_sig::PoKOfSignature, signature::BlindSignature,
     SignatureBlinding, SignatureMessage, ToVariableLengthBytes,
 };
 use std::collections::HashMap;
@@ -60,7 +59,7 @@ impl Prover {
         master_secret: &SignatureMessage,
         credential_values: HashMap<String, String>,
         issuer_pub_key: &DeterministicPublicKey,
-    ) -> Result<(BbsCredentialRequestSerialized, SignatureBlinding), Box<dyn Error>> {
+    ) -> Result<(BbsCredentialRequest, SignatureBlinding), Box<dyn Error>> {
         for required in &credential_schema.required {
             if credential_values.get(required).is_none() {
                 let error = format!(
@@ -88,7 +87,7 @@ impl Prover {
             })?;
 
         Ok((
-            BbsCredentialRequestSerialized {
+            BbsCredentialRequest {
                 schema: credential_schema.id.clone(),
                 subject: credential_offering.subject.clone(),
                 r#type: CREDENTIAL_REQUEST_TYPE.to_string(),
