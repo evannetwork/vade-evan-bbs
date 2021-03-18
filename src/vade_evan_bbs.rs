@@ -17,8 +17,8 @@
 use crate::application::{
     datatypes::{
         BbsCredential, BbsCredentialOffer, BbsCredentialRequest, BbsProofRequest,
-        CredentialProposal, CredentialSchema, RevocationListCredential, SchemaProperty,
-        UnfinishedBbsCredential,
+        CredentialProposal, CredentialSchema, CredentialSubject, ProofPresentation,
+        RevocationListCredential, SchemaProperty, UnfinishedBbsCredential,
     },
     issuer::Issuer,
     prover::Prover,
@@ -90,9 +90,13 @@ pub struct OfferCredentialPayload {
 pub struct PresentProofPayload {
     pub proof_request: BbsProofRequest,
     pub credential_schema_map: HashMap<String, BbsCredential>,
-    pub public_key_schema_map: HashMap<String, DeterministicPublicKey>,
+    pub revealed_properties_schema_map: HashMap<String, CredentialSubject>,
+    pub public_key_schema_map: HashMap<String, String>,
     pub nquads_schema_map: HashMap<String, Vec<String>>,
     pub master_secret: SignatureMessage,
+    pub prover_did: String,
+    pub prover_public_key_did: String,
+    pub prover_proving_key: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -117,7 +121,7 @@ pub struct RequestCredentialPayload {
 #[serde(rename_all = "camelCase")]
 pub struct RequestProofPayload {
     pub verifier_did: String,
-    pub schemas: Vec<CredentialSchema>,
+    pub schemas: Vec<String>,
     pub reveal_attributes: HashMap<String, Vec<usize>>,
 }
 
@@ -152,6 +156,15 @@ pub struct FinishCredentialPayload {
     pub nquads: Vec<String>,
     pub issuer_public_key: String,
     pub blinding: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VerifyProofPayload {
+    pub presentation: ProofPresentation,
+    pub proof_request: BbsProofRequest,
+    pub keys_to_schema_map: HashMap<String, DeterministicPublicKey>,
+    pub signer_address: String,
 }
 
 macro_rules! parse {
@@ -462,21 +475,25 @@ impl VadePlugin for VadeEvanBbs {
         payload: &str,
     ) -> Result<VadePluginResultValue<Option<String>>, Box<dyn Error>> {
         ignore_unrelated!(method, options);
-        let _payload: PresentProofPayload = parse!(&payload, "payload");
+        let payload: PresentProofPayload = parse!(&payload, "payload");
 
-        // let _ = Prover::present_proof(
-        //     payload.proof_request,
-        //     payload.credential_schema_map,
-        //     payload.public_key_schema_map,
-        //     payload.nquads_schema_map,
-        //     payload.master_secret,
-        // )
-        // .await?;
+        let result = Prover::present_proof(
+            &payload.proof_request,
+            &payload.credential_schema_map,
+            &payload.revealed_properties_schema_map,
+            &payload.public_key_schema_map,
+            &payload.nquads_schema_map,
+            &payload.master_secret,
+            &payload.prover_did,
+            &payload.prover_public_key_did,
+            &payload.prover_proving_key,
+            &self.signer,
+        )
+        .await?;
 
-        Err(Box::from("Not implemented"))
-        // Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
-        //     &result,
-        // )?)))
+        Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
+            &result,
+        )?)))
     }
 
     /// Creates a new bbs credential proposal. This message is the first in the
@@ -649,11 +666,24 @@ impl VadePlugin for VadeEvanBbs {
     /// * `Option<String>` - A JSON object representing a `ProofVerification` type, specifying whether verification was successful
     async fn vc_zkp_verify_proof(
         &mut self,
-        _method: &str,
-        _options: &str,
-        _payload: &str,
+        method: &str,
+        options: &str,
+        payload: &str,
     ) -> Result<VadePluginResultValue<Option<String>>, Box<dyn Error>> {
-        Err(Box::from("Not implemented"))
+        ignore_unrelated!(method, options);
+
+        let payload: VerifyProofPayload = parse!(&payload, "payload");
+
+        Verifier::verify_proof(
+            &payload.presentation,
+            &payload.proof_request,
+            &payload.keys_to_schema_map,
+            &payload.signer_address,
+        )?;
+
+        Ok(VadePluginResultValue::Success(Some(
+            "serialized".to_string(),
+        )))
     }
 
     /// Finishes a credential, e.g. by incorporating the prover's master secret into the credential signature after issuance.
@@ -683,7 +713,6 @@ impl VadePlugin for VadeEvanBbs {
             SignatureMessage::from(base64::decode(&payload.master_secret)?.into_boxed_slice());
 
         let public_key: DeterministicPublicKey = get_dpk_from_string(&payload.issuer_public_key)?;
-        println!("I am here!!!!");
         let credential = Prover::finish_credential(
             &payload.credential,
             &master_secret,

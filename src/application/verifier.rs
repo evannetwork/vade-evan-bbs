@@ -26,19 +26,19 @@ impl Verifier {
     /// `BbsProofRequest` - Proof request
     pub fn create_proof_request(
         verifier_did: String,
-        schemas: Vec<CredentialSchema>,
+        schemas: Vec<String>,
         reveal_attributes: HashMap<String, Vec<usize>>,
     ) -> Result<BbsProofRequest, Box<dyn Error>> {
         let nonce = BbsVerifier::generate_proof_nonce();
         let mut sub_proof_requests: Vec<BbsSubProofRequest> = Vec::new();
         for schema in schemas {
             let attributes = reveal_attributes
-                .get(&schema.id)
-                .ok_or(format!("Did not provide values for schema {}", &schema.id))?;
+                .get(&schema)
+                .ok_or(format!("Did not provide values for schema {}", &schema))?;
             sub_proof_requests.insert(
                 0,
                 BbsSubProofRequest {
-                    schema: schema.id.clone(),
+                    schema: schema.clone(),
                     revealed_attributes: attributes.clone(),
                 },
             )
@@ -136,7 +136,7 @@ mod tests {
     fn can_create_proof_request_for_one_schema() -> Result<(), Box<dyn Error>> {
         let schema: CredentialSchema =
             serde_json::from_str(&EXAMPLE_CREDENTIAL_SCHEMA_FIVE_PROPERTIES)?;
-        let schemas: Vec<CredentialSchema> = vec![schema.clone()];
+        let schemas: Vec<String> = vec![schema.id.clone()];
         let mut reveal_attributes = HashMap::new();
         reveal_attributes.insert(schema.clone().id, vec![1]);
 
@@ -167,7 +167,7 @@ mod tests {
         let schema: CredentialSchema = serde_json::from_str(&EXAMPLE_CREDENTIAL_SCHEMA)?;
         let mut another_schema: CredentialSchema = schema.clone();
         another_schema.id = "other_did".to_owned();
-        let schemas: Vec<CredentialSchema> = vec![schema.clone(), another_schema.clone()];
+        let schemas: Vec<String> = vec![schema.id.clone(), another_schema.id.clone()];
         let mut reveal_attributes = HashMap::new();
         reveal_attributes.insert(schema.clone().id, vec![1]);
         reveal_attributes.insert(another_schema.clone().id, vec![1]);

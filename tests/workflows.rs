@@ -1,22 +1,30 @@
+use bbs::prover;
 use std::collections::HashMap;
 use std::error::Error;
-use utilities::test_data::bbs_coherent_context_test_data::EXAMPLE_REVOCATION_LIST_DID;
+use utilities::test_data::{
+    accounts::local::HOLDER_DID, bbs_coherent_context_test_data::EXAMPLE_REVOCATION_LIST_DID,
+};
 use utilities::test_data::{
     accounts::local::{
         ISSUER_DID, ISSUER_PRIVATE_KEY, ISSUER_PUBLIC_KEY_DID, SIGNER_1_DID, SIGNER_1_PRIVATE_KEY,
+        VERIFIER_DID,
     },
     bbs_coherent_context_test_data::{MASTER_SECRET, PUB_KEY, SECRET_KEY, SUBJECT_DID},
     environment::DEFAULT_VADE_EVAN_SUBSTRATE_IP,
     vc_zkp::{SCHEMA_DESCRIPTION, SCHEMA_NAME, SCHEMA_PROPERTIES, SCHEMA_REQUIRED_PROPERTIES},
 };
 use vade::Vade;
-use vade_evan_bbs::application::datatypes::{
-    BbsCredential, BbsCredentialOffer, BbsCredentialRequest, CredentialSchema,
-    UnfinishedBbsCredential, CREDENTIAL_OFFER_TYPE, CREDENTIAL_PROOF_PURPOSE,
-    CREDENTIAL_PROPOSAL_TYPE, CREDENTIAL_REQUEST_TYPE, CREDENTIAL_SIGNATURE_TYPE,
+use vade_evan_bbs::{
+    application::datatypes::{
+        BbsCredential, BbsCredentialOffer, BbsCredentialRequest, CredentialSchema,
+        CredentialSubject, UnfinishedBbsCredential, CREDENTIAL_OFFER_TYPE,
+        CREDENTIAL_PROOF_PURPOSE, CREDENTIAL_PROPOSAL_TYPE, CREDENTIAL_REQUEST_TYPE,
+        CREDENTIAL_SIGNATURE_TYPE,
+    },
+    vade_evan_bbs::{PresentProofPayload, RequestProofPayload},
 };
 use vade_evan_bbs::{
-    application::datatypes::CredentialProposal,
+    application::datatypes::{BbsProofRequest, CredentialProposal},
     vade_evan_bbs::{
         CreateCredentialProposalPayload, FinishCredentialPayload, IssueCredentialPayload,
         OfferCredentialPayload, RequestCredentialPayload, VadeEvanBbs,
@@ -232,5 +240,50 @@ async fn test_issuance_workflow() -> Result<(), Box<dyn Error>> {
                 == finished_credential.credential_subject.data.get(key)));
     assert!(base64::decode(&finished_credential.proof.signature).is_ok());
 
+    // create proof request
+    let mut reveal_attributes = HashMap::new();
+    reveal_attributes.insert(SCHEMA_DID.clone().to_string(), vec![1]);
+    let proof_request_payload = RequestProofPayload {
+        verifier_did: VERIFIER_DID.to_string(),
+        schemas: vec![SCHEMA_DID.to_string()],
+        reveal_attributes,
+    };
+    let proof_request_json = serde_json::to_string(&proof_request_payload)?;
+    result = vade
+        .vc_zkp_request_proof(EVAN_METHOD, TYPE_OPTIONS, &proof_request_json)
+        .await?;
+    let proof_request: BbsProofRequest = serde_json::from_str(&result[0].as_ref().unwrap())?;
+
+    println!("{}", serde_json::to_string(&proof_request)?);
+
+    // create proof
+    let mut credential_schema_map = HashMap::new();
+    credential_schema_map.insert(SCHEMA_DID.to_string(), finished_credential.clone());
+
+    let mut revealed_data = finished_credential.credential_subject.data.clone();
+    let mut revealed_properties_map = HashMap::new();
+    let revealed = CredentialSubject {
+        id: HOLDER_DID.to_string(),
+        data: revealed_data,
+    };
+    revealed_properties_map.insert(SCHEMA_DID.to_string(), revealed);
+
+    let nquads: Vec<String> = vec!["test_property_string: value".to_string()];
+    let mut nquads_schema_map = HashMap::new();
+    nquads_schema_map.insert(SCHEMA_DID.to_string(), nquads);
+
+    let mut public_key_schema_map = HashMap::new();
+    public_key_schema_map.insert(SCHEMA_DID.to_string(), PUB_KEY.to_string());
+    let present_proof = PresentProofPayload {
+        proof_request,
+        credential_schema_map,
+        public_key_schema_map,
+        revealed_properties_schema_map,
+        nquads_schema_map,
+        master_secret: MASTER_SECRET.to_string(),
+        prover_did: VERIFIER_DID.to_string(),
+        prover_public_key_did: format!("{}#key-1", VERIFIER_DID),
+        prover_proving_key: SIGNER_1_PRIVATE_KEY,
+    };
     Ok(())
 }
