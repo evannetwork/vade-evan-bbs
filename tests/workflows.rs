@@ -6,8 +6,8 @@ use utilities::test_data::{
 };
 use utilities::test_data::{
     accounts::local::{
-        ISSUER_DID, ISSUER_PRIVATE_KEY, ISSUER_PUBLIC_KEY_DID, SIGNER_1_DID, SIGNER_1_PRIVATE_KEY,
-        VERIFIER_DID,
+        ISSUER_DID, ISSUER_PRIVATE_KEY, ISSUER_PUBLIC_KEY_DID, SIGNER_1_ADDRESS, SIGNER_1_DID,
+        SIGNER_1_PRIVATE_KEY, VERIFIER_DID,
     },
     bbs_coherent_context_test_data::{MASTER_SECRET, PUB_KEY, SECRET_KEY, SUBJECT_DID},
     environment::DEFAULT_VADE_EVAN_SUBSTRATE_IP,
@@ -17,11 +17,11 @@ use vade::Vade;
 use vade_evan_bbs::{
     application::datatypes::{
         BbsCredential, BbsCredentialOffer, BbsCredentialRequest, CredentialSchema,
-        CredentialSubject, UnfinishedBbsCredential, CREDENTIAL_OFFER_TYPE,
+        CredentialSubject, ProofPresentation, UnfinishedBbsCredential, CREDENTIAL_OFFER_TYPE,
         CREDENTIAL_PROOF_PURPOSE, CREDENTIAL_PROPOSAL_TYPE, CREDENTIAL_REQUEST_TYPE,
         CREDENTIAL_SIGNATURE_TYPE,
     },
-    vade_evan_bbs::{PresentProofPayload, RequestProofPayload},
+    vade_evan_bbs::{PresentProofPayload, RequestProofPayload, VerifyProofPayload},
 };
 use vade_evan_bbs::{
     application::datatypes::{BbsProofRequest, CredentialProposal},
@@ -239,7 +239,6 @@ async fn test_issuance_workflow() -> Result<(), Box<dyn Error>> {
             && credential_request.credential_values.get(key)
                 == finished_credential.credential_subject.data.get(key)));
     assert!(base64::decode(&finished_credential.proof.signature).is_ok());
-
     // create proof request
     let mut reveal_attributes = HashMap::new();
     reveal_attributes.insert(SCHEMA_DID.clone().to_string(), vec![1]);
@@ -253,20 +252,17 @@ async fn test_issuance_workflow() -> Result<(), Box<dyn Error>> {
         .vc_zkp_request_proof(EVAN_METHOD, TYPE_OPTIONS, &proof_request_json)
         .await?;
     let proof_request: BbsProofRequest = serde_json::from_str(&result[0].as_ref().unwrap())?;
-
-    println!("{}", serde_json::to_string(&proof_request)?);
-
     // create proof
     let mut credential_schema_map = HashMap::new();
     credential_schema_map.insert(SCHEMA_DID.to_string(), finished_credential.clone());
 
     let mut revealed_data = finished_credential.credential_subject.data.clone();
-    let mut revealed_properties_map = HashMap::new();
+    let mut revealed_properties_schema_map = HashMap::new();
     let revealed = CredentialSubject {
         id: HOLDER_DID.to_string(),
         data: revealed_data,
     };
-    revealed_properties_map.insert(SCHEMA_DID.to_string(), revealed);
+    revealed_properties_schema_map.insert(SCHEMA_DID.to_string(), revealed);
 
     let nquads: Vec<String> = vec!["test_property_string: value".to_string()];
     let mut nquads_schema_map = HashMap::new();
@@ -274,16 +270,35 @@ async fn test_issuance_workflow() -> Result<(), Box<dyn Error>> {
 
     let mut public_key_schema_map = HashMap::new();
     public_key_schema_map.insert(SCHEMA_DID.to_string(), PUB_KEY.to_string());
-    let present_proof = PresentProofPayload {
-        proof_request,
+    let present_proof_payload = PresentProofPayload {
+        proof_request: proof_request.clone(),
         credential_schema_map,
-        public_key_schema_map,
+        public_key_schema_map: public_key_schema_map.clone(),
         revealed_properties_schema_map,
         nquads_schema_map,
         master_secret: MASTER_SECRET.to_string(),
         prover_did: VERIFIER_DID.to_string(),
         prover_public_key_did: format!("{}#key-1", VERIFIER_DID),
-        prover_proving_key: SIGNER_1_PRIVATE_KEY,
+        prover_proving_key: SIGNER_1_PRIVATE_KEY.to_string(),
     };
+
+    let present_proof_json = serde_json::to_string(&present_proof_payload)?;
+    result = vade
+        .vc_zkp_present_proof(EVAN_METHOD, TYPE_OPTIONS, &present_proof_json)
+        .await?;
+    let presentation: ProofPresentation = serde_json::from_str(&result[0].as_ref().unwrap())?;
+
+
+    // verify proof
+    let verify_proof_payload = VerifyProofPayload {
+        presentation,
+        proof_request,
+        keys_to_schema_map: public_key_schema_map,
+        signer_address: SIGNER_1_ADDRESS.to_string(),
+    };
+    let verify_proof_json = serde_json::to_string(&verify_proof_payload)?;
+    result = vade
+        .vc_zkp_verify_proof(EVAN_METHOD, TYPE_OPTIONS, &verify_proof_json)
+        .await?;
     Ok(())
 }

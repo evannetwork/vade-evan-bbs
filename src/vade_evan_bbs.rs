@@ -93,7 +93,7 @@ pub struct PresentProofPayload {
     pub revealed_properties_schema_map: HashMap<String, CredentialSubject>,
     pub public_key_schema_map: HashMap<String, String>,
     pub nquads_schema_map: HashMap<String, Vec<String>>,
-    pub master_secret: SignatureMessage,
+    pub master_secret: String,
     pub prover_did: String,
     pub prover_public_key_did: String,
     pub prover_proving_key: String,
@@ -163,7 +163,7 @@ pub struct FinishCredentialPayload {
 pub struct VerifyProofPayload {
     pub presentation: ProofPresentation,
     pub proof_request: BbsProofRequest,
-    pub keys_to_schema_map: HashMap<String, DeterministicPublicKey>,
+    pub keys_to_schema_map: HashMap<String, String>,
     pub signer_address: String,
 }
 
@@ -395,8 +395,6 @@ impl VadePlugin for VadeEvanBbs {
         options: &str,
         payload: &str,
     ) -> Result<VadePluginResultValue<Option<String>>, Box<dyn Error>> {
-        println!("---------------------------------------------1");
-
         ignore_unrelated!(method, options);
         let payload: IssueCredentialPayload = parse!(&payload, "payload");
         let public_key: DeterministicPublicKey = DeterministicPublicKey::from(
@@ -406,7 +404,6 @@ impl VadePlugin for VadeEvanBbs {
             SecretKey::from(base64::decode(&payload.issuer_secret_key)?.into_boxed_slice());
 
         let schema: CredentialSchema = get_document!(&mut self.vade, &payload.schema, "schema");
-        // println!("---------------------------------------------1");
 
         let unfinished_credential = Issuer::issue_credential(
             &payload.issuer,
@@ -477,13 +474,22 @@ impl VadePlugin for VadeEvanBbs {
         ignore_unrelated!(method, options);
         let payload: PresentProofPayload = parse!(&payload, "payload");
 
+        let master_secret: SignatureMessage =
+            SignatureMessage::from(base64::decode(&payload.master_secret)?.into_boxed_slice());
+
+        let mut public_key_schema_map: HashMap<String, DeterministicPublicKey> = HashMap::new();
+        for (schema_did, base64_public_key) in payload.public_key_schema_map.iter() {
+            public_key_schema_map
+                .insert(schema_did.clone(), get_dpk_from_string(base64_public_key)?);
+        }
+
         let result = Prover::present_proof(
             &payload.proof_request,
             &payload.credential_schema_map,
             &payload.revealed_properties_schema_map,
-            &payload.public_key_schema_map,
+            &public_key_schema_map,
             &payload.nquads_schema_map,
-            &payload.master_secret,
+            &master_secret,
             &payload.prover_did,
             &payload.prover_public_key_did,
             &payload.prover_proving_key,
@@ -543,11 +549,8 @@ impl VadePlugin for VadeEvanBbs {
         payload: &str,
     ) -> Result<VadePluginResultValue<Option<String>>, Box<dyn Error>> {
         ignore_unrelated!(method, options);
-        // println!("I am here!!!!");
-        // println!("{}", payload);
         let payload: RequestCredentialPayload = serde_json::from_str(&payload)
             .map_err(|e| format!("{} when parsing payload {}", &e, &payload))?;
-        println!("I am here!!!!");
         let master_secret: SignatureMessage =
             SignatureMessage::from(base64::decode(&payload.master_secret)?.into_boxed_slice());
         let public_key: DeterministicPublicKey = DeterministicPublicKey::from(
@@ -674,10 +677,16 @@ impl VadePlugin for VadeEvanBbs {
 
         let payload: VerifyProofPayload = parse!(&payload, "payload");
 
+        let mut public_key_schema_map: HashMap<String, DeterministicPublicKey> = HashMap::new();
+        for (schema_did, base64_public_key) in payload.keys_to_schema_map.iter() {
+            public_key_schema_map
+                .insert(schema_did.clone(), get_dpk_from_string(base64_public_key)?);
+        }
+
         Verifier::verify_proof(
             &payload.presentation,
             &payload.proof_request,
-            &payload.keys_to_schema_map,
+            &public_key_schema_map,
             &payload.signer_address,
         )?;
 
@@ -713,6 +722,7 @@ impl VadePlugin for VadeEvanBbs {
             SignatureMessage::from(base64::decode(&payload.master_secret)?.into_boxed_slice());
 
         let public_key: DeterministicPublicKey = get_dpk_from_string(&payload.issuer_public_key)?;
+
         let credential = Prover::finish_credential(
             &payload.credential,
             &master_secret,
@@ -720,6 +730,7 @@ impl VadePlugin for VadeEvanBbs {
             &public_key,
             &blinding,
         )?;
+
         Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
             &credential,
         )?)))

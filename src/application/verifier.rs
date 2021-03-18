@@ -96,16 +96,16 @@ impl Verifier {
             let proof = panic::catch_unwind(|| SignatureProof::from(proof_bytes))
                 .map_err(|_| "Error parsing signature")?;
 
-            let valid = proof
+            let verified_proof = proof
                 .proof
                 .verify(&key, &proof.revealed_messages, &challenge)
-                .map_err(|e| format!("Error during proof verification: {}", e))?
-                .is_valid();
+                .map_err(|e| format!("Error during proof verification: {}", e))?;
 
-            if !valid {
+            if !verified_proof.is_valid() {
                 return Err(Box::from(format!(
-                    "Invalid proof for credential {}",
-                    &cred.id
+                    "Invalid proof for credential {}, with error message: {}",
+                    &cred.id,
+                    verified_proof
                 )));
             }
         }
