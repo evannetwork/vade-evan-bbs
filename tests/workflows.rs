@@ -37,7 +37,7 @@ use vade_evan_substrate::{
 };
 
 const EVAN_METHOD: &str = "did:evan";
-const TYPE_OPTIONS: &str = r#"{ "type": "cl" }"#;
+const TYPE_OPTIONS: &str = r#"{ "type": "bbs" }"#;
 const SCHEMA_DID: &str =
     "did:evan:zkp:0xd641c26161e769cef4b41760211972b274a8f37f135a34083e4e48b3f1035eda";
 

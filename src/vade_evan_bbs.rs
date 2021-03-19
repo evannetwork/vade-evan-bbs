@@ -38,7 +38,7 @@ use vade_evan_substrate::signing::Signer;
 
 const EVAN_METHOD: &str = "did:evan";
 const EVAN_METHOD_ZKP: &str = "did:evan:zkp";
-const PROOF_METHOD_CL: &str = "cl";
+const PROOF_METHOD_BBS: &str = "bbs";
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -192,7 +192,7 @@ macro_rules! ignore_unrelated {
         }
         let type_options: TypeOptions = parse!($options, "options");
         match type_options.r#type.as_deref() {
-            Some(PROOF_METHOD_CL) => (),
+            Some(PROOF_METHOD_BBS) => (),
             _ => return Ok(VadePluginResultValue::Ignored),
         };
     }};
