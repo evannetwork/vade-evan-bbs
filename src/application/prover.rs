@@ -409,7 +409,7 @@ mod tests {
             Ok(_) => assert!(false),
             Err(e) => assert_eq!(
                 format!("{}", e),
-                "Cannot request credential: Missing required schema property: test_property_string"
+                "Cannot create blind signature context. Provided no credential values"
             ),
         }
         Ok(())

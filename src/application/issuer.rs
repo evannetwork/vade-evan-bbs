@@ -20,7 +20,7 @@ use bbs::{
 };
 use flate2::{read::GzDecoder, write::GzEncoder, Compression};
 
-use std::{collections::HashMap, error::Error, io::prelude::*};
+use std::{collections::HashMap, convert::TryInto, error::Error, io::prelude::*};
 
 use vade_evan_substrate::signing::Signer;
 
@@ -172,11 +172,14 @@ impl Issuer {
             r#type: CREDENTIAL_SCHEMA_TYPE.to_string(),
         };
 
-let blind_signature: BlindSignature = raw.try_into()?;
+        let blind_signature: BlindSignatureContext =
+            base64::decode(&credential_request.blind_signature_context)?
+                .into_boxed_slice()
+                .try_into()?;
 
         let nonce = ProofNonce::from(base64::decode(&credential_offer.nonce)?.into_boxed_slice());
         let blind_signature = CryptoIssuer::create_signature(
-            &blind_signature_decoded,
+            &blind_signature,
             &nonce,
             nquads.clone(),
             issuer_public_key,

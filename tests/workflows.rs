@@ -124,7 +124,7 @@ async fn create_revocation_list(
 fn get_options() -> String {
     format!(
         r###"{{
-            "type": "cl",
+            "type": "bbs",
             "privateKey": "{}",
             "identity": "{}"
         }}"###,
@@ -518,7 +518,7 @@ async fn workflow_can_create_unfinished_credential() -> Result<(), Box<dyn Error
 }
 
 #[tokio::test]
-async fn workflow_can_finished_credential() -> Result<(), Box<dyn Error>> {
+async fn workflow_can_create_finished_credential() -> Result<(), Box<dyn Error>> {
     let mut vade = get_vade();
 
     let revocation_list = create_revocation_list(&mut vade).await?;
