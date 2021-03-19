@@ -273,7 +273,7 @@ let blind_signature: BlindSignature = raw.try_into()?;
     }
 
     /// Revokes a credential by flipping the specific index in the given revocation list.
-    /// See https://w3c-ccg.github.io/vc-status-rl-2020/#revocationlist2020credential for reference
+    /// See <https://w3c-ccg.github.io/vc-status-rl-2020/#revocationlist2020credential> for reference
     /// # Arguments
     /// * `issuer` - DID of the issuer
     /// * `revocation_list` - Revocation list the credential belongs to
