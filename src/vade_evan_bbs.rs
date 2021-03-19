@@ -602,8 +602,7 @@ impl VadePlugin for VadeEvanBbs {
         )?)))
     }
 
-    /// Revokes a credential. After revocation the updated revocation list needs to be updated with information
-    /// returned by this function. To revoke a credential, the revoker must be in possession of the private key associated
+    /// Revokes a credential. The information returned by this function needs to be persisted in order to update the revocation list. To revoke a credential, the revoker must be in possession of the private key associated
     /// with the credential's revocation list. After revocation, the published revocation list is updated on-chain.
     /// Only then is the credential truly revoked.
     ///
