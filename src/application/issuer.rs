@@ -172,9 +172,7 @@ impl Issuer {
             r#type: CREDENTIAL_SCHEMA_TYPE.to_string(),
         };
 
-        let blind_signature_decoded = BlindSignatureContext::from(
-            base64::decode(&credential_request.blind_signature_context)?.into_boxed_slice(),
-        );
+let blind_signature: BlindSignature = raw.try_into()?;
 
         let nonce = ProofNonce::from(base64::decode(&credential_offer.nonce)?.into_boxed_slice());
         let blind_signature = CryptoIssuer::create_signature(
