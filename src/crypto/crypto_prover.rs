@@ -2,18 +2,12 @@ use crate::application::datatypes::{BbsSubProofRequest, KEY_SIZE};
 use bbs::{
     keys::DeterministicPublicKey,
     messages::{HiddenMessage, ProofMessage},
-    pm_hidden,
-    pm_hidden_raw,
-    pm_revealed,
+    pm_hidden, pm_hidden_raw, pm_revealed,
     pok_sig::PoKOfSignature,
     prover::Prover as BbsProver,
     signature::{BlindSignature, Signature},
     verifier::Verifier as BbsVerifier,
-    BlindSignatureContext,
-    HashElem,
-    ProofNonce,
-    SignatureBlinding,
-    SignatureMessage,
+    BlindSignatureContext, HashElem, ProofNonce, SignatureBlinding, SignatureMessage,
     SignatureProof,
 };
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -101,7 +95,7 @@ impl CryptoProver {
         }
 
         for j in i..KEY_SIZE {
-            commitment_messages.insert(j, pm_revealed!(""))
+            commitment_messages.insert(j, pm_hidden!(""))
         }
 
         let signature_bytes = base64::decode(credential_signature)?.into_boxed_slice();
@@ -149,14 +143,12 @@ impl CryptoProver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::datatypes::{BbsCredential, UnfinishedBbsCredential};
-    use crate::application::utils::get_dpk_from_string;
+    use crate::application::{
+        datatypes::{BbsCredential, UnfinishedBbsCredential},
+        utils::get_dpk_from_string,
+    };
     use crate::utils::test_data::bbs_coherent_context_test_data::{
-        FINISHED_CREDENTIAL,
-        MASTER_SECRET,
-        NQUADS,
-        PUB_KEY,
-        SIGNATURE_BLINDING,
+        FINISHED_CREDENTIAL, MASTER_SECRET, NQUADS, PUB_KEY, SIGNATURE_BLINDING,
         UNFINISHED_CREDENTIAL,
     };
     use bbs::{issuer::Issuer as CryptoIssuer, prover::Prover};

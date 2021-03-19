@@ -1,10 +1,6 @@
 use crate::application::{
     datatypes::{
-        BbsCredential,
-        BbsProofRequest,
-        ProofPresentation,
-        RevocationListCredential,
-        KEY_SIZE,
+        BbsProofRequest, CredentialStatus, ProofPresentation, RevocationListCredential, KEY_SIZE,
     },
     utils::get_nonce_from_string,
 };
@@ -13,10 +9,7 @@ use std::error::Error;
 use std::io::prelude::*;
 
 use bbs::{
-    keys::DeterministicPublicKey,
-    verifier::Verifier as BbsVerifier,
-    ProofChallenge,
-    SignatureProof,
+    keys::DeterministicPublicKey, verifier::Verifier as BbsVerifier, ProofChallenge, SignatureProof,
 };
 
 use flate2::read::GzDecoder;
@@ -35,7 +28,7 @@ impl CryptoVerifier {
     /// * `bool` - bool value if the credential is revoked or not
 
     pub fn is_revoked(
-        credential: &BbsCredential,
+        credential_status: &CredentialStatus,
         revocation_list: &RevocationListCredential,
     ) -> Result<bool, Box<dyn Error>> {
         let encoded_list = base64::decode_config(
@@ -46,8 +39,7 @@ impl CryptoVerifier {
         let mut decoded_list = Vec::new();
         decoder.read_to_end(&mut decoded_list)?;
 
-        let revocation_list_index_number = credential
-            .credential_status
+        let revocation_list_index_number = credential_status
             .revocation_list_index
             .parse::<usize>()
             .map_err(|e| format!("Error parsing revocation_list_id: {}", e))?;
@@ -125,19 +117,17 @@ impl CryptoVerifier {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::application::datatypes::BbsCredential;
     use crate::utils::test_data::bbs_coherent_context_test_data::{
-        FINISHED_CREDENTIAL,
-        REVOCATION_LIST_CREDENTIAL,
-        REVOCATION_LIST_CREDENTIAL_REVOKED_ID_1,
+        FINISHED_CREDENTIAL, REVOCATION_LIST_CREDENTIAL, REVOCATION_LIST_CREDENTIAL_REVOKED_ID_1,
     };
-
     #[test]
     fn can_check_not_revoked_credential() -> Result<(), Box<dyn Error>> {
         let credential: BbsCredential = serde_json::from_str(&FINISHED_CREDENTIAL)?;
         let revocation_list: RevocationListCredential =
             serde_json::from_str(&REVOCATION_LIST_CREDENTIAL)?;
 
-        match CryptoVerifier::is_revoked(&credential, &revocation_list) {
+        match CryptoVerifier::is_revoked(&credential.credential_status, &revocation_list) {
             Ok(revoked) => assert_eq!(false, revoked),
             Err(e) => assert!(false, "Unexpected error: {}", e),
         };
@@ -150,7 +140,7 @@ mod tests {
         let revocation_list: RevocationListCredential =
             serde_json::from_str(&REVOCATION_LIST_CREDENTIAL_REVOKED_ID_1)?;
 
-        match CryptoVerifier::is_revoked(&credential, &revocation_list) {
+        match CryptoVerifier::is_revoked(&credential.credential_status, &revocation_list) {
             Ok(revoked) => assert_eq!(true, revoked),
             Err(e) => assert!(false, "Unexpected error: {}", e),
         };

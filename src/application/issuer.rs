@@ -1,40 +1,95 @@
 use crate::application::{
     datatypes::{BbsUnfinishedCredentialSignature, CredentialSchemaReference, CredentialSubject},
-    utils::{generate_uuid, get_nonce_from_string, get_now_as_iso_string},
+    utils::{generate_uuid, get_now_as_iso_string},
 };
 use crate::{
     application::datatypes::{
-        BbsCredentialOffer,
-        BbsCredentialRequest,
-        CredentialProposal,
-        CredentialSchema,
-        CredentialStatus,
-        RevocationListCredential,
-        RevocationListCredentialSubject,
-        UnfinishedBbsCredential,
-        UnproofedRevocationListCredential,
-        CREDENTIAL_OFFER_TYPE,
-        CREDENTIAL_PROOF_PURPOSE,
-        CREDENTIAL_SCHEMA_TYPE,
-        CREDENTIAL_SIGNATURE_TYPE,
-        DEFAULT_CREDENTIAL_CONTEXTS,
-        DEFAULT_REVOCATION_CONTEXTS,
+        BbsCredentialOffer, BbsCredentialRequest, CredentialProposal, CredentialSchema,
+        CredentialStatus, RevocationListCredential, RevocationListCredentialSubject,
+        UnfinishedBbsCredential, UnproofedRevocationListCredential, CREDENTIAL_OFFER_TYPE,
+        CREDENTIAL_PROOF_PURPOSE, CREDENTIAL_SCHEMA_TYPE, CREDENTIAL_SIGNATURE_TYPE,
+        DEFAULT_CREDENTIAL_CONTEXTS, DEFAULT_REVOCATION_CONTEXTS,
     },
     crypto::crypto_issuer::CryptoIssuer,
     crypto::crypto_utils::create_assertion_proof,
-    signing::Signer,
 };
 use bbs::{
     issuer::Issuer as BbsIssuer,
     keys::{DeterministicPublicKey, SecretKey},
+    BlindSignatureContext, ProofNonce,
 };
 use flate2::{read::GzDecoder, write::GzEncoder, Compression};
-use std::{error::Error, io::prelude::*};
+
+use std::{collections::HashMap, error::Error, io::prelude::*};
+
+use vade_evan_substrate::signing::Signer;
+
+use super::datatypes::SchemaProperty;
 pub struct Issuer {}
 
 const MAX_REVOCATION_ENTRIES: usize = 131072;
 
 impl Issuer {
+    /// Creates a new credential schema specifying properties credentials issued under this schema need to incorporate.
+    /// The schema needs to be stored in a publicly available and temper-proof way.
+    ///
+    /// # Arguments
+    /// * `assigned_did` - DID to be used to resolve this credential definition
+    /// * `issuer_did` - DID of the issuer
+    /// * `schema_name` - Name of the schema
+    /// * `description` - Description for the schema. Can be left blank
+    /// * `properties` - The properties of the schema as Key-Object pairs#
+    /// * `required_properties` - The keys of properties that need to be provided when issuing a credential under this schema.
+    /// * `allow_additional_properties` - Specifies whether a credential under this schema is considered valid if it specifies more properties than the schema specifies.
+    /// * `issuer_public_key_did` - DID of the public key to check the assertion proof of the definition document
+    /// * `issuer_proving_key` - Private key used to create the assertion proof
+    /// * `signer` - `Signer` to sign with
+    ///
+    /// # Returns
+    /// * `CredentialSchema` - The schema object to be saved in a publicly available and temper-proof way
+    pub async fn create_credential_schema(
+        assigned_did: &str,
+        issuer_did: &str,
+        schema_name: &str,
+        description: &str,
+        properties: HashMap<String, SchemaProperty>,
+        required_properties: Vec<String>,
+        allow_additional_properties: bool,
+        issuer_public_key_did: &str,
+        issuer_proving_key: &str,
+        signer: &Box<dyn Signer>,
+    ) -> Result<CredentialSchema, Box<dyn Error>> {
+        let created_at = get_now_as_iso_string();
+
+        let mut schema = CredentialSchema {
+            id: assigned_did.to_owned(),
+            r#type: "EvanVCSchema".to_string(), //TODO: Make enum
+            name: schema_name.to_owned(),
+            author: issuer_did.to_owned(),
+            created_at,
+            description: description.to_owned(),
+            properties,
+            required: required_properties,
+            additional_properties: allow_additional_properties,
+            proof: None,
+        };
+
+        let document_to_sign = serde_json::to_value(&schema)?;
+
+        let proof = create_assertion_proof(
+            &document_to_sign,
+            &issuer_public_key_did,
+            &issuer_did,
+            &issuer_proving_key,
+            &signer,
+        )
+        .await?;
+
+        schema.proof = Some(proof);
+
+        Ok(schema)
+    }
+
     /// Creates a new credential offer, as a response to a `CredentialProposal` sent by a prover.
     ///
     /// # Arguments
@@ -117,9 +172,11 @@ impl Issuer {
             r#type: CREDENTIAL_SCHEMA_TYPE.to_string(),
         };
 
-        let nonce = get_nonce_from_string(&credential_offer.nonce)?;
+let blind_signature: BlindSignature = raw.try_into()?;
+
+        let nonce = ProofNonce::from(base64::decode(&credential_offer.nonce)?.into_boxed_slice());
         let blind_signature = CryptoIssuer::create_signature(
-            &credential_request.blind_signature_context,
+            &blind_signature_decoded,
             &nonce,
             nquads.clone(),
             issuer_public_key,
@@ -287,14 +344,11 @@ mod tests {
         application::{
             datatypes::{BbsCredentialOffer, BbsCredentialRequest},
             prover::Prover,
-            utils_test::assert_credential,
         },
-        signing::{LocalSigner, Signer},
         utils::test_data::{
             accounts::local::{HOLDER_DID, ISSUER_DID, ISSUER_PRIVATE_KEY, ISSUER_PUBLIC_KEY_DID},
             bbs_coherent_context_test_data::{
-                EXAMPLE_REVOCATION_LIST_DID,
-                REVOCATION_LIST_CREDENTIAL,
+                EXAMPLE_REVOCATION_LIST_DID, REVOCATION_LIST_CREDENTIAL,
             },
             vc_zkp::{EXAMPLE_CREDENTIAL_PROPOSAL, EXAMPLE_CREDENTIAL_SCHEMA},
         },
@@ -302,6 +356,7 @@ mod tests {
     use bbs::issuer::Issuer as BbsIssuer;
     use bbs::prover::Prover as BbsProver;
     use std::collections::HashMap;
+    use vade_evan_substrate::signing::{LocalSigner, Signer};
 
     fn request_credential(
         pub_key: &DeterministicPublicKey,
@@ -334,41 +389,42 @@ mod tests {
         return Ok((credential_request, schema, nquads));
     }
 
-    // fn is_base_64(input: String) -> bool {
-    //     match base64::decode(input) {
-    //         Ok(_) => true,
-    //         Err(_) => false,
-    //     }
-    // }
+    fn is_base_64(input: String) -> bool {
+        match base64::decode(input) {
+            Ok(_) => true,
+            Err(_) => false,
+        }
+    }
 
-    // fn assert_credential(
-    //     credential_request: BbsCredentialRequest,
-    //     cred: UnfinishedBbsCredential,
-    //     pub_key_id: &str,
-    //     schema_id: &str,
-    // ) {
-    //     assert_eq!(&cred.issuer, ISSUER_DID);
-    //     assert_eq!(&cred.credential_subject.id, HOLDER_DID);
-    //     assert_eq!(&cred.credential_schema.id, schema_id);
-    //     // proof
-    //     assert_eq!(&cred.proof.required_reveal_statements, &[1].to_vec());
-    //     assert_eq!(&cred.proof.r#type, CREDENTIAL_SIGNATURE_TYPE);
-    //     assert_eq!(&cred.proof.proof_purpose, CREDENTIAL_PROOF_PURPOSE);
-    //     assert_eq!(&cred.proof.verification_method, pub_key_id);
-    //     assert!(
-    //         is_base_64(cred.proof.blind_signature.to_owned()),
-    //         "Signature seems not to be base64 encoded"
-    //     );
-    //     // Credential subject
-    //     // Are the values correctly copied into the credentials?
-    //     assert!(&cred
-    //         .credential_subject
-    //         .data
-    //         .keys()
-    //         .all(|key| credential_request.credential_values.contains_key(key)
-    //             && credential_request.credential_values.get(key)
-    //                 == cred.credential_subject.data.get(key)));
-    // }
+    fn assert_credential(
+        credential_request: BbsCredentialRequest,
+        cred: UnfinishedBbsCredential,
+        pub_key_id: &str,
+        schema_id: &str,
+    ) {
+        assert_eq!(&cred.issuer, ISSUER_DID);
+        assert_eq!(&cred.credential_subject.id, HOLDER_DID);
+        assert_eq!(&cred.credential_schema.id, schema_id);
+        // proof
+        assert_eq!(&cred.proof.required_reveal_statements, &[1].to_vec());
+        assert_eq!(&cred.proof.r#type, CREDENTIAL_SIGNATURE_TYPE);
+        assert_eq!(&cred.proof.proof_purpose, CREDENTIAL_PROOF_PURPOSE);
+        assert_eq!(&cred.proof.verification_method, pub_key_id);
+        assert!(
+            is_base_64(cred.proof.blind_signature.to_owned()),
+            "Signature seems not to be base64 encoded"
+        );
+        // Credential subject
+        // Are the values correctly copied into the credentials?
+        assert!(&cred
+            .credential_subject
+            .data
+            .keys()
+            .all(|key| credential_request.credential_values.contains_key(key)
+                && credential_request.credential_values.get(key)
+                    == cred.credential_subject.data.get(key)));
+    }
+
     #[test]
     fn can_offer_credential() -> Result<(), Box<dyn Error>> {
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
