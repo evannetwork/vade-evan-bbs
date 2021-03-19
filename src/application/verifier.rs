@@ -1,11 +1,5 @@
 use crate::application::{
-    datatypes::{
-        BbsProofRequest,
-        BbsSubProofRequest,
-        CredentialSchema,
-        ProofPresentation,
-        KEY_SIZE,
-    },
+    datatypes::{BbsProofRequest, BbsSubProofRequest, ProofPresentation, KEY_SIZE},
     utils::get_now_as_iso_string,
 };
 use crate::crypto::{crypto_utils::check_assertion_proof, crypto_verifier::CryptoVerifier};
@@ -30,19 +24,19 @@ impl Verifier {
     /// `BbsProofRequest` - Proof request
     pub fn create_proof_request(
         verifier_did: String,
-        schemas: Vec<CredentialSchema>,
+        schemas: Vec<String>,
         reveal_attributes: HashMap<String, Vec<usize>>,
     ) -> Result<BbsProofRequest, Box<dyn Error>> {
         let nonce = BbsVerifier::generate_proof_nonce();
         let mut sub_proof_requests: Vec<BbsSubProofRequest> = Vec::new();
         for schema in schemas {
             let attributes = reveal_attributes
-                .get(&schema.id)
-                .ok_or(format!("Did not provide values for schema {}", &schema.id))?;
+                .get(&schema)
+                .ok_or(format!("Did not provide values for schema {}", &schema))?;
             sub_proof_requests.insert(
                 0,
                 BbsSubProofRequest {
-                    schema: schema.id.clone(),
+                    schema: schema.clone(),
                     revealed_attributes: attributes.clone(),
                 },
             )
@@ -100,16 +94,15 @@ impl Verifier {
             let proof = panic::catch_unwind(|| SignatureProof::from(proof_bytes))
                 .map_err(|_| "Error parsing signature")?;
 
-            let valid = proof
+            let verified_proof = proof
                 .proof
                 .verify(&key, &proof.revealed_messages, &challenge)
-                .map_err(|e| format!("Error during proof verification: {}", e))?
-                .is_valid();
+                .map_err(|e| format!("Error during proof verification: {}", e))?;
 
-            if !valid {
+            if !verified_proof.is_valid() {
                 return Err(Box::from(format!(
-                    "Invalid proof for credential {}",
-                    &cred.id
+                    "Invalid proof for credential {}, with error message: {}",
+                    &cred.id, verified_proof
                 )));
             }
         }
@@ -121,29 +114,28 @@ impl Verifier {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::datatypes::{RevocationListCredential, UnfinishedProofPresentation};
+    use crate::application::datatypes::{
+        CredentialSchema, RevocationListCredential, UnfinishedProofPresentation,
+    };
     use crate::application::utils::get_dpk_from_string;
     use crate::crypto::crypto_utils::create_assertion_proof;
-    use crate::signing::{LocalSigner, Signer};
     use crate::utils::test_data::{
         accounts::local::{SIGNER_1_ADDRESS, SIGNER_1_DID, SIGNER_1_PRIVATE_KEY, VERIFIER_DID},
         bbs_coherent_context_test_data::{
-            PROOF_PRESENTATION,
-            PROOF_PRESENTATION_INVALID_SIGNATURE_AND_WITHOUT_JWS,
-            PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES,
-            PUB_KEY,
-            REVOCATION_LIST_CREDENTIAL,
+            PROOF_PRESENTATION, PROOF_PRESENTATION_INVALID_SIGNATURE_AND_WITHOUT_JWS,
+            PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES, PUB_KEY, REVOCATION_LIST_CREDENTIAL,
         },
         vc_zkp::EXAMPLE_CREDENTIAL_SCHEMA,
         vc_zkp::EXAMPLE_CREDENTIAL_SCHEMA_FIVE_PROPERTIES,
     };
     use serde_json::Value;
+    use vade_evan_substrate::signing::{LocalSigner, Signer};
 
     #[test]
     fn can_create_proof_request_for_one_schema() -> Result<(), Box<dyn Error>> {
         let schema: CredentialSchema =
             serde_json::from_str(&EXAMPLE_CREDENTIAL_SCHEMA_FIVE_PROPERTIES)?;
-        let schemas: Vec<CredentialSchema> = vec![schema.clone()];
+        let schemas: Vec<String> = vec![schema.id.clone()];
         let mut reveal_attributes = HashMap::new();
         reveal_attributes.insert(schema.clone().id, vec![1]);
 
@@ -174,7 +166,7 @@ mod tests {
         let schema: CredentialSchema = serde_json::from_str(&EXAMPLE_CREDENTIAL_SCHEMA)?;
         let mut another_schema: CredentialSchema = schema.clone();
         another_schema.id = "other_did".to_owned();
-        let schemas: Vec<CredentialSchema> = vec![schema.clone(), another_schema.clone()];
+        let schemas: Vec<String> = vec![schema.id.clone(), another_schema.id.clone()];
         let mut reveal_attributes = HashMap::new();
         reveal_attributes.insert(schema.clone().id, vec![1]);
         reveal_attributes.insert(another_schema.clone().id, vec![1]);

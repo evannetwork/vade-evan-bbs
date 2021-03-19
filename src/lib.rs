@@ -13,8 +13,11 @@
 
 // TODO: Add docs
 
+#[macro_use]
+extern crate log;
+extern crate vade_evan_substrate;
 // vc-zkp
 pub mod application;
 pub mod crypto;
-pub mod signing;
 mod utils;
+pub mod vade_evan_bbs;
