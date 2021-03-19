@@ -25,6 +25,7 @@ use crate::application::{
     utils::get_dpk_from_string,
     verifier::Verifier,
 };
+use crate::crypto::crypto_verifier::CryptoVerifier;
 use async_trait::async_trait;
 use bbs::{
     keys::{DeterministicPublicKey, SecretKey},
@@ -56,7 +57,6 @@ pub struct AuthenticationOptions {
 #[serde(rename_all = "camelCase")]
 pub struct CreateRevocationListPayload {
     pub issuer_did: String,
-    pub schema_did: String,
     pub issuer_public_key_did: String,
     pub issuer_proving_key: String,
 }
@@ -372,9 +372,7 @@ impl VadePlugin for VadeEvanBbs {
         )
         .await?;
 
-        let serialized_result = serde_json::to_string(&serialized_list)?;
-
-        Ok(VadePluginResultValue::Success(Some(serialized_result)))
+        Ok(VadePluginResultValue::Success(Some(serialized_list)))
     }
 
     /// Issues a new credential. This requires an issued schema, revocations list, an credential offer
@@ -558,7 +556,6 @@ impl VadePlugin for VadeEvanBbs {
         );
         let schema: CredentialSchema =
             get_document!(&mut self.vade, &payload.credential_schema, "schema");
-        println!("schema");
         let (credential_request, signature_blinding): (BbsCredentialRequest, SignatureBlinding) =
             Prover::request_credential(
                 &payload.credential_offering,
@@ -571,7 +568,6 @@ impl VadePlugin for VadeEvanBbs {
             credential_request,
             base64::encode(signature_blinding.to_bytes_compressed_form()),
         ))?;
-        println!("result");
         Ok(VadePluginResultValue::Success(Some(result)))
     }
 
@@ -689,6 +685,19 @@ impl VadePlugin for VadeEvanBbs {
             &public_key_schema_map,
             &payload.signer_address,
         )?;
+
+        // check revocation status
+        for cred in &payload.presentation.verifiable_credential {
+            let revocation_list: RevocationListCredential = get_document!(
+                &mut self.vade,
+                &cred.credential_status.revocation_list_credential,
+                "revocationlist"
+            );
+            let revoked = CryptoVerifier::is_revoked(&cred.credential_status, &revocation_list)?;
+            if revoked {
+                return Err(Box::from(format!("Credential id {} is revoked", cred.id)));
+            }
+        }
 
         Ok(VadePluginResultValue::Success(Some(
             "serialized".to_string(),

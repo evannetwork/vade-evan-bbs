@@ -60,6 +60,12 @@ impl Prover {
         credential_values: HashMap<String, String>,
         issuer_pub_key: &DeterministicPublicKey,
     ) -> Result<(BbsCredentialRequest, SignatureBlinding), Box<dyn Error>> {
+        if credential_values.len() == 0 {
+            return Err(Box::from(
+                "Cannot create blind signature context. Provided no credential values",
+            ));
+        }
+
         for required in &credential_schema.required {
             if credential_values.get(required).is_none() {
                 let error = format!(
@@ -68,12 +74,6 @@ impl Prover {
                 );
                 return Err(Box::from(error));
             }
-        }
-
-        if credential_values.len() == 0 {
-            return Err(Box::from(
-                "Cannot create blind signature context. Provided no credential values",
-            ));
         }
 
         let nonce = get_nonce_from_string(&credential_offering.nonce)?;
@@ -121,7 +121,6 @@ impl Prover {
         let raw: Box<[u8]> =
             base64::decode(unfinished_credential.proof.blind_signature.clone())?.into_boxed_slice();
         let blind_signature: BlindSignature = raw.try_into()?;
-        println!("I am here!!!!");
         let final_signature = CryptoProver::finish_credential_signature(
             nquads.clone(),
             master_secret,

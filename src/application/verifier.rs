@@ -1,7 +1,5 @@
 use crate::application::{
-    datatypes::{
-        BbsProofRequest, BbsSubProofRequest, CredentialSchema, ProofPresentation, KEY_SIZE,
-    },
+    datatypes::{BbsProofRequest, BbsSubProofRequest, ProofPresentation, KEY_SIZE},
     utils::get_now_as_iso_string,
 };
 use crate::crypto::{crypto_utils::check_assertion_proof, crypto_verifier::CryptoVerifier};
@@ -104,8 +102,7 @@ impl Verifier {
             if !verified_proof.is_valid() {
                 return Err(Box::from(format!(
                     "Invalid proof for credential {}, with error message: {}",
-                    &cred.id,
-                    verified_proof
+                    &cred.id, verified_proof
                 )));
             }
         }
@@ -117,7 +114,9 @@ impl Verifier {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::datatypes::{RevocationListCredential, UnfinishedProofPresentation};
+    use crate::application::datatypes::{
+        CredentialSchema, RevocationListCredential, UnfinishedProofPresentation,
+    };
     use crate::application::utils::get_dpk_from_string;
     use crate::crypto::crypto_utils::create_assertion_proof;
     use crate::utils::test_data::{

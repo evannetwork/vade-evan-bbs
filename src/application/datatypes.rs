@@ -283,6 +283,7 @@ pub struct BbsPresentation {
     pub issuance_date: String,
     pub credential_subject: CredentialSubject,
     pub credential_schema: CredentialSchemaReference,
+    pub credential_status: CredentialStatus,
     pub proof: BbsPresentationProof,
 }
 
@@ -304,6 +305,12 @@ impl BbsPresentation {
             credential_schema: CredentialSchemaReference {
                 id: cred.credential_schema.id,
                 r#type: cred.credential_schema.r#type,
+            },
+            credential_status: CredentialStatus {
+                id: cred.credential_status.id,
+                r#type: cred.credential_status.r#type,
+                revocation_list_index: cred.credential_status.revocation_list_index,
+                revocation_list_credential: cred.credential_status.revocation_list_credential,
             },
             proof: BbsPresentationProof {
                 created: cred.proof.created,
