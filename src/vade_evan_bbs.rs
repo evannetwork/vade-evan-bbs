@@ -698,9 +698,7 @@ impl VadePlugin for VadeEvanBbs {
             }
         }
 
-        Ok(VadePluginResultValue::Success(Some(
-            "serialized".to_string(),
-        )))
+        Ok(VadePluginResultValue::Success(None))
     }
 
     /// Finishes a credential, e.g. by incorporating the prover's master secret into the credential signature after issuance.
