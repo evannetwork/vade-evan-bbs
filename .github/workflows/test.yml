@@ -6,18 +6,23 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - name: Checkout vade-evan-bbs
+        uses: actions/checkout@v2
+        with:
+          repository: evannetwork/vade-evan-bbs
+          path: 'vade-evan-bbs'
+          token: ${{ secrets.ACCESS_TOKEN }}
       - name: Checkout vade
         uses: actions/checkout@v2
         with:
           repository: evannetwork/vade
-          path: '../vade'
+          path: 'vade'
           token: ${{ secrets.ACCESS_TOKEN }}
       - name: Checkout vade-evan-substrate
         uses: actions/checkout@v2
         with:
           repository: evannetwork/vade-evan-substrate
-          path: '../vade-evan-substrate'
+          path: 'vade-evan-substrate'
           token: ${{ secrets.ACCESS_TOKEN }}
       - uses: actions-rs/toolchain@v1
         with:
