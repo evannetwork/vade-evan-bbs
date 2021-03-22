@@ -5,10 +5,6 @@ name: Tests
 jobs:
   test:
     runs-on: ubuntu-latest
-        defaults:
-      run:
-        shell: bash
-        working-directory: scripts
     steps:
       - name: Checkout vade-evan-bbs
         uses: actions/checkout@v2
