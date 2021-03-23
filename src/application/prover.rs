@@ -1,19 +1,30 @@
 use super::datatypes::{
-    BbsCredential, BbsCredentialOffer, BbsCredentialRequest, BbsPresentation, BbsProofRequest,
-    CredentialProposal, CredentialSchema, CredentialSubject, ProofPresentation,
-    UnfinishedBbsCredential, UnfinishedProofPresentation, CREDENTIAL_PROPOSAL_TYPE,
-    CREDENTIAL_REQUEST_TYPE, DEFAULT_CREDENTIAL_CONTEXTS,
+    BbsCredential,
+    BbsCredentialOffer,
+    BbsCredentialRequest,
+    BbsPresentation,
+    BbsProofRequest,
+    CredentialProposal,
+    CredentialSchema,
+    CredentialSubject,
+    ProofPresentation,
+    UnfinishedBbsCredential,
+    UnfinishedProofPresentation,
+    CREDENTIAL_PROPOSAL_TYPE,
+    CREDENTIAL_REQUEST_TYPE,
+    DEFAULT_CREDENTIAL_CONTEXTS,
 };
 use crate::{
     application::utils::{generate_uuid, get_nonce_from_string, get_now_as_iso_string},
-    crypto::{
-        crypto_prover::CryptoProver,
-        crypto_utils::create_assertion_proof,
-    },
+    crypto::{crypto_prover::CryptoProver, crypto_utils::create_assertion_proof},
 };
 use bbs::{
-    keys::DeterministicPublicKey, pok_sig::PoKOfSignature, signature::BlindSignature,
-    SignatureBlinding, SignatureMessage, ToVariableLengthBytes,
+    keys::DeterministicPublicKey,
+    pok_sig::PoKOfSignature,
+    signature::BlindSignature,
+    SignatureBlinding,
+    SignatureMessage,
+    ToVariableLengthBytes,
 };
 use std::{
     collections::HashMap,
@@ -252,35 +263,36 @@ impl Prover {
 
 #[cfg(test)]
 mod tests {
+    extern crate utilities;
     use super::*;
     use crate::{
         application::utils::{get_dpk_from_string, get_signature_message_from_string},
         crypto::crypto_utils::check_assertion_proof,
-        utils::test_data::{
-            accounts::local::{
-                HOLDER_DID,
-                ISSUER_DID,
-                SIGNER_1_ADDRESS,
-                SIGNER_1_PRIVATE_KEY,
-                VERIFIER_DID,
-            },
-            bbs_coherent_context_test_data::{
-                FINISHED_CREDENTIAL,
-                MASTER_SECRET,
-                NQUADS,
-                PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES,
-                PUB_KEY,
-                SIGNATURE_BLINDING,
-                UNFINISHED_CREDENTIAL,
-            },
-            vc_zkp::{EXAMPLE_CREDENTIAL_OFFERING, EXAMPLE_CREDENTIAL_SCHEMA},
-        },
     };
     use bbs::{
         issuer::Issuer as BbsIssuer,
         keys::SecretKey,
         prover::Prover as BbsProver,
         SignatureBlinding,
+    };
+    use utilities::test_data::{
+        accounts::local::{
+            HOLDER_DID,
+            ISSUER_DID,
+            SIGNER_1_ADDRESS,
+            SIGNER_1_PRIVATE_KEY,
+            VERIFIER_DID,
+        },
+        bbs_coherent_context_test_data::{
+            FINISHED_CREDENTIAL,
+            MASTER_SECRET,
+            NQUADS,
+            PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES,
+            PUB_KEY,
+            SIGNATURE_BLINDING,
+            UNFINISHED_CREDENTIAL,
+        },
+        vc_zkp::{EXAMPLE_CREDENTIAL_OFFERING, EXAMPLE_CREDENTIAL_SCHEMA},
     };
     use vade_evan_substrate::signing::{LocalSigner, Signer};
 

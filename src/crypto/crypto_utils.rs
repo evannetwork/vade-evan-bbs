@@ -15,6 +15,7 @@
 */
 
 use crate::application::datatypes::AssertionProof;
+use crate::application::utils::get_now_as_iso_string;
 use base64;
 use secp256k1::{recover, Message, RecoveryId, Signature};
 use serde::{Deserialize, Serialize};
@@ -23,9 +24,6 @@ use sha2::{Digest, Sha256};
 use sha3::Keccak256;
 use std::{convert::TryInto, error::Error};
 use vade_evan_substrate::signing::Signer;
-
-#[cfg(not(target_arch = "wasm32"))]
-use chrono::Utc;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct JwsData<'a> {
@@ -55,10 +53,7 @@ pub async fn create_assertion_proof(
     let padded = base64::encode_config(header_str.as_bytes(), base64::URL_SAFE);
     let header_encoded = padded.trim_end_matches('=');
 
-    #[cfg(target_arch = "wasm32")]
-    let now: String = js_sys::Date::new_0().to_iso_string().to_string().into();
-    #[cfg(not(target_arch = "wasm32"))]
-    let now = Utc::now().format("%Y-%m-%dT%H:%M:%S.000Z").to_string();
+    let now = get_now_as_iso_string();
 
     // build data object and hash
     let mut data_json: Value = serde_json::from_str("{}")?;

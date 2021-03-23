@@ -117,15 +117,16 @@ impl CryptoVerifier {
 }
 
 #[cfg(test)]
+
 mod tests {
+    extern crate utilities;
+
     use super::*;
-    use crate::{
-        application::datatypes::BbsCredential,
-        utils::test_data::bbs_coherent_context_test_data::{
-            FINISHED_CREDENTIAL,
-            REVOCATION_LIST_CREDENTIAL,
-            REVOCATION_LIST_CREDENTIAL_REVOKED_ID_1,
-        },
+    use crate::application::datatypes::BbsCredential;
+    use utilities::test_data::bbs_coherent_context_test_data::{
+        FINISHED_CREDENTIAL,
+        REVOCATION_LIST_CREDENTIAL,
+        REVOCATION_LIST_CREDENTIAL_REVOKED_ID_1,
     };
 
     #[test]

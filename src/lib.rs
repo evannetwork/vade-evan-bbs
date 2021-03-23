@@ -14,7 +14,10 @@
 #[macro_use]
 extern crate log;
 extern crate vade_evan_substrate;
-pub mod application;
-pub mod crypto;
-mod utils;
-pub mod vade_evan_bbs;
+
+pub(crate) mod application;
+pub(crate) mod crypto;
+mod vade_evan_bbs;
+
+pub use self::application::datatypes::*;
+pub use self::vade_evan_bbs::*;

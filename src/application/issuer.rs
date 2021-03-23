@@ -4,11 +4,21 @@ use crate::application::{
 };
 use crate::{
     application::datatypes::{
-        BbsCredentialOffer, BbsCredentialRequest, CredentialProposal, CredentialSchema,
-        CredentialStatus, RevocationListCredential, RevocationListCredentialSubject,
-        UnfinishedBbsCredential, UnproofedRevocationListCredential, CREDENTIAL_OFFER_TYPE,
-        CREDENTIAL_PROOF_PURPOSE, CREDENTIAL_SCHEMA_TYPE, CREDENTIAL_SIGNATURE_TYPE,
-        DEFAULT_CREDENTIAL_CONTEXTS, DEFAULT_REVOCATION_CONTEXTS,
+        BbsCredentialOffer,
+        BbsCredentialRequest,
+        CredentialProposal,
+        CredentialSchema,
+        CredentialStatus,
+        RevocationListCredential,
+        RevocationListCredentialSubject,
+        UnfinishedBbsCredential,
+        UnproofedRevocationListCredential,
+        CREDENTIAL_OFFER_TYPE,
+        CREDENTIAL_PROOF_PURPOSE,
+        CREDENTIAL_SCHEMA_TYPE,
+        CREDENTIAL_SIGNATURE_TYPE,
+        DEFAULT_CREDENTIAL_CONTEXTS,
+        DEFAULT_REVOCATION_CONTEXTS,
     },
     crypto::crypto_issuer::CryptoIssuer,
     crypto::crypto_utils::create_assertion_proof,
@@ -16,7 +26,8 @@ use crate::{
 use bbs::{
     issuer::Issuer as BbsIssuer,
     keys::{DeterministicPublicKey, SecretKey},
-    BlindSignatureContext, ProofNonce,
+    BlindSignatureContext,
+    ProofNonce,
 };
 use flate2::{read::GzDecoder, write::GzEncoder, Compression};
 
@@ -343,25 +354,19 @@ impl Issuer {
 
 #[cfg(test)]
 mod tests {
+    extern crate utilities;
     use super::*;
-    use crate::{
-        application::{
-            datatypes::{BbsCredentialOffer, BbsCredentialRequest},
-            prover::Prover,
-        },
-        utils::test_data::{
-            accounts::local::{HOLDER_DID, ISSUER_DID, ISSUER_PRIVATE_KEY, ISSUER_PUBLIC_KEY_DID},
-            bbs_coherent_context_test_data::{
-                EXAMPLE_REVOCATION_LIST_DID, REVOCATION_LIST_CREDENTIAL,
-            },
-            vc_zkp::{EXAMPLE_CREDENTIAL_PROPOSAL, EXAMPLE_CREDENTIAL_SCHEMA},
-        },
+    use crate::application::{
+        datatypes::{BbsCredentialOffer, BbsCredentialRequest},
+        prover::Prover,
     };
-    use bbs::{
-        issuer::Issuer as BbsIssuer,
-        prover::Prover as BbsProver,
-    };
+    use bbs::{issuer::Issuer as BbsIssuer, prover::Prover as BbsProver};
     use std::collections::HashMap;
+    use utilities::test_data::{
+        accounts::local::{HOLDER_DID, ISSUER_DID, ISSUER_PRIVATE_KEY, ISSUER_PUBLIC_KEY_DID},
+        bbs_coherent_context_test_data::{EXAMPLE_REVOCATION_LIST_DID, REVOCATION_LIST_CREDENTIAL},
+        vc_zkp::{EXAMPLE_CREDENTIAL_PROPOSAL, EXAMPLE_CREDENTIAL_SCHEMA},
+    };
     use vade_evan_substrate::signing::{LocalSigner, Signer};
 
     fn request_credential(

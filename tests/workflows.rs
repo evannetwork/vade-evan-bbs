@@ -1,8 +1,4 @@
-use std::{
-    collections::HashMap,
-    error::Error,
-    env,
-};
+use std::{collections::HashMap, env, error::Error};
 use utilities::test_data::{
     accounts::local::{
         HOLDER_DID,
@@ -19,37 +15,7 @@ use utilities::test_data::{
     vc_zkp::{SCHEMA_DESCRIPTION, SCHEMA_NAME, SCHEMA_PROPERTIES, SCHEMA_REQUIRED_PROPERTIES},
 };
 use vade::Vade;
-use vade_evan_bbs::{
-    application::datatypes::{
-        BbsCredential,
-        BbsCredentialOffer,
-        BbsCredentialRequest,
-        BbsProofRequest,
-        CredentialProposal,
-        CredentialSchema,
-        CredentialSubject,
-        ProofPresentation,
-        RevocationListCredential,
-        UnfinishedBbsCredential,
-        CREDENTIAL_OFFER_TYPE,
-        CREDENTIAL_PROOF_PURPOSE,
-        CREDENTIAL_PROPOSAL_TYPE,
-        CREDENTIAL_REQUEST_TYPE,
-        CREDENTIAL_SIGNATURE_TYPE,
-    },
-    vade_evan_bbs::{
-        PresentProofPayload,
-        RequestProofPayload,
-        RevokeCredentialPayload,
-        VerifyProofPayload,
-        CreateCredentialProposalPayload,
-        FinishCredentialPayload,
-        IssueCredentialPayload,
-        OfferCredentialPayload,
-        RequestCredentialPayload,
-        VadeEvanBbs,
-    },
-};
+use vade_evan_bbs::*;
 use vade_evan_substrate::{
     signing::{LocalSigner, Signer},
     ResolverConfig,
