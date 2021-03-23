@@ -164,7 +164,7 @@ impl BbsCredential {
     }
 }
 
-// A verifiable credential with a blind signature that still needs to be processed by the holder
+/// A verifiable credential with a blind signature that still needs to be processed by the holder
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UnfinishedBbsCredential {
@@ -350,7 +350,7 @@ pub struct UnproofedRevocationListCredential {
 }
 
 /// A revocation list credential associating VC revocation IDs to their revocation status as a bit list. See
-/// https://w3c-ccg.github.io/vc-status-rl-2020/#revocationlist2020credential
+/// <https://w3c-ccg.github.io/vc-status-rl-2020/#revocationlist2020credential>
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RevocationListCredential {

@@ -1,10 +1,18 @@
-use std::collections::HashMap;
-use std::error::Error;
-use utilities::test_data::accounts::local::HOLDER_DID;
+use std::{
+    collections::HashMap,
+    error::Error,
+    env,
+};
 use utilities::test_data::{
     accounts::local::{
-        ISSUER_DID, ISSUER_PRIVATE_KEY, ISSUER_PUBLIC_KEY_DID, SIGNER_1_ADDRESS, SIGNER_1_DID,
-        SIGNER_1_PRIVATE_KEY, VERIFIER_DID,
+        HOLDER_DID,
+        ISSUER_DID,
+        ISSUER_PRIVATE_KEY,
+        ISSUER_PUBLIC_KEY_DID,
+        SIGNER_1_ADDRESS,
+        SIGNER_1_DID,
+        SIGNER_1_PRIVATE_KEY,
+        VERIFIER_DID,
     },
     bbs_coherent_context_test_data::{MASTER_SECRET, PUB_KEY, SECRET_KEY, SUBJECT_DID},
     environment::DEFAULT_VADE_EVAN_SUBSTRATE_IP,
@@ -13,27 +21,39 @@ use utilities::test_data::{
 use vade::Vade;
 use vade_evan_bbs::{
     application::datatypes::{
-        BbsCredential, BbsCredentialOffer, BbsCredentialRequest, CredentialSchema,
-        CredentialSubject, ProofPresentation, RevocationListCredential, UnfinishedBbsCredential,
-        CREDENTIAL_OFFER_TYPE, CREDENTIAL_PROOF_PURPOSE, CREDENTIAL_PROPOSAL_TYPE,
-        CREDENTIAL_REQUEST_TYPE, CREDENTIAL_SIGNATURE_TYPE,
+        BbsCredential,
+        BbsCredentialOffer,
+        BbsCredentialRequest,
+        BbsProofRequest,
+        CredentialProposal,
+        CredentialSchema,
+        CredentialSubject,
+        ProofPresentation,
+        RevocationListCredential,
+        UnfinishedBbsCredential,
+        CREDENTIAL_OFFER_TYPE,
+        CREDENTIAL_PROOF_PURPOSE,
+        CREDENTIAL_PROPOSAL_TYPE,
+        CREDENTIAL_REQUEST_TYPE,
+        CREDENTIAL_SIGNATURE_TYPE,
     },
     vade_evan_bbs::{
-        PresentProofPayload, RequestProofPayload, RevokeCredentialPayload, VerifyProofPayload,
+        PresentProofPayload,
+        RequestProofPayload,
+        RevokeCredentialPayload,
+        VerifyProofPayload,
+        CreateCredentialProposalPayload,
+        FinishCredentialPayload,
+        IssueCredentialPayload,
+        OfferCredentialPayload,
+        RequestCredentialPayload,
+        VadeEvanBbs,
     },
 };
-use vade_evan_bbs::{
-    application::datatypes::{BbsProofRequest, CredentialProposal},
-    vade_evan_bbs::{
-        CreateCredentialProposalPayload, FinishCredentialPayload, IssueCredentialPayload,
-        OfferCredentialPayload, RequestCredentialPayload, VadeEvanBbs,
-    },
-};
-
-use std::env;
 use vade_evan_substrate::{
     signing::{LocalSigner, Signer},
-    ResolverConfig, VadeEvanSubstrate,
+    ResolverConfig,
+    VadeEvanSubstrate,
 };
 
 const EVAN_METHOD: &str = "did:evan";
@@ -693,7 +713,6 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
     .await?;
 
     // revoke credential
-
     revoke_credential(&mut vade, revocation_list.id, 0).await?;
 
     // create proof request

@@ -1,14 +1,12 @@
-use crate::application::{
-    datatypes::{BbsProofRequest, BbsSubProofRequest, ProofPresentation, KEY_SIZE},
-    utils::get_now_as_iso_string,
+use crate::{
+    application::{
+        datatypes::{BbsProofRequest, BbsSubProofRequest, ProofPresentation, KEY_SIZE},
+        utils::get_now_as_iso_string,
+    },
+    crypto::{crypto_utils::check_assertion_proof, crypto_verifier::CryptoVerifier},
 };
-use crate::crypto::{crypto_utils::check_assertion_proof, crypto_verifier::CryptoVerifier};
-
-use bbs::verifier::Verifier as BbsVerifier;
-use bbs::{keys::DeterministicPublicKey, SignatureProof};
-use std::collections::HashMap;
-use std::error::Error;
-use std::panic;
+use bbs::{keys::DeterministicPublicKey, verifier::Verifier as BbsVerifier, SignatureProof};
+use std::{collections::HashMap, error::Error, panic};
 
 pub struct Verifier {}
 
@@ -114,19 +112,24 @@ impl Verifier {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::datatypes::{
-        CredentialSchema, RevocationListCredential, UnfinishedProofPresentation,
-    };
-    use crate::application::utils::get_dpk_from_string;
-    use crate::crypto::crypto_utils::create_assertion_proof;
-    use crate::utils::test_data::{
-        accounts::local::{SIGNER_1_ADDRESS, SIGNER_1_DID, SIGNER_1_PRIVATE_KEY, VERIFIER_DID},
-        bbs_coherent_context_test_data::{
-            PROOF_PRESENTATION, PROOF_PRESENTATION_INVALID_SIGNATURE_AND_WITHOUT_JWS,
-            PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES, PUB_KEY, REVOCATION_LIST_CREDENTIAL,
+    use crate::{
+        application::{
+            datatypes::{CredentialSchema, RevocationListCredential, UnfinishedProofPresentation},
+            utils::get_dpk_from_string,
         },
-        vc_zkp::EXAMPLE_CREDENTIAL_SCHEMA,
-        vc_zkp::EXAMPLE_CREDENTIAL_SCHEMA_FIVE_PROPERTIES,
+        crypto::crypto_utils::create_assertion_proof,
+        utils::test_data::{
+            accounts::local::{SIGNER_1_ADDRESS, SIGNER_1_DID, SIGNER_1_PRIVATE_KEY, VERIFIER_DID},
+            bbs_coherent_context_test_data::{
+                PROOF_PRESENTATION,
+                PROOF_PRESENTATION_INVALID_SIGNATURE_AND_WITHOUT_JWS,
+                PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES,
+                PUB_KEY,
+                REVOCATION_LIST_CREDENTIAL,
+            },
+            vc_zkp::EXAMPLE_CREDENTIAL_SCHEMA,
+            vc_zkp::EXAMPLE_CREDENTIAL_SCHEMA_FIVE_PROPERTIES,
+        },
     };
     use serde_json::Value;
     use vade_evan_substrate::signing::{LocalSigner, Signer};
@@ -243,7 +246,6 @@ mod tests {
         )
         .await?;
         let presentation = ProofPresentation::new(proofless_presentation, assertion_proof);
-        // assert!(false, serde_json::to_string(&presentation)?);
         let proof_request: BbsProofRequest =
             serde_json::from_str(&PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES)?;
         let key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;

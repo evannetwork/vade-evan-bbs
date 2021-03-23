@@ -25,6 +25,7 @@ use std::{collections::HashMap, convert::TryInto, error::Error, io::prelude::*};
 use vade_evan_substrate::signing::Signer;
 
 use super::datatypes::SchemaProperty;
+
 pub struct Issuer {}
 
 const MAX_REVOCATION_ENTRIES: usize = 131072;
@@ -63,7 +64,7 @@ impl Issuer {
 
         let mut schema = CredentialSchema {
             id: assigned_did.to_owned(),
-            r#type: "EvanVCSchema".to_string(), //TODO: Make enum
+            r#type: "EvanVCSchema".to_string(),
             name: schema_name.to_owned(),
             author: issuer_did.to_owned(),
             created_at,
@@ -356,8 +357,10 @@ mod tests {
             vc_zkp::{EXAMPLE_CREDENTIAL_PROPOSAL, EXAMPLE_CREDENTIAL_SCHEMA},
         },
     };
-    use bbs::issuer::Issuer as BbsIssuer;
-    use bbs::prover::Prover as BbsProver;
+    use bbs::{
+        issuer::Issuer as BbsIssuer,
+        prover::Prover as BbsProver,
+    };
     use std::collections::HashMap;
     use vade_evan_substrate::signing::{LocalSigner, Signer};
 

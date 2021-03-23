@@ -11,12 +11,9 @@
   limitations under the License.
 */
 
-// TODO: Add docs
-
 #[macro_use]
 extern crate log;
 extern crate vade_evan_substrate;
-// vc-zkp
 pub mod application;
 pub mod crypto;
 mod utils;

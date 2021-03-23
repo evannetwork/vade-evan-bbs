@@ -14,22 +14,33 @@
   limitations under the License.
 */
 
-use crate::application::{
-    datatypes::{
-        BbsCredential, BbsCredentialOffer, BbsCredentialRequest, BbsProofRequest,
-        CredentialProposal, CredentialSchema, CredentialSubject, ProofPresentation,
-        RevocationListCredential, SchemaProperty, UnfinishedBbsCredential,
+use crate::{
+    application::{
+        datatypes::{
+            BbsCredential,
+            BbsCredentialOffer,
+            BbsCredentialRequest,
+            BbsProofRequest,
+            CredentialProposal,
+            CredentialSchema,
+            CredentialSubject,
+            ProofPresentation,
+            RevocationListCredential,
+            SchemaProperty,
+            UnfinishedBbsCredential,
+        },
+        issuer::Issuer,
+        prover::Prover,
+        utils::get_dpk_from_string,
+        verifier::Verifier,
     },
-    issuer::Issuer,
-    prover::Prover,
-    utils::get_dpk_from_string,
-    verifier::Verifier,
+    crypto::crypto_verifier::CryptoVerifier,
 };
-use crate::crypto::crypto_verifier::CryptoVerifier;
 use async_trait::async_trait;
 use bbs::{
     keys::{DeterministicPublicKey, SecretKey},
-    SignatureBlinding, SignatureMessage,
+    SignatureBlinding,
+    SignatureMessage,
 };
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, error::Error};
@@ -221,9 +232,9 @@ impl VadeEvanBbs {
     ) -> Result<String, Box<dyn Error>> {
         let options = format!(
             r###"{{
-            "privateKey": "{}",
-            "identity": "{}"
-        }}"###,
+                "privateKey": "{}",
+                "identity": "{}"
+            }}"###,
             private_key, identity
         );
         let result = self
@@ -253,10 +264,10 @@ impl VadeEvanBbs {
     ) -> Result<Option<String>, Box<dyn Error>> {
         let options = format!(
             r###"{{
-            "privateKey": "{}",
-            "identity": "{}",
-            "operation": "setDidDocument"
-        }}"###,
+                "privateKey": "{}",
+                "identity": "{}",
+                "operation": "setDidDocument"
+            }}"###,
             &private_key, &identity
         );
         let result = self.vade.did_update(&did, &options, &payload).await?;
@@ -719,7 +730,6 @@ impl VadePlugin for VadeEvanBbs {
     ) -> Result<VadePluginResultValue<Option<String>>, Box<dyn std::error::Error>> {
         ignore_unrelated!(method, options);
 
-        // let options: AuthenticationOptions = parse!(&options, "options");
         let payload: FinishCredentialPayload = parse!(&payload, "payload");
 
         let blinding: SignatureBlinding =

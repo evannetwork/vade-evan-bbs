@@ -1,19 +1,21 @@
 use crate::application::{
     datatypes::{
-        BbsProofRequest, CredentialStatus, ProofPresentation, RevocationListCredential, KEY_SIZE,
+        BbsProofRequest,
+        CredentialStatus,
+        ProofPresentation,
+        RevocationListCredential,
+        KEY_SIZE,
     },
     utils::get_nonce_from_string,
 };
-use std::collections::HashMap;
-use std::error::Error;
-use std::io::prelude::*;
-
 use bbs::{
-    keys::DeterministicPublicKey, verifier::Verifier as BbsVerifier, ProofChallenge, SignatureProof,
+    keys::DeterministicPublicKey,
+    verifier::Verifier as BbsVerifier,
+    ProofChallenge,
+    SignatureProof,
 };
-
 use flate2::read::GzDecoder;
-use std::panic;
+use std::{collections::HashMap, error::Error, io::prelude::*, panic};
 
 pub struct CryptoVerifier {}
 
@@ -117,10 +119,15 @@ impl CryptoVerifier {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::datatypes::BbsCredential;
-    use crate::utils::test_data::bbs_coherent_context_test_data::{
-        FINISHED_CREDENTIAL, REVOCATION_LIST_CREDENTIAL, REVOCATION_LIST_CREDENTIAL_REVOKED_ID_1,
+    use crate::{
+        application::datatypes::BbsCredential,
+        utils::test_data::bbs_coherent_context_test_data::{
+            FINISHED_CREDENTIAL,
+            REVOCATION_LIST_CREDENTIAL,
+            REVOCATION_LIST_CREDENTIAL_REVOKED_ID_1,
+        },
     };
+
     #[test]
     fn can_check_not_revoked_credential() -> Result<(), Box<dyn Error>> {
         let credential: BbsCredential = serde_json::from_str(&FINISHED_CREDENTIAL)?;

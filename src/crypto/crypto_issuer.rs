@@ -8,8 +8,11 @@ use bbs::{
     ProofNonce,
     SignatureMessage,
 };
-use std::collections::BTreeMap;
-use std::error::Error;
+use std::{
+    collections::BTreeMap,
+    error::Error,
+};
+
 pub struct CryptoIssuer {}
 
 impl CryptoIssuer {

@@ -10,10 +10,12 @@ use bbs::{
     BlindSignatureContext, HashElem, ProofNonce, SignatureBlinding, SignatureMessage,
     SignatureProof,
 };
-use std::collections::{BTreeMap, HashMap, HashSet};
-use std::error::Error;
-use std::iter::FromIterator;
-use std::panic;
+use std::{
+    collections::{BTreeMap, HashMap, HashSet},
+    error::Error,
+    iter::FromIterator,
+    panic,
+};
 
 pub struct CryptoProver {}
 
@@ -143,13 +145,19 @@ impl CryptoProver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::{
-        datatypes::{BbsCredential, UnfinishedBbsCredential},
-        utils::get_dpk_from_string,
-    };
-    use crate::utils::test_data::bbs_coherent_context_test_data::{
-        FINISHED_CREDENTIAL, MASTER_SECRET, NQUADS, PUB_KEY, SIGNATURE_BLINDING,
-        UNFINISHED_CREDENTIAL,
+    use crate::{
+        application::{
+            datatypes::{BbsCredential, UnfinishedBbsCredential},
+            utils::get_dpk_from_string,
+        },
+        utils::test_data::bbs_coherent_context_test_data::{
+            FINISHED_CREDENTIAL,
+            MASTER_SECRET,
+            NQUADS,
+            PUB_KEY,
+            SIGNATURE_BLINDING,
+            UNFINISHED_CREDENTIAL,
+        },
     };
     use bbs::{issuer::Issuer as CryptoIssuer, prover::Prover};
     use std::convert::{From, TryInto};
