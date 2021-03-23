@@ -32,6 +32,7 @@ pub fn get_dpk_from_string(dpk: &str) -> Result<DeterministicPublicKey, Box<dyn 
     return Ok(nonce);
 }
 
+#[allow(dead_code)]
 pub fn get_signature_message_from_string(dpk: &str) -> Result<SignatureMessage, Box<dyn Error>> {
     let msg_bytes = base64::decode(dpk)?.into_boxed_slice();
     let msg = panic::catch_unwind(|| SignatureMessage::from(msg_bytes))
