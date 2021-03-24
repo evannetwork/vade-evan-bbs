@@ -1,8 +1,7 @@
 use bbs::{keys::DeterministicPublicKey, ProofNonce, SignatureMessage};
 #[cfg(not(target_arch = "wasm32"))]
 use chrono::Utc;
-use std::error::Error;
-use std::panic;
+use std::{error::Error, panic};
 use uuid::Uuid;
 
 pub fn get_now_as_iso_string() -> String {

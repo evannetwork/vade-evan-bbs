@@ -23,8 +23,7 @@ use crate::{
         },
         utils::{generate_uuid, get_now_as_iso_string},
     },
-    crypto::crypto_issuer::CryptoIssuer,
-    crypto::crypto_utils::create_assertion_proof,
+    crypto::{crypto_issuer::CryptoIssuer, crypto_utils::create_assertion_proof},
 };
 use bbs::{
     issuer::Issuer as BbsIssuer,
