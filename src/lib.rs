@@ -19,5 +19,4 @@ pub(crate) mod application;
 pub(crate) mod crypto;
 mod vade_evan_bbs;
 
-pub use self::application::datatypes::*;
-pub use self::vade_evan_bbs::*;
+pub use self::{application::datatypes::*, vade_evan_bbs::*};
