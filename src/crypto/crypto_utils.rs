@@ -14,8 +14,7 @@
   limitations under the License.
 */
 
-use crate::application::datatypes::AssertionProof;
-use crate::application::utils::get_now_as_iso_string;
+use crate::application::{datatypes::AssertionProof, utils::get_now_as_iso_string};
 use base64;
 use secp256k1::{recover, Message, RecoveryId, Signature};
 use serde::{Deserialize, Serialize};

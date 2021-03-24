@@ -1,24 +1,27 @@
-use crate::application::{
-    datatypes::{BbsUnfinishedCredentialSignature, CredentialSchemaReference, CredentialSubject},
-    utils::{generate_uuid, get_now_as_iso_string},
-};
+use super::datatypes::SchemaProperty;
 use crate::{
-    application::datatypes::{
-        BbsCredentialOffer,
-        BbsCredentialRequest,
-        CredentialProposal,
-        CredentialSchema,
-        CredentialStatus,
-        RevocationListCredential,
-        RevocationListCredentialSubject,
-        UnfinishedBbsCredential,
-        UnproofedRevocationListCredential,
-        CREDENTIAL_OFFER_TYPE,
-        CREDENTIAL_PROOF_PURPOSE,
-        CREDENTIAL_SCHEMA_TYPE,
-        CREDENTIAL_SIGNATURE_TYPE,
-        DEFAULT_CREDENTIAL_CONTEXTS,
-        DEFAULT_REVOCATION_CONTEXTS,
+    application::{
+        datatypes::{
+            BbsCredentialOffer,
+            BbsCredentialRequest,
+            BbsUnfinishedCredentialSignature,
+            CredentialProposal,
+            CredentialSchema,
+            CredentialSchemaReference,
+            CredentialStatus,
+            CredentialSubject,
+            RevocationListCredential,
+            RevocationListCredentialSubject,
+            UnfinishedBbsCredential,
+            UnproofedRevocationListCredential,
+            CREDENTIAL_OFFER_TYPE,
+            CREDENTIAL_PROOF_PURPOSE,
+            CREDENTIAL_SCHEMA_TYPE,
+            CREDENTIAL_SIGNATURE_TYPE,
+            DEFAULT_CREDENTIAL_CONTEXTS,
+            DEFAULT_REVOCATION_CONTEXTS,
+        },
+        utils::{generate_uuid, get_now_as_iso_string},
     },
     crypto::crypto_issuer::CryptoIssuer,
     crypto::crypto_utils::create_assertion_proof,
@@ -30,12 +33,8 @@ use bbs::{
     ProofNonce,
 };
 use flate2::{read::GzDecoder, write::GzEncoder, Compression};
-
 use std::{collections::HashMap, convert::TryInto, error::Error, io::prelude::*};
-
 use vade_evan_substrate::signing::Signer;
-
-use super::datatypes::SchemaProperty;
 
 pub struct Issuer {}
 
