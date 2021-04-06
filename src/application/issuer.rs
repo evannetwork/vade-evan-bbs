@@ -364,6 +364,10 @@ impl Issuer {
 
         Ok(revocation_list)
     }
+
+    pub fn create_new_keys() -> (DeterministicPublicKey, SecretKey) {
+        return BbsIssuer::new_short_keys(None);
+    }
 }
 
 #[cfg(test)]

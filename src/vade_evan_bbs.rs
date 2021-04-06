@@ -225,6 +225,48 @@ impl VadeEvanBbs {
 }
 
 impl VadeEvanBbs {
+    /// Runs a custom function, currently supports
+    ///
+    /// - `create_master_secret` to create new master secrets
+    ///
+    /// # Arguments
+    ///
+    /// * `method` - method to call a function for (e.g. "did:example")
+    /// * `function` - currently supports `create_master_secret`
+    /// * `options` - serialized [`TypeOptions`](https://docs.rs/vade_evan_cl/*/vade_evan_bbs/struct.TypeOptions.html)
+    /// * `_payload` - currently not used, so can be left empty
+    async fn run_custom_function(
+        &mut self,
+        method: &str,
+        function: &str,
+        options: &str,
+        _payload: &str,
+    ) -> Result<VadePluginResultValue<Option<String>>, Box<dyn Error>> {
+        ignore_unrelated!(method, options);
+        match function {
+            "create_master_secret" => Ok(VadePluginResultValue::Success(Some(
+                Prover::create_master_secret(),
+            ))),
+            "create_new_keys" => {
+                let keys = Issuer::create_new_keys();
+                let pub_key = base64::encode(keys.0.to_bytes_compressed_form());
+                let secret_key = base64::encode(keys.1.to_bytes_compressed_form());
+
+                let serialised_keys = format!(
+                    r###"
+                {{
+                    "public_key": "{}",
+                    "secret_key": "{}"
+                }}
+                "###,
+                    pub_key, secret_key
+                );
+                Ok(VadePluginResultValue::Success(Some(serialised_keys)))
+            }
+            _ => Ok(VadePluginResultValue::Ignored),
+        }
+    }
+
     async fn generate_did(
         &mut self,
         private_key: &str,

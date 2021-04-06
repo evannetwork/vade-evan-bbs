@@ -35,8 +35,9 @@ use crate::{
     crypto::{crypto_prover::CryptoProver, crypto_utils::create_assertion_proof},
 };
 use bbs::{
-    keys::DeterministicPublicKey,
+    keys::{DeterministicPublicKey, SecretKey},
     pok_sig::PoKOfSignature,
+    prover::Prover as BbsProver,
     signature::BlindSignature,
     SignatureBlinding,
     SignatureMessage,
@@ -274,6 +275,10 @@ impl Prover {
         .await?;
 
         Ok(ProofPresentation::new(signatureless_presentation, proof))
+    }
+
+    pub fn create_master_secret() -> String {
+        return base64::encode(BbsProver::new_link_secret().to_bytes_compressed_form());
     }
 }
 
