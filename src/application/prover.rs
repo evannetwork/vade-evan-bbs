@@ -277,6 +277,10 @@ impl Prover {
         Ok(ProofPresentation::new(signatureless_presentation, proof))
     }
 
+    /// Creates a new master secret
+    ///
+    /// # Returns
+    /// * `String` - Base64-encoded bytes representation of the master secret
     pub fn create_master_secret() -> String {
         return base64::encode(BbsProver::new_link_secret().to_bytes_compressed_form());
     }

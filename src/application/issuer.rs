@@ -365,6 +365,10 @@ impl Issuer {
         Ok(revocation_list)
     }
 
+    /// Creates a new key pair
+    ///
+    /// # Returns
+    /// * `(DeterministicPublicKey, SecretKey)` - Tuple of the public key and secret key
     pub fn create_new_keys() -> (DeterministicPublicKey, SecretKey) {
         return BbsIssuer::new_short_keys(None);
     }
@@ -379,6 +383,7 @@ mod tests {
         prover::Prover,
     };
     use bbs::{issuer::Issuer as BbsIssuer, prover::Prover as BbsProver};
+    use serde_json::Value;
     use std::collections::HashMap;
     use utilities::test_data::{
         accounts::local::{HOLDER_DID, ISSUER_DID, ISSUER_PRIVATE_KEY, ISSUER_PUBLIC_KEY_DID},
