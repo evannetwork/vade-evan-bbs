@@ -110,14 +110,18 @@ impl Prover {
         }
 
         let nonce = get_nonce_from_string(&credential_offering.nonce)?;
-        let (blind_signature_context, blinding) =
-            CryptoProver::create_blind_signature_context(&issuer_pub_key, &master_secret, &nonce)
-                .map_err(|e| {
-                format!(
-                    "Cannot request credential: Could not create signature blinding: {}",
-                    e
-                )
-            })?;
+        let (blind_signature_context, blinding) = CryptoProver::create_blind_signature_context(
+            &issuer_pub_key,
+            &master_secret,
+            &nonce,
+            credential_offering.credential_message_count.parse()?,
+        )
+        .map_err(|e| {
+            format!(
+                "Cannot request credential: Could not create signature blinding: {}",
+                e
+            )
+        })?;
 
         Ok((
             BbsCredentialRequest {

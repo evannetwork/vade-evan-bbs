@@ -16,7 +16,7 @@
 
 use crate::{
     application::{
-        datatypes::{BbsProofRequest, BbsSubProofRequest, ProofPresentation, KEY_SIZE},
+        datatypes::{BbsProofRequest, BbsSubProofRequest, ProofPresentation},
         utils::get_now_as_iso_string,
     },
     crypto::{crypto_utils::check_assertion_proof, crypto_verifier::CryptoVerifier},
@@ -96,7 +96,7 @@ impl Verifier {
                     "Missing public key for schema {}",
                     &cred.credential_schema.id
                 ))?
-                .to_public_key(KEY_SIZE)
+                .to_public_key(cred.proof.credential_message_count.parse()?)
                 .map_err(|e| {
                     format!(
                         "Error converting deterministic public key while verifying proof: {}",

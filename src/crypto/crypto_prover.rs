@@ -14,7 +14,7 @@
   limitations under the License.
 */
 
-use crate::application::datatypes::{BbsSubProofRequest, KEY_SIZE};
+use crate::application::datatypes::BbsSubProofRequest;
 use bbs::{
     keys::DeterministicPublicKey,
     messages::{HiddenMessage, ProofMessage},
@@ -46,9 +46,10 @@ impl CryptoProver {
         issuer_pub_key: &DeterministicPublicKey,
         master_secret: &SignatureMessage,
         credential_offering_nonce: &ProofNonce,
+        credential_message_count: usize,
     ) -> Result<(BlindSignatureContext, SignatureBlinding), Box<dyn Error>> {
         let pk = issuer_pub_key
-            .to_public_key(KEY_SIZE) // + 1 for master secret
+            .to_public_key(credential_message_count) // + 1 for master secret
             .map_err(|e| format!("{}", e))?;
         let mut messages = BTreeMap::new();
         messages.insert(0, master_secret.clone());
@@ -74,12 +75,8 @@ impl CryptoProver {
             i += 1;
         }
 
-        for j in i..KEY_SIZE {
-            messages.insert(j, SignatureMessage::hash(""));
-        }
-
         let verkey = issuer_public_key
-            .to_public_key(KEY_SIZE)
+            .to_public_key(credential_messages.len())
             .map_err(|e| format!("Error finishing credential: {}", e))?;
 
         BbsProver::complete_signature(&verkey, &messages, &blind_signature, &blinding_factor)
@@ -94,7 +91,7 @@ impl CryptoProver {
         nquads: Vec<String>,
     ) -> Result<PoKOfSignature, Box<dyn Error>> {
         let pk = public_key
-            .to_public_key(KEY_SIZE)
+            .to_public_key(nquads.len())
             .map_err(|e| format!("Cannot create proof: Error converting public key: {}", e))?;
 
         let crypto_proof_request =
@@ -116,10 +113,6 @@ impl CryptoProver {
             }
             commitment_messages.insert(i, msg);
             i += 1;
-        }
-
-        for j in i..KEY_SIZE {
-            commitment_messages.insert(j, pm_hidden!(""))
         }
 
         let signature_bytes = base64::decode(credential_signature)?.into_boxed_slice();
@@ -193,7 +186,12 @@ mod tests {
     #[test]
     fn can_create_blind_signature_context() {
         let (dpk, master_secret, nonce) = setup_tests();
-        let ctx = CryptoProver::create_blind_signature_context(&dpk, &master_secret, &nonce);
+        let ctx = CryptoProver::create_blind_signature_context(
+            &dpk,
+            &master_secret,
+            &nonce,
+            100, /*random value*/
+        );
         assert!(ctx.is_ok());
     }
 

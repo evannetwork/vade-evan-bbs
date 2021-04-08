@@ -455,8 +455,11 @@ impl VadePlugin for VadeEvanBbs {
         ignore_unrelated!(method, options);
 
         let payload: OfferCredentialPayload = parse!(&payload, "payload");
-        let result: BbsCredentialOffer =
-            Issuer::offer_credential(&payload.credential_proposal, &payload.issuer)?;
+        let result: BbsCredentialOffer = Issuer::offer_credential(
+            &payload.credential_proposal,
+            &payload.issuer,
+            1, /*arbitrary*/
+        )?;
         Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
             &result,
         )?)))
