@@ -127,7 +127,6 @@ impl Issuer {
     pub fn offer_credential(
         credential_proposal: &CredentialProposal,
         issuer_did: &str,
-        credential_message_count: usize,
     ) -> Result<BbsCredentialOffer, Box<dyn Error>> {
         let nonce = base64::encode(BbsIssuer::generate_signing_nonce().to_bytes_compressed_form());
         if credential_proposal.issuer != issuer_did {
@@ -409,9 +408,15 @@ mod tests {
             nquads.insert(nquads.len(), string);
         }
 
-        let (credential_request, _) =
-            Prover::request_credential(offer, &schema, &secret, credential_values, pub_key)
-                .map_err(|e| format!("{}", e))?;
+        let (credential_request, _) = Prover::request_credential(
+            offer,
+            &schema,
+            &secret,
+            credential_values,
+            pub_key,
+            amount_of_values.into(), // + 1 for master secret
+        )
+        .map_err(|e| format!("{}", e))?;
 
         return Ok((credential_request, schema, nquads));
     }
@@ -455,7 +460,7 @@ mod tests {
     #[test]
     fn can_offer_credential() -> Result<(), Box<dyn Error>> {
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
-        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID, 1)?;
+        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID)?;
 
         assert_eq!(&offer.issuer, &ISSUER_DID);
         assert_eq!(&offer.schema, &proposal.schema);
@@ -468,7 +473,7 @@ mod tests {
     #[test]
     fn credential_offer_fails_on_wrong_issuer() -> Result<(), Box<dyn Error>> {
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
-        let offer = Issuer::offer_credential(&proposal, "random_issuer", 1);
+        let offer = Issuer::offer_credential(&proposal, "random_issuer");
 
         match offer {
             Ok(_) => assert!(false),
@@ -486,7 +491,7 @@ mod tests {
         let message_count = 1;
         let (dpk, sk) = BbsIssuer::new_short_keys(None);
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
-        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID, message_count)?;
+        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
         let (credential_request, schema, nquads) =
             request_credential(&dpk, &offer, message_count.try_into()?)?;
@@ -523,7 +528,7 @@ mod tests {
         let message_count = 5;
         let (dpk, sk) = BbsIssuer::new_short_keys(None);
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
-        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID, message_count)?;
+        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
         let (credential_request, schema, nquads) =
             request_credential(&dpk, &offer, message_count.try_into()?)?;
@@ -560,7 +565,7 @@ mod tests {
         let message_count = 5;
         let (dpk, sk) = BbsIssuer::new_short_keys(None);
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
-        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID, message_count)?;
+        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
         let (credential_request, schema, nquads) =
             request_credential(&dpk, &offer, message_count.try_into()?)?;

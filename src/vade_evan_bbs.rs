@@ -126,6 +126,7 @@ pub struct RequestCredentialPayload {
     pub master_secret: String,
     pub credential_values: HashMap<String, String>,
     pub issuer_pub_key: String,
+    pub credential_message_count: usize,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -455,11 +456,8 @@ impl VadePlugin for VadeEvanBbs {
         ignore_unrelated!(method, options);
 
         let payload: OfferCredentialPayload = parse!(&payload, "payload");
-        let result: BbsCredentialOffer = Issuer::offer_credential(
-            &payload.credential_proposal,
-            &payload.issuer,
-            1, /*arbitrary*/
-        )?;
+        let result: BbsCredentialOffer =
+            Issuer::offer_credential(&payload.credential_proposal, &payload.issuer)?;
         Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
             &result,
         )?)))
@@ -577,6 +575,7 @@ impl VadePlugin for VadeEvanBbs {
                 &master_secret,
                 payload.credential_values,
                 &public_key,
+                payload.credential_message_count,
             )?;
         let result = serde_json::to_string(&(
             credential_request,

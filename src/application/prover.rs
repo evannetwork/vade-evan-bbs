@@ -82,6 +82,7 @@ impl Prover {
     /// * `master_secret` - The master secret to be incorporated as a blinded value to be signed by the issuer
     /// * `credential_values` - A mapping of property names to their stringified cleartext values
     /// * `issuer_pub_key` - Public key of the issuer
+    /// * `credential_message_count` - Number of messages to be signed in this credential by the issuer (all required schema properties + the optional ones the prover wants to provide values for)
     ///
     /// # Returns
     /// * `BbsCredentialRequest` - The request to be sent to the issuer
@@ -92,6 +93,7 @@ impl Prover {
         master_secret: &SignatureMessage,
         credential_values: HashMap<String, String>,
         issuer_pub_key: &DeterministicPublicKey,
+        credential_message_count: usize,
     ) -> Result<(BbsCredentialRequest, SignatureBlinding), Box<dyn Error>> {
         if credential_values.len() == 0 {
             return Err(Box::from(
@@ -114,7 +116,7 @@ impl Prover {
             &issuer_pub_key,
             &master_secret,
             &nonce,
-            credential_offering.credential_message_count.parse()?,
+            credential_message_count + 1, // +1 for master secret
         )
         .map_err(|e| {
             format!(
@@ -440,9 +442,16 @@ mod tests {
     #[test]
     fn can_request_credential() -> Result<(), Box<dyn Error>> {
         let (dpk, _, offering, schema, secret, credential_values) = setup_test()?;
-        let (credential_request, _) =
-            Prover::request_credential(&offering, &schema, &secret, credential_values, &dpk)
-                .map_err(|e| format!("{}", e))?;
+        let message_len = &credential_values.len() + 1; /* +1 for master secret */
+        let (credential_request, _) = Prover::request_credential(
+            &offering,
+            &schema,
+            &secret,
+            credential_values,
+            &dpk,
+            message_len,
+        )
+        .map_err(|e| format!("{}", e))?;
         assert_eq!(credential_request.schema, schema.id);
         assert_eq!(credential_request.subject, offering.subject);
         assert_eq!(credential_request.r#type, CREDENTIAL_REQUEST_TYPE);
@@ -452,8 +461,16 @@ mod tests {
     #[test]
     fn throws_when_omitting_required_credential_value() -> Result<(), Box<dyn Error>> {
         let (dpk, _, offering, schema, secret, mut credential_values) = setup_test()?;
+        let message_len = &credential_values.len() + 1; /* +1 for master secret */
         credential_values.remove("test_property_string");
-        match Prover::request_credential(&offering, &schema, &secret, credential_values, &dpk) {
+        match Prover::request_credential(
+            &offering,
+            &schema,
+            &secret,
+            credential_values,
+            &dpk,
+            message_len,
+        ) {
             Ok(_) => assert!(false),
             Err(e) => assert_eq!(
                 format!("{}", e),

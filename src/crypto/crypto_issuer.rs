@@ -44,7 +44,7 @@ impl CryptoIssuer {
         }
 
         let pub_key = issuer_public_key
-            .to_public_key(credential_values.len() + 1)
+            .to_public_key(credential_values.len() + 1/* +1 for master secret */)
             .map_err(|_| "Error creating signature: Schema for blinded signature context does not match provided values")?;
 
         let signature = BbsIssuer::blind_sign(
