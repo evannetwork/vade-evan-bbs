@@ -345,30 +345,33 @@ impl VadePlugin for VadeEvanBbs {
     /// Runs a custom function, currently supports
     ///
     /// - `create_master_secret` to create new master secrets
+    /// - `create_new_keys` to create a new key pair for BBS+ based signatures and persist  this in the given identity's DID document
     ///
     /// # Arguments
     ///
     /// * `method` - method to call a function for (e.g. "did:example")
-    /// * `function` - currently supports `create_master_secret`
+    /// * `function` - currently supports `create_master_secret` and  `create_new_keys`
     /// * `options` - serialized [`TypeOptions`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.TypeOptions.html)
-    /// * `_payload` - currently not used, so can be left empty
+    /// * `payload` - necessary for `create_new_keys`, can be left empty for `create_master_secret`
     async fn run_custom_function(
         &mut self,
         method: &str,
         function: &str,
         options: &str,
-        _payload: &str,
+        payload: &str,
     ) -> Result<VadePluginResultValue<Option<String>>, Box<dyn Error>> {
         ignore_unrelated!(method, options);
         let options: AuthenticationOptions = parse!(&options, "options");
-        let payload: CreateKeysPayload = parse!(&_payload, "payload");
         match function {
             "create_master_secret" => Ok(VadePluginResultValue::Success(Some(
                 Prover::create_master_secret(),
             ))),
-            "create_new_keys" => Ok(VadePluginResultValue::Success(Some(
-                self.create_new_keys(options, payload).await?,
-            ))),
+            "create_new_keys" => {
+                let payload: CreateKeysPayload = parse!(&payload, "payload");
+                Ok(VadePluginResultValue::Success(Some(
+                    self.create_new_keys(options, payload).await?,
+                )))
+            }
             _ => Ok(VadePluginResultValue::Ignored),
         }
     }
