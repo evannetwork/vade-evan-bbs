@@ -116,7 +116,6 @@ pub struct BbsCredentialOffer {
     pub r#type: String,
     pub schema: String,
     pub nonce: String,
-    pub credential_message_count: String,
 }
 
 /// Message to initiate credential issuance, sent by (potential) prover.

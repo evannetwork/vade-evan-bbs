@@ -140,7 +140,6 @@ impl Issuer {
             issuer: issuer_did.to_owned(),
             subject: credential_proposal.subject.to_owned(),
             r#type: CREDENTIAL_OFFER_TYPE.to_string(),
-            credential_message_count: credential_message_count.to_string(),
             schema: credential_proposal.schema.to_owned(),
             nonce,
         })
