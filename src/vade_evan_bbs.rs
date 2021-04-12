@@ -361,12 +361,12 @@ impl VadePlugin for VadeEvanBbs {
         payload: &str,
     ) -> Result<VadePluginResultValue<Option<String>>, Box<dyn Error>> {
         ignore_unrelated!(method, options);
-        let options: AuthenticationOptions = parse!(&options, "options");
         match function {
             "create_master_secret" => Ok(VadePluginResultValue::Success(Some(
                 Prover::create_master_secret(),
             ))),
             "create_new_keys" => {
+                let options: AuthenticationOptions = parse!(&options, "options");
                 let payload: CreateKeysPayload = parse!(&payload, "payload");
                 Ok(VadePluginResultValue::Success(Some(
                     self.create_new_keys(options, payload).await?,
