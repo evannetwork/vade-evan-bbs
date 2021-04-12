@@ -383,7 +383,6 @@ mod tests {
         prover::Prover,
     };
     use bbs::{issuer::Issuer as BbsIssuer, prover::Prover as BbsProver};
-    use serde_json::Value;
     use std::collections::HashMap;
     use utilities::test_data::{
         accounts::local::{HOLDER_DID, ISSUER_DID, ISSUER_PRIVATE_KEY, ISSUER_PUBLIC_KEY_DID},

@@ -35,7 +35,7 @@ use crate::{
     crypto::{crypto_prover::CryptoProver, crypto_utils::create_assertion_proof},
 };
 use bbs::{
-    keys::{DeterministicPublicKey, SecretKey},
+    keys::DeterministicPublicKey,
     pok_sig::PoKOfSignature,
     prover::Prover as BbsProver,
     signature::BlindSignature,

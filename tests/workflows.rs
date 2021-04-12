@@ -346,7 +346,7 @@ async fn ensure_whitelist(vade: &mut Vade, signer: &str) -> Result<(), Box<dyn E
     );
     let mut json_editable: Value = serde_json::from_str(&auth_string)?;
     json_editable["operation"] = Value::from("ensureWhitelisted");
-    let options = serde_json::to_string(&json_editable).unwrap();
+    let options = serde_json::to_string(&json_editable)?;
 
     let result = vade.did_update(signer, &options, &"".to_string()).await;
 

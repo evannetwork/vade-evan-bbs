@@ -300,13 +300,11 @@ impl VadeEvanBbs {
         let key_id = format!("bbs-key-{}", generate_uuid());
 
         let serialised_keys = format!(
-            r###"
-                {{
-                    "didUrl": "{}#{}",
-                    "publicKey": "{}",
-                    "secretKey": "{}"
-                }}
-                "###,
+            r###"{{
+                "didUrl": "{}#{}",
+                "publicKey": "{}",
+                "secretKey": "{}"
+            }}"###,
             &payload.key_owner_did, key_id, pub_key, secret_key
         );
 
@@ -314,23 +312,21 @@ impl VadeEvanBbs {
             get_document!(&mut self.vade, &payload.key_owner_did, "did document");
 
         let public_key_values = did_document["assertionMethod"].as_array();
-        let mut public_keys = public_key_values.unwrap_or(&vec![]).clone();
+        let mut public_keys = public_key_values.unwrap_or_else(|| vec![]);
 
         // See https://w3c-ccg.github.io/ldp-bbs2020/#bls12-381 for explanations why G2 Key (date: 07.04.2021, may be subject to change)
         let new_key = format!(
-            r###"
-                        {{
-                            "id": "{}#{}",
-                            "type": "Bls12381G2Key2020",
-                            "publicKeyBase58": "{}"
-                        }}
-                        "###,
+            r###"{{
+                "id": "{}#{}",
+                "type": "Bls12381G2Key2020",
+                "publicKeyBase58": "{}"
+            }}"###,
             &payload.key_owner_did,
             &key_id,
             &bs58::encode(keys.0.to_bytes_compressed_form()).into_string()
         );
         public_keys.push(serde_json::from_str(&new_key)?);
-        did_document["assertionMethod"] = serde_json::Value::Array(public_keys);
+        did_document["assertionMethod"] = serde_json::Value::Array(public_keys.clone());
 
         self.set_did_document(
             &payload.key_owner_did,
@@ -354,7 +350,7 @@ impl VadePlugin for VadeEvanBbs {
     ///
     /// * `method` - method to call a function for (e.g. "did:example")
     /// * `function` - currently supports `create_master_secret`
-    /// * `options` - serialized [`TypeOptions`](https://docs.rs/vade_evan_cl/*/vade_evan_bbs/struct.TypeOptions.html)
+    /// * `options` - serialized [`TypeOptions`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.TypeOptions.html)
     /// * `_payload` - currently not used, so can be left empty
     async fn run_custom_function(
         &mut self,
@@ -384,8 +380,8 @@ impl VadePlugin for VadeEvanBbs {
     /// # Arguments
     ///
     /// * `method` - method to create a credential schema for (e.g. "did:example")
-    /// * `options` - serialized [`AuthenticationOptions`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.AuthenticationOptions.html)
-    /// * `payload` - serialized [`CreateCredentialSchemaPayload`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.CreateCredentialSchemaPayload.html)
+    /// * `options` - serialized [`AuthenticationOptions`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.AuthenticationOptions.html)
+    /// * `payload` - serialized [`CreateCredentialSchemaPayload`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.CreateCredentialSchemaPayload.html)
     ///
     /// # Returns
     /// * `Option<String>` - The created schema as a JSON object
@@ -442,7 +438,7 @@ impl VadePlugin for VadeEvanBbs {
     /// * `payload` - serialized [`CreateRevocationListPayload`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.CreateRevocationListPayload.html)
     ///
     /// # Returns
-    /// * created revocation list as a JSON object as serialized [`RevocationList`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.RevocationList.html)
+    /// * created revocation list as a JSON object as serialized [`RevocationList`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.RevocationList.html)
     async fn vc_zkp_create_revocation_registry_definition(
         &mut self,
         method: &str,
