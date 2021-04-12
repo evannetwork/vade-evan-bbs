@@ -312,7 +312,7 @@ impl VadeEvanBbs {
             get_document!(&mut self.vade, &payload.key_owner_did, "did document");
 
         let public_key_values = did_document["assertionMethod"].as_array();
-        let mut public_keys = public_key_values.unwrap_or_else(|| vec![]);
+        let mut public_keys = public_key_values.unwrap_or(&vec![]).clone();
 
         // See https://w3c-ccg.github.io/ldp-bbs2020/#bls12-381 for explanations why G2 Key (date: 07.04.2021, may be subject to change)
         let new_key = format!(
@@ -326,7 +326,7 @@ impl VadeEvanBbs {
             &bs58::encode(keys.0.to_bytes_compressed_form()).into_string()
         );
         public_keys.push(serde_json::from_str(&new_key)?);
-        did_document["assertionMethod"] = serde_json::Value::Array(public_keys.clone());
+        did_document["assertionMethod"] = serde_json::Value::Array(public_keys);
 
         self.set_did_document(
             &payload.key_owner_did,
