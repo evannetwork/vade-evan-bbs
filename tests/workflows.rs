@@ -804,17 +804,17 @@ async fn workflow_can_create_and_persist_keys() -> Result<(), Box<dyn Error>> {
 
     let options = format!(
         r#"{{
-        "identity": "{}",
-        "privateKey": "{}",
-        "type": "bbs"
-    }}"#,
+            "identity": "{}",
+            "privateKey": "{}",
+            "type": "bbs"
+        }}"#,
         &SIGNER_2_DID, &SIGNER_2_PRIVATE_KEY
     );
 
     let payload = format!(
         r#"{{
-        "keyOwnerDid": "{}"
-    }}"#,
+            "keyOwnerDid": "{}"
+        }}"#,
         &SIGNER_2_DID
     );
 
