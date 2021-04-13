@@ -92,13 +92,14 @@ impl CryptoVerifier {
                     "Missing revealed messages for schema {}",
                     cred.credential_schema.id
                 ))?;
+            let message_count: usize = cred.proof.credential_message_count.parse()?;
             let key = keys_to_schema_map
                 .get(&cred.credential_schema.id)
                 .ok_or(format!(
                     "Missing key for schema {}",
                     cred.credential_schema.id
                 ))?
-                .to_public_key(cred.proof.credential_message_count.parse()?)
+                .to_public_key(message_count)
                 .map_err(|e| format!("Error converting key for proof verification: {}", e))?;
 
             proof_requests.insert(

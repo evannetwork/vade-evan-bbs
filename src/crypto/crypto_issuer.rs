@@ -38,14 +38,13 @@ impl CryptoIssuer {
         let mut messages: BTreeMap<usize, SignatureMessage> = BTreeMap::new();
         let mut i = 1; // 0 is always reserved for master secret
         for value in &credential_values {
-            println!("Signing {} value: {}", i, value);
             let message = SignatureMessage::hash(value);
             messages.insert(i, message);
             i += 1;
         }
 
         let pub_key = issuer_public_key
-            .to_public_key(credential_values.len() + 1/* +1 for master secret */)
+            .to_public_key(credential_values.len() + 1)
             .map_err(|_| "Error creating signature: Schema for blinded signature context does not match provided values")?;
 
         let signature = BbsIssuer::blind_sign(

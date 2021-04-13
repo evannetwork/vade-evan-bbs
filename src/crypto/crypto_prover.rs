@@ -50,13 +50,9 @@ impl CryptoProver {
         credential_message_count: usize,
     ) -> Result<(BlindSignatureContext, SignatureBlinding), Box<dyn Error>> {
         let pk = issuer_pub_key
-            .to_public_key(credential_message_count) // + 1 for master secret
+            .to_public_key(credential_message_count)
             .map_err(|e| format!("{}", e))?;
         let mut messages = BTreeMap::new();
-        println!(
-            "Blinding with master secert {}",
-            base64::encode(master_secret.clone().to_bytes_compressed_form())
-        );
         messages.insert(0, master_secret.clone());
         let (context, blinding) =
             BbsProver::new_blind_signature_context(&pk, &messages, &credential_offering_nonce)
@@ -74,13 +70,8 @@ impl CryptoProver {
     ) -> Result<Signature, Box<dyn Error>> {
         let mut messages: Vec<SignatureMessage> = Vec::new();
         let mut i = 1;
-        println!(
-            "Finishing with master secert {}",
-            base64::encode(master_secret.clone().to_bytes_compressed_form())
-        );
         messages.insert(0, master_secret.clone());
         for message in &credential_messages {
-            println!("Finishing value {}: {}", i, message);
             messages.insert(i, SignatureMessage::hash(message));
             i += 1;
         }
@@ -114,24 +105,18 @@ impl CryptoProver {
             HashSet::from_iter(sub_proof_request.revealed_attributes.iter().cloned());
 
         let mut commitment_messages = Vec::new();
-        println!(
-            "Proofing with master secert {}",
-            base64::encode(master_secret.clone().to_bytes_compressed_form())
-        );
         let link_secret_blinding = ProofNonce::random();
         commitment_messages.insert(
             0,
             pm_hidden_raw!(master_secret.clone(), link_secret_blinding),
         );
-        
+
         let mut i = 1;
         for nquad in nquads.iter() {
             let msg;
             if indices.contains(&i) {
-                println!("Revealing {}", nquad);
                 msg = pm_revealed!(nquad);
             } else {
-                println!("Hiding {}", nquad);
                 msg = pm_hidden!(nquad);
             }
             commitment_messages.insert(i, msg);

@@ -127,6 +127,7 @@ impl Issuer {
     pub fn offer_credential(
         credential_proposal: &CredentialProposal,
         issuer_did: &str,
+        nquad_count: usize,
     ) -> Result<BbsCredentialOffer, Box<dyn Error>> {
         let nonce = base64::encode(BbsIssuer::generate_signing_nonce().to_bytes_compressed_form());
         if credential_proposal.issuer != issuer_did {
@@ -140,6 +141,7 @@ impl Issuer {
             subject: credential_proposal.subject.to_owned(),
             r#type: CREDENTIAL_OFFER_TYPE.to_string(),
             schema: credential_proposal.schema.to_owned(),
+            credential_message_count: nquad_count + 1, // +1 for master secret
             nonce,
         })
     }
@@ -219,7 +221,7 @@ impl Issuer {
             proof_purpose: CREDENTIAL_PROOF_PURPOSE.to_owned(),
             verification_method: issuer_public_key_id.to_owned(),
             required_reveal_statements: required_indices,
-            credential_message_count: nquads.len().to_string(),
+            credential_message_count: (nquads.len() + 1).to_string(),
             blind_signature: base64::encode(blind_signature.to_bytes_compressed_form()),
         };
 
@@ -392,7 +394,6 @@ mod tests {
     fn request_credential(
         pub_key: &DeterministicPublicKey,
         offer: &BbsCredentialOffer,
-        amount_of_values: u8,
     ) -> Result<
         (
             BbsCredentialRequest,
@@ -406,7 +407,7 @@ mod tests {
         let secret = BbsProver::new_link_secret();
         let mut credential_values = HashMap::new();
         credential_values.insert("test_property_string".to_owned(), "value".to_owned());
-        for i in 1..amount_of_values {
+        for i in 1..(offer.credential_message_count - 1) {
             credential_values.insert(format!("test_property_string{}", i), "value".to_owned());
         }
 
@@ -421,15 +422,9 @@ mod tests {
             nquads.insert(nquads.len(), string);
         }
 
-        let (credential_request, blinding) = Prover::request_credential(
-            offer,
-            &schema,
-            &secret,
-            credential_values,
-            pub_key,
-            amount_of_values.into(), // + 1 for master secret
-        )
-        .map_err(|e| format!("{}", e))?;
+        let (credential_request, blinding) =
+            Prover::request_credential(offer, &schema, &secret, credential_values, pub_key)
+                .map_err(|e| format!("{}", e))?;
 
         return Ok((credential_request, schema, nquads, blinding));
     }
@@ -473,7 +468,7 @@ mod tests {
     #[test]
     fn can_offer_credential() -> Result<(), Box<dyn Error>> {
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
-        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID)?;
+        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID, 1)?;
 
         assert_eq!(&offer.issuer, &ISSUER_DID);
         assert_eq!(&offer.schema, &proposal.schema);
@@ -486,7 +481,7 @@ mod tests {
     #[test]
     fn credential_offer_fails_on_wrong_issuer() -> Result<(), Box<dyn Error>> {
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
-        let offer = Issuer::offer_credential(&proposal, "random_issuer");
+        let offer = Issuer::offer_credential(&proposal, "random_issuer", 1);
 
         match offer {
             Ok(_) => assert!(false),
@@ -504,10 +499,9 @@ mod tests {
         let message_count = 1;
         let (dpk, sk) = BbsIssuer::new_short_keys(None);
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
-        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID)?;
+        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID, message_count)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
-        let (credential_request, schema, nquads, _) =
-            request_credential(&dpk, &offer, message_count.try_into()?)?;
+        let (credential_request, schema, nquads, _) = request_credential(&dpk, &offer)?;
 
         match Issuer::issue_credential(
             &ISSUER_DID,
@@ -546,10 +540,9 @@ mod tests {
         let nonce_bytes = base64::decode(&SECRET_KEY)?.into_boxed_slice();
         let sk = SecretKey::from(nonce_bytes);
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
-        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID)?;
+        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID, message_count)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
-        let (credential_request, schema, nquads, blinding) =
-            request_credential(&dpk, &offer, message_count.try_into()?)?;
+        let (credential_request, schema, nquads, blinding) = request_credential(&dpk, &offer)?;
 
         match Issuer::issue_credential(
             &ISSUER_DID,
@@ -572,14 +565,6 @@ mod tests {
                     &key_id,
                     &schema.id,
                 );
-                assert!(
-                    false,
-                    format!(
-                        "{}\nRequest:\n{}",
-                        serde_json::to_string(&cred)?,
-                        serde_json::to_string(&credential_request)?
-                    )
-                );
             }
             Err(e) => assert!(false, "Received error when issuing credential: {}", e),
         }
@@ -591,10 +576,9 @@ mod tests {
         let message_count = 5;
         let (dpk, sk) = BbsIssuer::new_short_keys(None);
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
-        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID)?;
+        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID, message_count)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
-        let (credential_request, schema, nquads, _) =
-            request_credential(&dpk, &offer, message_count.try_into()?)?;
+        let (credential_request, schema, nquads, _) = request_credential(&dpk, &offer)?;
 
         let result = Issuer::issue_credential(
             &ISSUER_DID,

@@ -90,13 +90,14 @@ impl Verifier {
             CryptoVerifier::create_challenge(&presentation, &proof_request, &keys_to_schema_map)?;
 
         for cred in &presentation.verifiable_credential {
+            let message_count: usize = cred.proof.credential_message_count.parse()?;
             let key = keys_to_schema_map
                 .get(&cred.credential_schema.id)
                 .ok_or(format!(
                     "Missing public key for schema {}",
                     &cred.credential_schema.id
                 ))?
-                .to_public_key(cred.proof.credential_message_count.parse()?)
+                .to_public_key(message_count)
                 .map_err(|e| {
                     format!(
                         "Error converting deterministic public key while verifying proof: {}",
@@ -107,11 +108,6 @@ impl Verifier {
             let proof_bytes = base64::decode(&cred.proof.proof)?.into_boxed_slice();
             let proof = panic::catch_unwind(|| SignatureProof::from(proof_bytes))
                 .map_err(|_| "Error parsing signature")?;
-
-            println!(
-                "Verifying revealed messages: {}",
-                serde_json::to_string(&proof.revealed_messages)?
-            );
 
             let verified_proof = proof
                 .proof
