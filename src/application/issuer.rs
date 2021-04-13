@@ -394,20 +394,13 @@ mod tests {
     fn request_credential(
         pub_key: &DeterministicPublicKey,
         offer: &BbsCredentialOffer,
-    ) -> Result<
-        (
-            BbsCredentialRequest,
-            CredentialSchema,
-            Vec<String>,
-            SignatureBlinding,
-        ),
-        Box<dyn Error>,
-    > {
+    ) -> Result<(BbsCredentialRequest, CredentialSchema, Vec<String>), Box<dyn Error>> {
         let schema: CredentialSchema = serde_json::from_str(EXAMPLE_CREDENTIAL_SCHEMA)?;
         let secret = BbsProver::new_link_secret();
         let mut credential_values = HashMap::new();
         credential_values.insert("test_property_string".to_owned(), "value".to_owned());
         for i in 1..(offer.credential_message_count - 1) {
+            // Create messages until we have message_count - 1 messages (one is reserved for master secret)
             credential_values.insert(format!("test_property_string{}", i), "value".to_owned());
         }
 
@@ -422,11 +415,11 @@ mod tests {
             nquads.insert(nquads.len(), string);
         }
 
-        let (credential_request, blinding) =
+        let (credential_request, _) =
             Prover::request_credential(offer, &schema, &secret, credential_values, pub_key)
                 .map_err(|e| format!("{}", e))?;
 
-        return Ok((credential_request, schema, nquads, blinding));
+        return Ok((credential_request, schema, nquads));
     }
 
     fn is_base_64(input: String) -> bool {
@@ -501,7 +494,7 @@ mod tests {
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
         let offer = Issuer::offer_credential(&proposal, &ISSUER_DID, message_count)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
-        let (credential_request, schema, nquads, _) = request_credential(&dpk, &offer)?;
+        let (credential_request, schema, nquads) = request_credential(&dpk, &offer)?;
 
         match Issuer::issue_credential(
             &ISSUER_DID,
@@ -542,7 +535,7 @@ mod tests {
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
         let offer = Issuer::offer_credential(&proposal, &ISSUER_DID, message_count)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
-        let (credential_request, schema, nquads, blinding) = request_credential(&dpk, &offer)?;
+        let (credential_request, schema, nquads) = request_credential(&dpk, &offer)?;
 
         match Issuer::issue_credential(
             &ISSUER_DID,
@@ -578,7 +571,7 @@ mod tests {
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
         let offer = Issuer::offer_credential(&proposal, &ISSUER_DID, message_count)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
-        let (credential_request, schema, nquads, _) = request_credential(&dpk, &offer)?;
+        let (credential_request, schema, nquads) = request_credential(&dpk, &offer)?;
 
         let result = Issuer::issue_credential(
             &ISSUER_DID,

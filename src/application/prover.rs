@@ -159,6 +159,18 @@ impl Prover {
         let raw: Box<[u8]> =
             base64::decode(unfinished_credential.proof.blind_signature.clone())?.into_boxed_slice();
         let blind_signature: BlindSignature = raw.try_into()?;
+
+        if unfinished_credential
+            .proof
+            .credential_message_count
+            .parse::<usize>()?
+            != (nquads.len() + 1)
+        {
+            return Err(Box::from(
+                "Provided number of nquads differ from number used in signature",
+            ));
+        }
+
         let final_signature = CryptoProver::finish_credential_signature(
             nquads.clone(),
             master_secret,
@@ -453,7 +465,6 @@ mod tests {
     #[test]
     fn throws_when_omitting_required_credential_value() -> Result<(), Box<dyn Error>> {
         let (dpk, _, offering, schema, secret, mut credential_values) = setup_test()?;
-        let message_len = &credential_values.len() + 1; /* +1 for master secret */
         credential_values.remove("test_property_string");
         match Prover::request_credential(&offering, &schema, &secret, credential_values, &dpk) {
             Ok(_) => assert!(false),
