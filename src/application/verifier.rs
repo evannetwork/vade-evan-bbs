@@ -90,7 +90,7 @@ impl Verifier {
             CryptoVerifier::create_challenge(&presentation, &proof_request, &keys_to_schema_map)?;
 
         for cred in &presentation.verifiable_credential {
-            let message_count: usize = cred.proof.credential_message_count.parse()?;
+            let message_count: usize = cred.proof.credential_message_count;
             let key = keys_to_schema_map
                 .get(&cred.credential_schema.id)
                 .ok_or(format!(

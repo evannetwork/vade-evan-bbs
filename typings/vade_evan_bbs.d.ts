@@ -53,12 +53,13 @@ export interface IssueCredentialPayload {
   requiredIndices: number[],
   nquads: string[],
   revocationListDid: string,
-  revocationListId: string,
+  revocationListId: number,
 }
 
 export interface OfferCredentialPayload {
   issuer: string,
   credentialProposal: CredentialProposal,
+  nquadCount: number,
 }
 
 export interface PresentProofPayload {

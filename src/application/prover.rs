@@ -160,12 +160,7 @@ impl Prover {
             base64::decode(unfinished_credential.proof.blind_signature.clone())?.into_boxed_slice();
         let blind_signature: BlindSignature = raw.try_into()?;
 
-        if unfinished_credential
-            .proof
-            .credential_message_count
-            .parse::<usize>()?
-            != (nquads.len() + 1)
-        {
+        if unfinished_credential.proof.credential_message_count != (nquads.len() + 1) {
             return Err(Box::from(
                 "Provided number of nquads differ from number used in signature",
             ));

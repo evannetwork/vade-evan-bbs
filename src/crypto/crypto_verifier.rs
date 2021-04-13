@@ -51,10 +51,7 @@ impl CryptoVerifier {
         let mut decoded_list = Vec::new();
         decoder.read_to_end(&mut decoded_list)?;
 
-        let revocation_list_index_number = credential_status
-            .revocation_list_index
-            .parse::<usize>()
-            .map_err(|e| format!("Error parsing revocation_list_id: {}", e))?;
+        let revocation_list_index_number = credential_status.revocation_list_index;
 
         let byte_index_float: f32 = (revocation_list_index_number / 8) as f32;
         let byte_index: usize = byte_index_float.floor() as usize;
@@ -92,7 +89,7 @@ impl CryptoVerifier {
                     "Missing revealed messages for schema {}",
                     cred.credential_schema.id
                 ))?;
-            let message_count: usize = cred.proof.credential_message_count.parse()?;
+            let message_count: usize = cred.proof.credential_message_count;
             let key = keys_to_schema_map
                 .get(&cred.credential_schema.id)
                 .ok_or(format!(

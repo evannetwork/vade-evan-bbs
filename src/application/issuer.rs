@@ -176,16 +176,12 @@ impl Issuer {
         required_indices: Vec<u32>,
         nquads: Vec<String>,
         revocation_list_did: &str,
-        revocation_list_id: &str,
+        revocation_list_id: usize,
     ) -> Result<UnfinishedBbsCredential, Box<dyn Error>> {
-        let revocation_list_index_number = revocation_list_id
-            .parse::<usize>()
-            .map_err(|e| format!("Error parsing revocation_list_id: {}", e))?;
-
-        if revocation_list_index_number > MAX_REVOCATION_ENTRIES {
+        if revocation_list_id > MAX_REVOCATION_ENTRIES {
             let error = format!(
                 "Cannot issue credential: revocation_list_id {} is larger than list limit of {}",
-                revocation_list_index_number, MAX_REVOCATION_ENTRIES
+                revocation_list_id, MAX_REVOCATION_ENTRIES
             );
             return Err(Box::from(error));
         }
@@ -221,7 +217,7 @@ impl Issuer {
             proof_purpose: CREDENTIAL_PROOF_PURPOSE.to_owned(),
             verification_method: issuer_public_key_id.to_owned(),
             required_reveal_statements: required_indices,
-            credential_message_count: (nquads.len() + 1).to_string(), // + 1 for master secret
+            credential_message_count: nquads.len() + 1, // + 1 for master secret
             blind_signature: base64::encode(blind_signature.to_bytes_compressed_form()),
         };
 
@@ -239,7 +235,7 @@ impl Issuer {
             credential_status: CredentialStatus {
                 id: format!("{}#{}", revocation_list_did, revocation_list_id),
                 r#type: "RevocationList2021Status".to_string(),
-                revocation_list_index: revocation_list_id.to_string(),
+                revocation_list_index: revocation_list_id,
                 revocation_list_credential: revocation_list_did.to_string(),
             },
             proof: vc_signature,
@@ -508,7 +504,7 @@ mod tests {
             [1].to_vec(),
             nquads,
             EXAMPLE_REVOCATION_LIST_DID,
-            "0",
+            0,
         ) {
             Ok(cred) => {
                 assert_credential(
@@ -549,7 +545,7 @@ mod tests {
             [1].to_vec(),
             nquads,
             EXAMPLE_REVOCATION_LIST_DID,
-            "0",
+            0,
         ) {
             Ok(cred) => {
                 assert_credential(
@@ -585,7 +581,7 @@ mod tests {
             [1].to_vec(),
             nquads,
             EXAMPLE_REVOCATION_LIST_DID,
-            &(MAX_REVOCATION_ENTRIES + 1).to_string(),
+            MAX_REVOCATION_ENTRIES + 1,
         )
         .map_err(|e| format!("{}", e))
         .err();

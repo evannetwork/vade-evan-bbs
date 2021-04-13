@@ -208,7 +208,7 @@ pub struct CredentialSubject {
 pub struct CredentialStatus {
     pub id: String,
     pub r#type: String,
-    pub revocation_list_index: String,
+    pub revocation_list_index: usize,
     pub revocation_list_credential: String,
 }
 
@@ -234,7 +234,7 @@ pub struct BbsCredentialSignature {
     pub created: String,
     pub proof_purpose: String,
     pub verification_method: String,
-    pub credential_message_count: String,
+    pub credential_message_count: usize,
     pub required_reveal_statements: Vec<u32>,
     pub signature: String,
 }
@@ -246,7 +246,7 @@ pub struct BbsUnfinishedCredentialSignature {
     pub created: String,
     pub proof_purpose: String,
     pub verification_method: String,
-    pub credential_message_count: String,
+    pub credential_message_count: usize,
     pub required_reveal_statements: Vec<u32>,
     pub blind_signature: String,
 }
@@ -351,7 +351,7 @@ pub struct BbsPresentationProof {
     pub r#type: String,
     pub created: String,
     pub proof_purpose: String,
-    pub credential_message_count: String,
+    pub credential_message_count: usize,
     pub verification_method: String,
     pub nonce: String,
     pub proof: String,
