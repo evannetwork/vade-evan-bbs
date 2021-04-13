@@ -108,6 +108,11 @@ impl Verifier {
             let proof = panic::catch_unwind(|| SignatureProof::from(proof_bytes))
                 .map_err(|_| "Error parsing signature")?;
 
+            println!(
+                "Verifying revealed messages: {}",
+                serde_json::to_string(&proof.revealed_messages)?
+            );
+
             let verified_proof = proof
                 .proof
                 .verify(&key, &proof.revealed_messages, &challenge)

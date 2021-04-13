@@ -38,6 +38,7 @@ impl CryptoIssuer {
         let mut messages: BTreeMap<usize, SignatureMessage> = BTreeMap::new();
         let mut i = 1; // 0 is always reserved for master secret
         for value in &credential_values {
+            println!("Signing {} value: {}", i, value);
             let message = SignatureMessage::hash(value);
             messages.insert(i, message);
             i += 1;

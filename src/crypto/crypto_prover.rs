@@ -28,6 +28,7 @@ use bbs::{
     BlindSignatureContext,
     HashElem,
     ProofNonce,
+    RandomElem,
     SignatureBlinding,
     SignatureMessage,
     SignatureProof,
@@ -52,6 +53,10 @@ impl CryptoProver {
             .to_public_key(credential_message_count) // + 1 for master secret
             .map_err(|e| format!("{}", e))?;
         let mut messages = BTreeMap::new();
+        println!(
+            "Blinding with master secert {}",
+            base64::encode(master_secret.clone().to_bytes_compressed_form())
+        );
         messages.insert(0, master_secret.clone());
         let (context, blinding) =
             BbsProver::new_blind_signature_context(&pk, &messages, &credential_offering_nonce)
@@ -69,14 +74,21 @@ impl CryptoProver {
     ) -> Result<Signature, Box<dyn Error>> {
         let mut messages: Vec<SignatureMessage> = Vec::new();
         let mut i = 1;
+        println!(
+            "Finishing with master secert {}",
+            base64::encode(master_secret.clone().to_bytes_compressed_form())
+        );
         messages.insert(0, master_secret.clone());
         for message in &credential_messages {
+            println!("Finishing value {}: {}", i, message);
             messages.insert(i, SignatureMessage::hash(message));
             i += 1;
         }
 
         let verkey = issuer_public_key
-            .to_public_key(credential_messages.len())
+            .to_public_key(
+                credential_messages.len() + 1, /* +1 for master secret */
+            )
             .map_err(|e| format!("Error finishing credential: {}", e))?;
 
         BbsProver::complete_signature(&verkey, &messages, &blind_signature, &blinding_factor)
@@ -91,7 +103,7 @@ impl CryptoProver {
         nquads: Vec<String>,
     ) -> Result<PoKOfSignature, Box<dyn Error>> {
         let pk = public_key
-            .to_public_key(nquads.len())
+            .to_public_key(nquads.len() + 1 /* +1 for master secret */)
             .map_err(|e| format!("Cannot create proof: Error converting public key: {}", e))?;
 
         let crypto_proof_request =
@@ -102,13 +114,24 @@ impl CryptoProver {
             HashSet::from_iter(sub_proof_request.revealed_attributes.iter().cloned());
 
         let mut commitment_messages = Vec::new();
-        commitment_messages.insert(0, pm_hidden_raw!(master_secret.clone()));
+        println!(
+            "Proofing with master secert {}",
+            base64::encode(master_secret.clone().to_bytes_compressed_form())
+        );
+        let link_secret_blinding = ProofNonce::random();
+        commitment_messages.insert(
+            0,
+            pm_hidden_raw!(master_secret.clone(), link_secret_blinding),
+        );
+        
         let mut i = 1;
         for nquad in nquads.iter() {
             let msg;
             if indices.contains(&i) {
+                println!("Revealing {}", nquad);
                 msg = pm_revealed!(nquad);
             } else {
+                println!("Hiding {}", nquad);
                 msg = pm_hidden!(nquad);
             }
             commitment_messages.insert(i, msg);

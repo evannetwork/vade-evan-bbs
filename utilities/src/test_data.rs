@@ -258,46 +258,48 @@ pub mod vc_zkp {
 #[allow(dead_code)]
 pub mod bbs_coherent_context_test_data {
     pub const UNFINISHED_CREDENTIAL: &str = r###"{
-        "@context": [
-            "https://www.w3.org/2018/credentials/v1",
-            "https:://schema.org"
+        "@context":[
+           "https://www.w3.org/2018/credentials/v1",
+           "https:://schema.org",
+           "https://w3id.org/vc-status-list-2021/v1"
         ],
-        "id": "9311f783-eda0-4f2d-8287-3816868193ef",
-        "type": [
-            "VerifiableCredential"
+        "id":"56cab80e-0b2b-419f-b835-08a8bac8fd28",
+        "type":[
+           "VerifiableCredential"
         ],
-        "issuer": "did:evan:testcore:0x6240cedfc840579b7fdcd686bdc65a9a8c42dea6",
-        "credentialSubject": {
-            "id": "did:evan:testcore:0x0d87204c3957d73b68ae28d0af961d3c72403901",
-            "data": {
-                "test_property_string3": "value",
-                "test_property_string4": "value",
-                "test_property_string": "value",
-                "test_property_string1": "value",
-                "test_property_string2": "value"
-            }
+        "issuer":"did:evan:testcore:0x6240cedfc840579b7fdcd686bdc65a9a8c42dea6",
+        "credentialSubject":{
+           "id":"did:evan:testcore:0x0d87204c3957d73b68ae28d0af961d3c72403901",
+           "data":{
+              "test_property_string2":"value",
+              "test_property_string3":"value",
+              "test_property_string4":"value",
+              "test_property_string1":"value",
+              "test_property_string":"value"
+           }
         },
-        "credentialSchema": {
-            "id": "did:evan:zkp:0x123451234512345123451234512345",
-            "type": "EvanZKPSchema"
+        "credentialSchema":{
+           "id":"did:evan:zkp:0x6240cedfc840579b7fdcd686bdc65a9a8c42dea6",
+           "type":"EvanZKPSchema"
         },
-        "credentialStatus": {
-            "id": "did:evan:zkp:0x1234512345123451234512345123456789#1",
-            "type": "RevocationList2020Status",
-            "revocationListIndex": "1",
-            "revocationListCredential": "did:evan:zkp:0x1234512345123451234512345123456789"
+        "credentialStatus":{
+           "id":"did:evan:zkp:0x1234512345123451234512345123456789#0",
+           "type":"RevocationList2021Status",
+           "revocationListIndex":"0",
+           "revocationListCredential":"did:evan:zkp:0x1234512345123451234512345123456789"
         },
-        "proof": {
-            "type": "BbsBlsSignature2020",
-            "created": "2021-03-10T10:00:35.000Z",
-            "proofPurpose": "assertionMethod",
-            "verificationMethod": "did:evan:testcore:0x6240cedfc840579b7fdcd686bdc65a9a8c42dea6#key-1",
-            "requiredRevealStatements": [
-                1
-            ],
-            "blindSignature": "gnXpPqIUfwng9+vKO0wTOPJQixMU3GXJXhQC4nG9GvVxK1MAGWVAmYR+ahyQAr2FCtjfvcuBvkyfVMo87LrqV0z7WjlFrgU0FveR07T5XGFpgx5JGVziusqI6x26hZu3dX8M2YwEM9rhewmcH166ew=="
+        "proof":{
+           "type":"BbsBlsSignature2020",
+           "created":"2021-04-12T13:22:05.000Z",
+           "proofPurpose":"assertionMethod",
+           "verificationMethod":"did:evan:testcore:0x6240cedfc840579b7fdcd686bdc65a9a8c42dea6#key-1",
+           "credentialMessageCount":"5",
+           "requiredRevealStatements":[
+              1
+           ],
+           "blindSignature":"i5SjxsK/LZSN/H/psdVYGthqsooT8HTcwARYfISt8zeeVOlkLJiQQ6YPD5XLJaZ3UBe6E4dlcezd5+DgsEeqp0dCgxk10uJcF9RYAByFbqViFaW50KAqgjrnna8uZZWbG8f7MUpGmslull3bJR/xIw=="
         }
-    }"###;
+     }"###;
 
     pub const FINISHED_CREDENTIAL: &str = r###"{
         "@context": [

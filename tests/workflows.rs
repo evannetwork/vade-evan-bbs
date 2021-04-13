@@ -183,7 +183,7 @@ async fn create_credential_request(
         master_secret: MASTER_SECRET.to_string(),
         credential_values: credential_values.clone(),
         issuer_pub_key: PUB_KEY.to_string(),
-        credential_message_count: nquads.len() + 1, /* +1 for master secret */
+        credential_message_count: nquads.len(),
     };
 
     let request_json = serde_json::to_string(&request)?;
@@ -296,6 +296,7 @@ async fn create_presentation(
     finished_credential: BbsCredential,
     proof_request: BbsProofRequest,
     public_key_schema_map: HashMap<String, String>,
+    nquads: Vec<String>,
 ) -> Result<ProofPresentation, Box<dyn Error>> {
     let mut credential_schema_map = HashMap::new();
     credential_schema_map.insert(SCHEMA_DID.to_string(), finished_credential.clone());
@@ -308,7 +309,6 @@ async fn create_presentation(
     };
     revealed_properties_schema_map.insert(SCHEMA_DID.to_string(), revealed);
 
-    let nquads: Vec<String> = vec!["test_property_string: value".to_string()];
     let mut nquads_schema_map = HashMap::new();
     nquads_schema_map.insert(SCHEMA_DID.to_string(), nquads);
 
@@ -605,6 +605,10 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
     // Create credential request
     let mut credential_values = HashMap::new();
     credential_values.insert("test_property_string".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string1".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string2".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string3".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string4".to_owned(), "value".to_owned());
 
     let (credential_request, signature_blinding_base64, nquads) =
         create_credential_request(&mut vade, credential_values, offer.clone()).await?;
@@ -621,9 +625,9 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
 
     let finished_credential = create_finished_credential(
         &mut vade,
-        unfinished_credential,
-        signature_blinding_base64,
-        nquads,
+        unfinished_credential.clone(),
+        signature_blinding_base64.clone(),
+        nquads.clone(),
     )
     .await?;
 
@@ -635,15 +639,16 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
     public_key_schema_map.insert(SCHEMA_DID.to_string(), PUB_KEY.to_string());
     let presentation = create_presentation(
         &mut vade,
-        finished_credential,
+        finished_credential.clone(),
         proof_request.clone(),
         public_key_schema_map.clone(),
+        nquads,
     )
     .await?;
 
     // verify proof
     let verify_proof_payload = VerifyProofPayload {
-        presentation,
+        presentation: presentation.clone(),
         proof_request: proof_request,
         keys_to_schema_map: public_key_schema_map,
         signer_address: SIGNER_1_ADDRESS.to_string(),
@@ -651,6 +656,17 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
     let verify_proof_json = serde_json::to_string(&verify_proof_payload)?;
     vade.vc_zkp_verify_proof(EVAN_METHOD, TYPE_OPTIONS, &verify_proof_json)
         .await?;
+
+    assert!(
+        false,
+        format!(
+            "Blinding:{}\nUnfinished credential:{}\nFinished:credential:{}\nproof presentation:{}",
+            &signature_blinding_base64,
+            serde_json::to_string(&unfinished_credential)?,
+            serde_json::to_string(&finished_credential)?,
+            serde_json::to_string(&presentation)?,
+        )
+    );
     Ok(())
 }
 
@@ -691,7 +707,7 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
         &mut vade,
         unfinished_credential,
         signature_blinding_base64,
-        nquads,
+        nquads.clone(),
     )
     .await?;
 
@@ -709,6 +725,7 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
         finished_credential.clone(),
         proof_request.clone(),
         public_key_schema_map.clone(),
+        nquads,
     )
     .await?;
 
