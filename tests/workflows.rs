@@ -14,6 +14,7 @@
   limitations under the License.
 */
 
+use serde_json::Value;
 use std::{collections::HashMap, env, error::Error};
 use utilities::test_data::{
     accounts::local::{
@@ -24,9 +25,12 @@ use utilities::test_data::{
         SIGNER_1_ADDRESS,
         SIGNER_1_DID,
         SIGNER_1_PRIVATE_KEY,
+        SIGNER_2_DID,
+        SIGNER_2_PRIVATE_KEY,
         VERIFIER_DID,
     },
     bbs_coherent_context_test_data::{MASTER_SECRET, PUB_KEY, SECRET_KEY, SUBJECT_DID},
+    did::EXAMPLE_DID_DOCUMENT_2,
     environment::DEFAULT_VADE_EVAN_SUBSTRATE_IP,
     vc_zkp::{SCHEMA_DESCRIPTION, SCHEMA_NAME, SCHEMA_PROPERTIES, SCHEMA_REQUIRED_PROPERTIES},
 };
@@ -330,6 +334,37 @@ async fn create_presentation(
     let presentation: ProofPresentation = serde_json::from_str(&result[0].as_ref().unwrap())?;
 
     Ok(presentation)
+}
+
+async fn ensure_whitelist(vade: &mut Vade, signer: &str) -> Result<(), Box<dyn Error>> {
+    let auth_string = format!(
+        r###"{{
+            "privateKey": "{}",
+            "identity": "{}"
+        }}"###,
+        SIGNER_2_PRIVATE_KEY, SIGNER_2_DID,
+    );
+    let mut json_editable: Value = serde_json::from_str(&auth_string)?;
+    json_editable["operation"] = Value::from("ensureWhitelisted");
+    let options = serde_json::to_string(&json_editable)?;
+
+    let result = vade.did_update(signer, &options, &"".to_string()).await;
+
+    match result {
+        Ok(values) => assert!(!values.is_empty()),
+        Err(e) => panic!("could not whitelist identity; {}", &e),
+    };
+
+    let resolver = get_resolver();
+
+    assert_eq!(
+        true,
+        resolver
+            .is_whitelisted(&SIGNER_2_DID, &SIGNER_2_PRIVATE_KEY)
+            .await?
+    );
+
+    Ok(())
 }
 
 #[tokio::test]
@@ -732,5 +767,99 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
             finished_credential.id
         ))
     );
+    Ok(())
+}
+
+async fn whitelist_and_create_did_doc_for_signer_2(
+    mut vade: &mut Vade,
+) -> Result<(), Box<dyn Error>> {
+    ensure_whitelist(&mut vade, &SIGNER_2_DID).await?;
+
+    // Set example did document to make sure it resolves
+    let auth_string = format!(
+        r###"{{
+            "privateKey": "{}",
+            "identity": "{}"
+        }}"###,
+        SIGNER_2_PRIVATE_KEY, SIGNER_2_DID,
+    );
+    let mut json_editable: Value = serde_json::from_str(&auth_string)?;
+    json_editable["operation"] = Value::from("setDidDocument");
+
+    vade.did_update(
+        &SIGNER_2_DID,
+        &serde_json::to_string(&json_editable)?,
+        &EXAMPLE_DID_DOCUMENT_2,
+    )
+    .await?;
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn workflow_can_create_and_persist_keys() -> Result<(), Box<dyn Error>> {
+    let mut vade = get_vade();
+
+    whitelist_and_create_did_doc_for_signer_2(&mut vade).await?;
+
+    let options = format!(
+        r#"{{
+            "identity": "{}",
+            "privateKey": "{}",
+            "type": "bbs"
+        }}"#,
+        &SIGNER_2_DID, &SIGNER_2_PRIVATE_KEY
+    );
+
+    let payload = format!(
+        r#"{{
+            "keyOwnerDid": "{}"
+        }}"#,
+        &SIGNER_2_DID
+    );
+
+    let result = vade
+        .run_custom_function(EVAN_METHOD, "create_new_keys", &options, &payload)
+        .await?;
+
+    // Get values from plugin result
+    let created_keys: Value = serde_json::from_str(
+        &result[0]
+            .as_ref()
+            .ok_or("Unexpected empty vector from create_new_keys")?,
+    )?;
+    let created_key_id = created_keys["didUrl"]
+        .as_str()
+        .ok_or("Expected key id field to be a string")?;
+    let created_pub_key_b64 = created_keys["publicKey"]
+        .as_str()
+        .ok_or("Expected publicKey field to be a string")?;
+    let created_pub_key_raw = base64::decode(created_pub_key_b64)?;
+
+    // Resolve the (hopefully) updated did document
+    let resolve_result = vade.did_resolve(&SIGNER_2_DID).await?[0].clone();
+    let updated_doc: Value =
+        serde_json::from_str(&resolve_result.ok_or("Return value was empty")?)?;
+    let assertion_methods = updated_doc["assertionMethod"]
+        .as_array()
+        .ok_or("Expected an array for assertionMethod")?;
+    assert_eq!(1, assertion_methods.len());
+
+    let newly_added: Value = assertion_methods[0].clone();
+    let resolved_key_id = newly_added["id"]
+        .as_str()
+        .ok_or("Expected key id field to be a string")?;
+    let resolved_pub_key_raw = bs58::decode(
+        newly_added["publicKeyBase58"]
+            .as_str()
+            .ok_or("Expected publicKeyBase58 field to be a string")?,
+    )
+    .into_vec()?;
+
+    // Test
+    assert!(resolved_key_id.starts_with(&format!("{}#bbs-key-", &SIGNER_2_DID)));
+    assert_eq!(resolved_key_id, created_key_id);
+    assert_eq!(created_pub_key_raw, resolved_pub_key_raw);
+
     Ok(())
 }

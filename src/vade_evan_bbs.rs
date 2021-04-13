@@ -31,7 +31,7 @@ use crate::{
         },
         issuer::Issuer,
         prover::Prover,
-        utils::get_dpk_from_string,
+        utils::{generate_uuid, get_dpk_from_string},
         verifier::Verifier,
     },
     crypto::crypto_verifier::CryptoVerifier,
@@ -43,6 +43,7 @@ use bbs::{
     SignatureMessage,
 };
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::{collections::HashMap, error::Error};
 use vade::{Vade, VadePlugin, VadePluginResultValue};
 use vade_evan_substrate::signing::Signer;
@@ -178,6 +179,12 @@ pub struct VerifyProofPayload {
     pub signer_address: String,
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateKeysPayload {
+    pub key_owner_did: String,
+}
+
 macro_rules! parse {
     ($data:expr, $type_name:expr) => {{
         serde_json::from_str($data)
@@ -280,10 +287,95 @@ impl VadeEvanBbs {
 
         Ok(Some("".to_string()))
     }
+
+    async fn create_new_keys(
+        &mut self,
+        options: AuthenticationOptions,
+        payload: CreateKeysPayload,
+    ) -> Result<String, Box<dyn Error>> {
+        let keys = Issuer::create_new_keys();
+        let pub_key = base64::encode(keys.0.to_bytes_compressed_form());
+        let secret_key = base64::encode(keys.1.to_bytes_compressed_form());
+
+        let key_id = format!("bbs-key-{}", generate_uuid());
+
+        let serialised_keys = format!(
+            r###"{{
+                "didUrl": "{}#{}",
+                "publicKey": "{}",
+                "secretKey": "{}"
+            }}"###,
+            &payload.key_owner_did, key_id, pub_key, secret_key
+        );
+
+        let mut did_document: Value =
+            get_document!(&mut self.vade, &payload.key_owner_did, "did document");
+
+        let public_key_values = did_document["assertionMethod"].as_array();
+        let mut public_keys = public_key_values.unwrap_or(&vec![]).clone();
+
+        // See https://w3c-ccg.github.io/ldp-bbs2020/#bls12-381 for explanations why G2 Key (date: 07.04.2021, may be subject to change)
+        let new_key = format!(
+            r###"{{
+                "id": "{}#{}",
+                "type": "Bls12381G2Key2020",
+                "publicKeyBase58": "{}"
+            }}"###,
+            &payload.key_owner_did,
+            &key_id,
+            &bs58::encode(keys.0.to_bytes_compressed_form()).into_string()
+        );
+        public_keys.push(serde_json::from_str(&new_key)?);
+        did_document["assertionMethod"] = serde_json::Value::Array(public_keys);
+
+        self.set_did_document(
+            &payload.key_owner_did,
+            &serde_json::to_string(&did_document)?,
+            &options.private_key,
+            &options.identity,
+        )
+        .await?;
+
+        Ok(serialised_keys)
+    }
 }
 
 #[async_trait(?Send)]
 impl VadePlugin for VadeEvanBbs {
+    /// Runs a custom function, currently supports
+    ///
+    /// - `create_master_secret` to create new master secrets
+    /// - `create_new_keys` to create a new key pair for BBS+ based signatures and persist  this in the given identity's DID document
+    ///
+    /// # Arguments
+    ///
+    /// * `method` - method to call a function for (e.g. "did:example")
+    /// * `function` - currently supports `create_master_secret` and  `create_new_keys`
+    /// * `options` - serialized [`TypeOptions`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.TypeOptions.html)
+    /// * `payload` - necessary for `create_new_keys`, can be left empty for `create_master_secret`
+    async fn run_custom_function(
+        &mut self,
+        method: &str,
+        function: &str,
+        options: &str,
+        payload: &str,
+    ) -> Result<VadePluginResultValue<Option<String>>, Box<dyn Error>> {
+        ignore_unrelated!(method, options);
+        match function {
+            "create_master_secret" => Ok(VadePluginResultValue::Success(Some(
+                Prover::create_master_secret(),
+            ))),
+            "create_new_keys" => {
+                let options: AuthenticationOptions = parse!(&options, "options");
+                let payload: CreateKeysPayload = parse!(&payload, "payload");
+                Ok(VadePluginResultValue::Success(Some(
+                    self.create_new_keys(options, payload).await?,
+                )))
+            }
+            _ => Ok(VadePluginResultValue::Ignored),
+        }
+    }
+
     /// Creates a new zero-knowledge proof credential schema.
     ///
     /// Note that `options.identity` needs to be whitelisted for this function.
@@ -291,8 +383,8 @@ impl VadePlugin for VadeEvanBbs {
     /// # Arguments
     ///
     /// * `method` - method to create a credential schema for (e.g. "did:example")
-    /// * `options` - serialized [`AuthenticationOptions`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.AuthenticationOptions.html)
-    /// * `payload` - serialized [`CreateCredentialSchemaPayload`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.CreateCredentialSchemaPayload.html)
+    /// * `options` - serialized [`AuthenticationOptions`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.AuthenticationOptions.html)
+    /// * `payload` - serialized [`CreateCredentialSchemaPayload`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.CreateCredentialSchemaPayload.html)
     ///
     /// # Returns
     /// * `Option<String>` - The created schema as a JSON object
@@ -349,7 +441,7 @@ impl VadePlugin for VadeEvanBbs {
     /// * `payload` - serialized [`CreateRevocationListPayload`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.CreateRevocationListPayload.html)
     ///
     /// # Returns
-    /// * created revocation list as a JSON object as serialized [`RevocationList`](https://docs.rs/vade_evan_cl/*/vade_evan_cl/struct.RevocationList.html)
+    /// * created revocation list as a JSON object as serialized [`RevocationList`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.RevocationList.html)
     async fn vc_zkp_create_revocation_registry_definition(
         &mut self,
         method: &str,
