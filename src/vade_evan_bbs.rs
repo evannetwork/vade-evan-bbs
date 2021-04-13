@@ -127,7 +127,6 @@ pub struct RequestCredentialPayload {
     pub master_secret: String,
     pub credential_values: HashMap<String, String>,
     pub issuer_pub_key: String,
-    pub credential_message_count: usize,
 }
 
 #[derive(Serialize, Deserialize)]

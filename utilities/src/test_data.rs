@@ -286,7 +286,7 @@ pub mod bbs_coherent_context_test_data {
         "credentialStatus":{
            "id":"did:evan:zkp:0xcac3f4186e273083820c8c59f3c52efb713a755de255d0eb997b4990253ea388#0",
            "type":"RevocationList2021Status",
-           "revocationListIndex":"0",
+           "revocationListIndex": 0,
            "revocationListCredential":"did:evan:zkp:0xcac3f4186e273083820c8c59f3c52efb713a755de255d0eb997b4990253ea388"
         },
         "proof":{
@@ -294,7 +294,7 @@ pub mod bbs_coherent_context_test_data {
            "created":"2021-04-13T12:53:18.000Z",
            "proofPurpose":"assertionMethod",
            "verificationMethod":"did:evan:testcore:0x6240cedfc840579b7fdcd686bdc65a9a8c42dea6#key-1",
-           "credentialMessageCount":"6",
+           "credentialMessageCount": 6,
            "requiredRevealStatements":[
               1
            ],
@@ -330,7 +330,7 @@ pub mod bbs_coherent_context_test_data {
         "credentialStatus":{
            "id":"did:evan:zkp:0xcac3f4186e273083820c8c59f3c52efb713a755de255d0eb997b4990253ea388#0",
            "type":"RevocationList2021Status",
-           "revocationListIndex":"1",
+           "revocationListIndex": 1,
            "revocationListCredential":"did:evan:zkp:0xcac3f4186e273083820c8c59f3c52efb713a755de255d0eb997b4990253ea388"
         },
         "proof":{
@@ -338,7 +338,7 @@ pub mod bbs_coherent_context_test_data {
            "created":"2021-04-13T12:53:18.000Z",
            "proofPurpose":"assertionMethod",
            "verificationMethod":"did:evan:testcore:0x6240cedfc840579b7fdcd686bdc65a9a8c42dea6#key-1",
-           "credentialMessageCount":"6",
+           "credentialMessageCount": 6,
            "requiredRevealStatements":[
               1
            ],
@@ -474,14 +474,14 @@ pub mod bbs_coherent_context_test_data {
               "credentialStatus":{
                  "id":"did:evan:zkp:0xcac3f4186e273083820c8c59f3c52efb713a755de255d0eb997b4990253ea388#0",
                  "type":"RevocationList2021Status",
-                 "revocationListIndex":"0",
+                 "revocationListIndex": 0,
                  "revocationListCredential":"did:evan:zkp:0xcac3f4186e273083820c8c59f3c52efb713a755de255d0eb997b4990253ea388"
               },
               "proof":{
                  "type":"BbsBlsSignatureProof2020",
                  "created":"2021-04-13T12:53:18.000Z",
                  "proofPurpose":"assertionMethod",
-                 "credentialMessageCount":"6",
+                 "credentialMessageCount": 6,
                  "verificationMethod":"did:evan:testcore:0x6240cedfc840579b7fdcd686bdc65a9a8c42dea6#key-1",
                  "nonce":"XWgrfaNTKs1owMRpmKNj8+CuRZJBC5BRCIErRv+DPUs=",
                  "proof":"AAACHKQyOOUe2WlFaUzgFxCE3tRxqGnxSfLAi1RXebnMTH43riF6lBZCLoY+urlTEP0rQ4B278gwpMNNDeS+DT9GSBTi8Pqvx0y3Xu3p1Tev6FVK9OKqpgXbe0OF4XXgfKCaT6r3P6fuGoIWkM292peKRUtt7vzpvqurLepdG8mjxHW/zxBSVvVHptd/zawVM1ekgQAAAHSCUWt42jV9ESvRp9dSwxUTm6U2tBhByoxhFblRbU6VtkmyGczGppORwqOm/PdTG8wAAAACCf+Hut4+/oDUun/DR3JOd9mY7CuxSfEbMN+AcarGI9QbHeQmNkq7HhVrLX9n1AIjn+E+IU71Ob2rGMkg8AsBl5h6hmG0K/RNmReylya50r8fympJQ3uRf3R1hnya7D9M+JSj9afEPnDuNW1fNzxFnQAAAAcQqAlkMkN9oRbAcYqJ4L66/gfuUBxx5glGjSgMf2gpNTjP1JQlXgGnnOkLE0DOPuOgCkPwhRL1TaX6FbAmylOlTX3syXMH7OaW1sWduANqgiIzGsuLdblEk/jmJSHlwukXDW1lfCNm2IKGur61DK9+abzqNwhflR9DOBA+qRTVhmVjvpa+tAWzvBHaEzT6GgDJrZKiA+RAwVtvP9Qv5877WEd0x3QiezkMnp5inE3Vx+xSBnCzxOKJ/xWRgvUIuAwarGLS1KXzOfOKEWlXEP/bkC3Lq3i71MttbwGu33GGqwAAAAEAAAABVYYuxWfEuaxvBkivWA/SfIa+XSWTfQxphjVs8yhmpfY="
@@ -537,14 +537,14 @@ pub mod bbs_coherent_context_test_data {
                "credentialStatus":{
                   "id":"did:evan:zkp:0xcac3f4186e273083820c8c59f3c52efb713a755de255d0eb997b4990253ea388#0",
                   "type":"RevocationList2021Status",
-                  "revocationListIndex":"0",
+                  "revocationListIndex": 0,
                   "revocationListCredential":"did:evan:zkp:0xcac3f4186e273083820c8c59f3c52efb713a755de255d0eb997b4990253ea388"
                },
                "proof":{
                   "type":"BbsBlsSignatureProof2020",
                   "created":"2021-04-13T12:53:18.000Z",
                   "proofPurpose":"assertionMethod",
-                  "credentialMessageCount":"6",
+                  "credentialMessageCount": 6,
                   "verificationMethod":"did:evan:testcore:0x6240cedfc840579b7fdcd686bdc65a9a8c42dea6#key-1",
                   "nonce":"XWgrfaNTKs1owMRpmKNj8+CuRZJBC5BRCIErRv+DPUs=",
                   "proof":"BBACHKQyOOUe2WlFaUzgFxCE3tRxqGnxSfLAi1RXebnMTH43riF6lBZCLoY+urlTEP0rQ4B278gwpMNNDeS+DT9GSBTi8Pqvx0y3Xu3p1Tev6FVK9OKqpgXbe0OF4XXgfKCaT6r3P6fuGoIWkM292peKRUtt7vzpvqurLepdG8mjxHW/zxBSVvVHptd/zawVM1ekgQAAAHSCUWt42jV9ESvRp9dSwxUTm6U2tBhByoxhFblRbU6VtkmyGczGppORwqOm/PdTG8wAAAACCf+Hut4+/oDUun/DR3JOd9mY7CuxSfEbMN+AcarGI9QbHeQmNkq7HhVrLX9n1AIjn+E+IU71Ob2rGMkg8AsBl5h6hmG0K/RNmReylya50r8fympJQ3uRf3R1hnya7D9M+JSj9afEPnDuNW1fNzxFnQAAAAcQqAlkMkN9oRbAcYqJ4L66/gfuUBxx5glGjSgMf2gpNTjP1JQlXgGnnOkLE0DOPuOgCkPwhRL1TaX6FbAmylOlTX3syXMH7OaW1sWduANqgiIzGsuLdblEk/jmJSHlwukXDW1lfCNm2IKGur61DK9+abzqNwhflR9DOBA+qRTVhmVjvpa+tAWzvBHaEzT6GgDJrZKiA+RAwVtvP9Qv5877WEd0x3QiezkMnp5inE3Vx+xSBnCzxOKJ/xWRgvUIuAwarGLS1KXzOfOKEWlXEP/bkC3Lq3i71MttbwGu33GGqwAAAAEAAAABVYYuxWfEuaxvBkivWA/SfIa+XSWTfQxphjVs8yhmpfY="

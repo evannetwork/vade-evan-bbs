@@ -183,7 +183,6 @@ async fn create_credential_request(
         master_secret: MASTER_SECRET.to_string(),
         credential_values: credential_values.clone(),
         issuer_pub_key: PUB_KEY.to_string(),
-        credential_message_count: nquads.len(),
     };
 
     let request_json = serde_json::to_string(&request)?;
