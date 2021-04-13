@@ -221,7 +221,7 @@ impl Issuer {
             proof_purpose: CREDENTIAL_PROOF_PURPOSE.to_owned(),
             verification_method: issuer_public_key_id.to_owned(),
             required_reveal_statements: required_indices,
-            credential_message_count: (nquads.len() + 1).to_string(),
+            credential_message_count: (nquads.len() + 1).to_string(), // + 1 for master secret
             blind_signature: base64::encode(blind_signature.to_bytes_compressed_form()),
         };
 
