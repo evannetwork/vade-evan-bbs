@@ -363,7 +363,7 @@ impl VadePlugin for VadeEvanBbs {
         ignore_unrelated!(method, options);
         match function {
             "create_master_secret" => Ok(VadePluginResultValue::Success(Some(
-                Prover::create_master_secret(),
+                serde_json::to_string(&Prover::create_master_secret())?,
             ))),
             "create_new_keys" => {
                 let options: AuthenticationOptions = parse!(&options, "options");
