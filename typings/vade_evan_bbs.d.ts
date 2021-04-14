@@ -127,3 +127,12 @@ export interface VerifyProofPayload {
   keysToSchemaMap: Record<string, string>,
   signerAddress: string,
 }
+
+export interface CreateKeysPayload {
+  keyOwnerDid: string,
+}
+export interface BbsKeys {
+  didUrl: string,
+  publicKey: string,
+  secretKey: string,
+}
