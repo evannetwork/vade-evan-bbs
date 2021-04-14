@@ -179,12 +179,16 @@ impl Issuer {
         required_indices: Vec<u32>,
         nquads: Vec<String>,
         revocation_list_did: &str,
-        revocation_list_id: usize,
+        revocation_list_id: &str,
     ) -> Result<UnfinishedBbsCredential, Box<dyn Error>> {
-        if revocation_list_id > MAX_REVOCATION_ENTRIES {
+        let revocation_list_index_number = revocation_list_id
+            .parse::<usize>()
+            .map_err(|e| format!("Error parsing revocation_list_id: {}", e))?;
+
+        if revocation_list_index_number > MAX_REVOCATION_ENTRIES {
             let error = format!(
                 "Cannot issue credential: revocation_list_id {} is larger than list limit of {}",
-                revocation_list_id, MAX_REVOCATION_ENTRIES
+                revocation_list_index_number, MAX_REVOCATION_ENTRIES
             );
             return Err(Box::from(error));
         }
@@ -238,7 +242,7 @@ impl Issuer {
             credential_status: CredentialStatus {
                 id: format!("{}#{}", revocation_list_did, revocation_list_id),
                 r#type: "RevocationList2020Status".to_string(),
-                revocation_list_index: revocation_list_id,
+                revocation_list_index: revocation_list_id.to_string(),
                 revocation_list_credential: revocation_list_did.to_string(),
             },
             proof: vc_signature,

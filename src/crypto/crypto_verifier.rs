@@ -51,7 +51,10 @@ impl CryptoVerifier {
         let mut decoded_list = Vec::new();
         decoder.read_to_end(&mut decoded_list)?;
 
-        let revocation_list_index_number = credential_status.revocation_list_index;
+        let revocation_list_index_number = credential_status
+            .revocation_list_index
+            .parse::<usize>()
+            .map_err(|e| format!("Error parsing revocation_list_id: {}", e))?;
 
         let byte_index_float: f32 = (revocation_list_index_number / 8) as f32;
         let byte_index: usize = byte_index_float.floor() as usize;

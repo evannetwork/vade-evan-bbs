@@ -204,7 +204,7 @@ async fn create_unfinished_credential(
     vade: &mut Vade,
     credential_request: BbsCredentialRequest,
     revocation_list_did: String,
-    revocation_list_id: usize,
+    revocation_list_id: String,
     nquads: Vec<String>,
     offer: BbsCredentialOffer,
 ) -> Result<UnfinishedBbsCredential, Box<dyn Error>> {
@@ -586,7 +586,7 @@ async fn workflow_can_create_finished_credential() -> Result<(), Box<dyn Error>>
         &mut vade,
         credential_request.clone(),
         revocation_list.id,
-        0,
+        "0".to_string(),
         nquads.clone(),
         offer,
     )
@@ -658,7 +658,7 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
         &mut vade,
         credential_request,
         revocation_list.id,
-        0,
+        "0".to_string(),
         nquads.clone(),
         offer,
     )
@@ -728,7 +728,7 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
         &mut vade,
         credential_request,
         revocation_list.id.clone(),
-        0,
+        "0".to_string(),
         nquads.clone(),
         offer,
     )

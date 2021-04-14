@@ -208,7 +208,7 @@ pub struct CredentialSubject {
 pub struct CredentialStatus {
     pub id: String,
     pub r#type: String,
-    pub revocation_list_index: usize,
+    pub revocation_list_index: String,
     pub revocation_list_credential: String,
 }
 

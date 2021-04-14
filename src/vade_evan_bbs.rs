@@ -88,7 +88,7 @@ pub struct IssueCredentialPayload {
     pub required_indices: Vec<u32>,
     pub nquads: Vec<String>,
     pub revocation_list_did: String,
-    pub revocation_list_id: usize,
+    pub revocation_list_id: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -520,7 +520,7 @@ impl VadePlugin for VadeEvanBbs {
             payload.required_indices,
             payload.nquads,
             &payload.revocation_list_did,
-            payload.revocation_list_id,
+            &payload.revocation_list_id,
         )?;
 
         Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
