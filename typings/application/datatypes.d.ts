@@ -227,6 +227,12 @@ export interface BbsPresentationProof {
   proof: string,
 }
 
+export interface BbsProofVerification {
+    proof: string,
+    status: string,
+    reason?: string,
+}
+
 /*
  * `RevocationListCredential` without a proof (for internal use only).
  */

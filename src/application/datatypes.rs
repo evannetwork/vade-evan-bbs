@@ -357,6 +357,15 @@ pub struct BbsPresentationProof {
     pub proof: String,
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BbsProofVerification {
+    pub presented_proof: String,
+    pub status: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
+}
+
 /// `RevocationListCredential` without a proof (for internal use only).
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]

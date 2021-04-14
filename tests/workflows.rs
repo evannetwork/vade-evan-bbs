@@ -726,23 +726,29 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
     .await?;
 
     // verify proof
+    let presentation_id = &presentation.id.to_owned();
     let verify_proof_payload = VerifyProofPayload {
         presentation,
-        proof_request: proof_request,
+        proof_request,
         keys_to_schema_map: public_key_schema_map,
         signer_address: SIGNER_1_ADDRESS.to_string(),
     };
     let verify_proof_json = serde_json::to_string(&verify_proof_payload)?;
-    let err_result = vade
+    let results = vade
         .vc_zkp_verify_proof(EVAN_METHOD, TYPE_OPTIONS, &verify_proof_json)
-        .await
-        .map_err(|e| format!("{}", e))
-        .err();
+        .await?;
 
+    let result: BbsProofVerification =
+        serde_json::from_str(&results[0].as_ref().ok_or("could not get result")?)?;
+
+    assert_eq!(&result.presented_proof, presentation_id);
+    assert_eq!(&result.status, &"rejected".to_string());
     assert_eq!(
-        err_result,
+        result
+            .reason
+            .or_else(|| Some("no reason provided".to_string())),
         Some(format!(
-            "could not run vc_zkp_verify_proof for \"did:evan\"; Credential id {} is revoked",
+            "Credential id {} is revoked",
             finished_credential.id
         ))
     );
