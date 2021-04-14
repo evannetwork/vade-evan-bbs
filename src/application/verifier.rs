@@ -223,7 +223,7 @@ mod tests {
 
     #[test]
     fn can_verify_proof() -> Result<(), Box<dyn Error>> {
-        let holder_address = SIGNER_1_ADDRESS;
+        let signer_address = SIGNER_1_ADDRESS;
         let presentation: ProofPresentation = serde_json::from_str(&PROOF_PRESENTATION)?;
         let proof_request: BbsProofRequest =
             serde_json::from_str(&PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES)?;
@@ -242,7 +242,7 @@ mod tests {
             &presentation,
             &proof_request,
             &keys_to_schema_map,
-            holder_address,
+            signer_address,
         )?;
 
         Ok(())

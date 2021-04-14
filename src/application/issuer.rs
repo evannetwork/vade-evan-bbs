@@ -373,13 +373,12 @@ mod tests {
         datatypes::{BbsCredentialOffer, BbsCredentialRequest},
         prover::Prover,
     };
-    use bbs::{issuer::Issuer as BbsIssuer, prover::Prover as BbsProver, SignatureBlinding};
+    use bbs::{issuer::Issuer as BbsIssuer, prover::Prover as BbsProver};
     use std::collections::HashMap;
     use utilities::test_data::{
         accounts::local::{HOLDER_DID, ISSUER_DID, ISSUER_PRIVATE_KEY, ISSUER_PUBLIC_KEY_DID},
         bbs_coherent_context_test_data::{
             EXAMPLE_REVOCATION_LIST_DID,
-            PROOF_PRESENTATION,
             PUB_KEY,
             REVOCATION_LIST_CREDENTIAL,
             SECRET_KEY,
@@ -560,18 +559,6 @@ mod tests {
         }
         Ok(())
     }
-
-    // #[test]
-    // fn bla() -> Result<(), Box<dyn Error>> {
-    //     let doc = serde_json::from_str(PROOF_PRESENTATION)?;
-    //     create_assertion_proof(
-    //         &doc,
-    //         "did:evan:testcore:0x1234512345123451234512345123451234512345#key-1",
-    //         "did:evan:testcore:0x6240cedfc840579b7fdcd686bdc65a9a8c42dea6",
-    //         private_key: &str,
-    //         signer: &Box<dyn Signer>,
-    //     )
-    // }
 
     #[test]
     fn cannot_issue_credential_larger_revocation_id() -> Result<(), Box<dyn Error>> {
