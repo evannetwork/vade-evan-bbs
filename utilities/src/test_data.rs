@@ -286,7 +286,7 @@ pub mod bbs_coherent_context_test_data {
         "credentialStatus":{
            "id":"did:evan:zkp:0xcac3f4186e273083820c8c59f3c52efb713a755de255d0eb997b4990253ea388#0",
            "type":"RevocationList2021Status",
-           "revocationListIndex": 0,
+           "revocationListIndex": "0",
            "revocationListCredential":"did:evan:zkp:0xcac3f4186e273083820c8c59f3c52efb713a755de255d0eb997b4990253ea388"
         },
         "proof":{
@@ -330,7 +330,7 @@ pub mod bbs_coherent_context_test_data {
         "credentialStatus":{
            "id":"did:evan:zkp:0xcac3f4186e273083820c8c59f3c52efb713a755de255d0eb997b4990253ea388#0",
            "type":"RevocationList2021Status",
-           "revocationListIndex": 1,
+           "revocationListIndex": "1",
            "revocationListCredential":"did:evan:zkp:0xcac3f4186e273083820c8c59f3c52efb713a755de255d0eb997b4990253ea388"
         },
         "proof":{
@@ -474,7 +474,7 @@ pub mod bbs_coherent_context_test_data {
               "credentialStatus":{
                  "id":"did:evan:zkp:0xcac3f4186e273083820c8c59f3c52efb713a755de255d0eb997b4990253ea388#0",
                  "type":"RevocationList2021Status",
-                 "revocationListIndex": 0,
+                 "revocationListIndex": "0",
                  "revocationListCredential":"did:evan:zkp:0xcac3f4186e273083820c8c59f3c52efb713a755de255d0eb997b4990253ea388"
               },
               "proof":{
@@ -537,7 +537,7 @@ pub mod bbs_coherent_context_test_data {
                "credentialStatus":{
                   "id":"did:evan:zkp:0xcac3f4186e273083820c8c59f3c52efb713a755de255d0eb997b4990253ea388#0",
                   "type":"RevocationList2021Status",
-                  "revocationListIndex": 0,
+                  "revocationListIndex": "0",
                   "revocationListCredential":"did:evan:zkp:0xcac3f4186e273083820c8c59f3c52efb713a755de255d0eb997b4990253ea388"
                },
                "proof":{
