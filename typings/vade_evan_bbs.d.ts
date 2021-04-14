@@ -53,7 +53,7 @@ export interface IssueCredentialPayload {
   requiredIndices: number[],
   nquads: string[],
   revocationListDid: string,
-  revocationListId: number,
+  revocationListId: string,
 }
 
 export interface OfferCredentialPayload {
@@ -97,7 +97,7 @@ export interface RequestProofPayload {
 export interface RevokeCredentialPayload {
   issuer: string,
   revocationList: string,
-  revocationId: number,
+  revocationId: string,
   issuerPublicKeyDid: string,
   issuerProvingKey: string,
 }
