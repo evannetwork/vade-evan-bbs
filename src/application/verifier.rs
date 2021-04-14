@@ -16,13 +16,7 @@
 
 use crate::{
     application::{
-        datatypes::{
-            BbsProofRequest,
-            BbsProofVerification,
-            BbsSubProofRequest,
-            ProofPresentation,
-            KEY_SIZE,
-        },
+        datatypes::{BbsProofRequest, BbsProofVerification, BbsSubProofRequest, ProofPresentation},
         utils::get_now_as_iso_string,
     },
     crypto::{crypto_utils::check_assertion_proof, crypto_verifier::CryptoVerifier},
@@ -124,13 +118,14 @@ impl Verifier {
             CryptoVerifier::create_challenge(&presentation, &proof_request, &keys_to_schema_map)?;
 
         for cred in &presentation.verifiable_credential {
+            let message_count: usize = cred.proof.credential_message_count;
             let key = keys_to_schema_map
                 .get(&cred.credential_schema.id)
                 .ok_or(format!(
                     "Missing public key for schema {}",
                     &cred.credential_schema.id
                 ))?
-                .to_public_key(KEY_SIZE)
+                .to_public_key(message_count)
                 .map_err(|e| {
                     format!(
                         "Error converting deterministic public key while verifying proof: {}",
@@ -259,7 +254,7 @@ mod tests {
 
     #[test]
     fn can_verify_proof() -> Result<(), Box<dyn Error>> {
-        let holder_address = SIGNER_1_ADDRESS;
+        let signer_address = SIGNER_1_ADDRESS;
         let presentation: ProofPresentation = serde_json::from_str(&PROOF_PRESENTATION)?;
         let proof_request: BbsProofRequest =
             serde_json::from_str(&PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES)?;
@@ -278,7 +273,7 @@ mod tests {
             &presentation,
             &proof_request,
             &keys_to_schema_map,
-            holder_address,
+            signer_address,
         )?;
 
         Ok(())

@@ -87,7 +87,7 @@ pub struct IssueCredentialPayload {
     pub required_indices: Vec<u32>,
     pub nquads: Vec<String>,
     pub revocation_list_did: String,
-    pub revocation_list_id: String,
+    pub revocation_list_id: usize,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -95,6 +95,7 @@ pub struct IssueCredentialPayload {
 pub struct OfferCredentialPayload {
     pub issuer: String,
     pub credential_proposal: CredentialProposal,
+    pub nquad_count: usize,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -427,7 +428,7 @@ impl VadePlugin for VadeEvanBbs {
             payload.required_indices,
             payload.nquads,
             &payload.revocation_list_did,
-            &payload.revocation_list_id,
+            payload.revocation_list_id,
         )?;
 
         Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
@@ -456,8 +457,11 @@ impl VadePlugin for VadeEvanBbs {
         ignore_unrelated!(method, options);
 
         let payload: OfferCredentialPayload = parse!(&payload, "payload");
-        let result: BbsCredentialOffer =
-            Issuer::offer_credential(&payload.credential_proposal, &payload.issuer)?;
+        let result: BbsCredentialOffer = Issuer::offer_credential(
+            &payload.credential_proposal,
+            &payload.issuer,
+            payload.nquad_count,
+        )?;
         Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
             &result,
         )?)))

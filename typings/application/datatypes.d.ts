@@ -88,6 +88,7 @@ export interface BbsCredentialOffer {
   issuer: string,
   subject: string,
   type: string,
+  credentialMessageCount: number,
   schema: string,
   nonce: string,
 }
@@ -161,6 +162,7 @@ export interface BbsCredentialSignature {
   created: string,
   proofPurpose: string,
   verificationMethod: string,
+  credentialMessageCount: number,
   requiredRevealStatements: number[],
   signature: string,
 }
@@ -170,6 +172,7 @@ export interface BbsUnfinishedCredentialSignature {
   created: string,
   proofPurpose: string,
   verificationMethod: string,
+  credentialMessageCount: number,
   requiredRevealStatements: number[],
   blindSignature: string,
 }
@@ -218,6 +221,7 @@ export interface BbsPresentationProof {
   type: string,
   created: string,
   proofPurpose: string,
+  credentialMessageCount: number,
   verificationMethod: string,
   nonce: string,
   proof: string,
