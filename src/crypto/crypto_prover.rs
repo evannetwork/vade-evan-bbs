@@ -187,7 +187,7 @@ mod tests {
         utils::get_dpk_from_string,
     };
     use bbs::{issuer::Issuer as CryptoIssuer, prover::Prover};
-    use std::convert::{From, TryInto};
+    use std::convert::From;
     use utilities::test_data::bbs_coherent_context_test_data::{
         FINISHED_CREDENTIAL,
         MASTER_SECRET,

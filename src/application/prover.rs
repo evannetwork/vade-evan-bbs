@@ -37,16 +37,11 @@ use crate::{
 use bbs::{
     keys::DeterministicPublicKey,
     pok_sig::PoKOfSignature,
-    signature::BlindSignature,
     SignatureBlinding,
     SignatureMessage,
     ToVariableLengthBytes,
 };
-use std::{
-    collections::HashMap,
-    convert::{From, TryInto},
-    error::Error,
-};
+use std::{collections::HashMap, convert::From, error::Error};
 use vade_evan_substrate::signing::Signer;
 
 pub struct Prover {}
