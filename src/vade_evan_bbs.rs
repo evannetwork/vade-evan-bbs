@@ -769,7 +769,7 @@ impl VadePlugin for VadeEvanBbs {
     /// * `payload` - serialized [`ValidateProofPayload`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.ValidateProofPayload.html)
     ///
     /// # Returns
-    /// * `Option<String>` - A JSON object representing a `BbdProofVerification` type, specifying whether verification was successful
+    /// * `Option<String>` - A JSON object representing a `BbsProofVerification` type, specifying whether verification was successful
     async fn vc_zkp_verify_proof(
         &mut self,
         method: &str,

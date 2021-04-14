@@ -142,7 +142,7 @@ export interface CredentialSubject {
 export interface CredentialStatus {
   id: string,
   type: string,
-  revocationListIndex: string,
+  revocationListIndex: number,
   revocationListCredential: string,
 }
 
