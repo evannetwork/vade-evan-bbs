@@ -156,21 +156,11 @@ impl Prover {
         issuer_public_key: &DeterministicPublicKey,
         blinding: &SignatureBlinding,
     ) -> Result<BbsCredential, Box<dyn Error>> {
-        let raw: Box<[u8]> =
-            base64::decode(unfinished_credential.proof.blind_signature.clone())?.into_boxed_slice();
-        let blind_signature: BlindSignature = raw.try_into()?;
-
-        if unfinished_credential.proof.credential_message_count != (nquads.len() + 1) {
-            return Err(Box::from(
-                "Provided number of nquads differ from number used in signature",
-            ));
-        }
-
         let final_signature = CryptoProver::finish_credential_signature(
             nquads.clone(),
             master_secret,
             issuer_public_key,
-            &blind_signature,
+            &unfinished_credential.proof,
             blinding,
         )?;
 
@@ -234,7 +224,7 @@ impl Prover {
 
             let proof_of_knowledge = CryptoProver::create_proof_of_knowledge(
                 sub_proof_request,
-                &credential.proof.signature,
+                &credential.proof,
                 &dpk,
                 &master_secret,
                 nquads,

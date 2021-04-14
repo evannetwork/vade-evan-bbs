@@ -55,6 +55,9 @@ pub struct Issuer {}
 
 const MAX_REVOCATION_ENTRIES: usize = 131072;
 
+// Master secret is always incorporated, without being mentioned in the credential schema
+pub const ADDITIONAL_HIDDEN_MESSAGES_COUNT: usize = 1;
+
 impl Issuer {
     /// Creates a new credential schema specifying properties credentials issued under this schema need to incorporate.
     /// The schema needs to be stored in a publicly available and temper-proof way.
@@ -141,7 +144,7 @@ impl Issuer {
             subject: credential_proposal.subject.to_owned(),
             r#type: CREDENTIAL_OFFER_TYPE.to_string(),
             schema: credential_proposal.schema.to_owned(),
-            credential_message_count: nquad_count + 1, // +1 for master secret
+            credential_message_count: nquad_count + ADDITIONAL_HIDDEN_MESSAGES_COUNT,
             nonce,
         })
     }
@@ -217,7 +220,7 @@ impl Issuer {
             proof_purpose: CREDENTIAL_PROOF_PURPOSE.to_owned(),
             verification_method: issuer_public_key_id.to_owned(),
             required_reveal_statements: required_indices,
-            credential_message_count: nquads.len() + 1, // + 1 for master secret
+            credential_message_count: nquads.len() + ADDITIONAL_HIDDEN_MESSAGES_COUNT,
             blind_signature: base64::encode(blind_signature.to_bytes_compressed_form()),
         };
 

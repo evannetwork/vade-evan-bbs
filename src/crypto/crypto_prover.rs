@@ -14,7 +14,10 @@
   limitations under the License.
 */
 
-use crate::application::datatypes::BbsSubProofRequest;
+use crate::application::{
+    datatypes::{BbsCredentialSignature, BbsSubProofRequest, BbsUnfinishedCredentialSignature},
+    issuer::ADDITIONAL_HIDDEN_MESSAGES_COUNT,
+};
 use bbs::{
     keys::DeterministicPublicKey,
     messages::{HiddenMessage, ProofMessage},
@@ -35,6 +38,7 @@ use bbs::{
 };
 use std::{
     collections::{BTreeMap, HashMap, HashSet},
+    convert::TryInto,
     error::Error,
     iter::FromIterator,
     panic,
@@ -65,9 +69,20 @@ impl CryptoProver {
         credential_messages: Vec<String>,
         master_secret: &SignatureMessage,
         issuer_public_key: &DeterministicPublicKey,
-        blind_signature: &BlindSignature,
+        signature: &BbsUnfinishedCredentialSignature,
         blinding_factor: &SignatureBlinding,
     ) -> Result<Signature, Box<dyn Error>> {
+        let raw: Box<[u8]> = base64::decode(signature.blind_signature.clone())?.into_boxed_slice();
+        let blind_signature: BlindSignature = raw.try_into()?;
+
+        if signature.credential_message_count
+            != (credential_messages.len() + ADDITIONAL_HIDDEN_MESSAGES_COUNT)
+        {
+            return Err(Box::from(
+                "Provided number of nquads differ from number used in signature",
+            ));
+        }
+
         let mut messages: Vec<SignatureMessage> = Vec::new();
         let mut i = 1;
         messages.insert(0, master_secret.clone());
@@ -77,9 +92,7 @@ impl CryptoProver {
         }
 
         let verkey = issuer_public_key
-            .to_public_key(
-                credential_messages.len() + 1, /* +1 for master secret */
-            )
+            .to_public_key(signature.credential_message_count)
             .map_err(|e| format!("Error finishing credential: {}", e))?;
 
         BbsProver::complete_signature(&verkey, &messages, &blind_signature, &blinding_factor)
@@ -88,13 +101,13 @@ impl CryptoProver {
 
     pub fn create_proof_of_knowledge(
         sub_proof_request: &BbsSubProofRequest,
-        credential_signature: &str,
+        credential_signature: &BbsCredentialSignature,
         public_key: &DeterministicPublicKey,
         master_secret: &SignatureMessage,
         nquads: Vec<String>,
     ) -> Result<PoKOfSignature, Box<dyn Error>> {
         let pk = public_key
-            .to_public_key(nquads.len() + 1 /* +1 for master secret */)
+            .to_public_key(credential_signature.credential_message_count)
             .map_err(|e| format!("Cannot create proof: Error converting public key: {}", e))?;
 
         let crypto_proof_request =
@@ -123,7 +136,7 @@ impl CryptoProver {
             i += 1;
         }
 
-        let signature_bytes = base64::decode(credential_signature)?.into_boxed_slice();
+        let signature_bytes = base64::decode(&credential_signature.signature)?.into_boxed_slice();
         let signature = panic::catch_unwind(|| Signature::from(signature_bytes))
             .map_err(|_| "Error parsing signature")?;
 
@@ -214,15 +227,11 @@ mod tests {
         let blinding: SignatureBlinding =
             SignatureBlinding::from(base64::decode(&SIGNATURE_BLINDING)?.into_boxed_slice());
 
-        let raw: Box<[u8]> =
-            base64::decode(unfinished_credential.proof.blind_signature.clone())?.into_boxed_slice();
-        let blind_signature: BlindSignature = raw.try_into()?;
-
         CryptoProver::finish_credential_signature(
             nquads.clone(),
             &master_secret,
             &public_key,
-            &blind_signature,
+            &unfinished_credential.proof,
             &blinding,
         )?;
 
@@ -243,7 +252,7 @@ mod tests {
 
         match CryptoProver::create_proof_of_knowledge(
             &sub_proof_request,
-            &credential.proof.signature,
+            &credential.proof,
             &public_key,
             &master_secret,
             nquads,
@@ -269,7 +278,7 @@ mod tests {
 
         let pok = CryptoProver::create_proof_of_knowledge(
             &sub_proof_request,
-            &credential.proof.signature,
+            &credential.proof,
             &public_key,
             &master_secret,
             nquads,

@@ -14,6 +14,7 @@
   limitations under the License.
 */
 
+use crate::application::issuer::ADDITIONAL_HIDDEN_MESSAGES_COUNT;
 use bbs::{
     issuer::Issuer as BbsIssuer,
     keys::{DeterministicPublicKey, SecretKey},
@@ -44,7 +45,7 @@ impl CryptoIssuer {
         }
 
         let pub_key = issuer_public_key
-            .to_public_key(credential_values.len() + 1)
+            .to_public_key(credential_values.len() + ADDITIONAL_HIDDEN_MESSAGES_COUNT)
             .map_err(|_| "Error creating signature: Schema for blinded signature context does not match provided values")?;
 
         let signature = BbsIssuer::blind_sign(
