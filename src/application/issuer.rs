@@ -519,7 +519,7 @@ mod tests {
             [1].to_vec(),
             nquads,
             EXAMPLE_REVOCATION_LIST_DID,
-            "0".to_string(),
+            &"0".to_string(),
         ) {
             Ok(cred) => {
                 assert_credential(
@@ -559,7 +559,7 @@ mod tests {
             [1].to_vec(),
             nquads,
             EXAMPLE_REVOCATION_LIST_DID,
-            "0".to_string(),
+            &"0".to_string(),
         ) {
             Ok(cred) => {
                 assert_credential(
