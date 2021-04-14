@@ -131,6 +131,7 @@ export interface VerifyProofPayload {
 export interface CreateKeysPayload {
   keyOwnerDid: string,
 }
+
 export interface BbsKeys {
   didUrl: string,
   publicKey: string,
