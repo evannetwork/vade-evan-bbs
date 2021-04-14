@@ -142,7 +142,7 @@ export interface CredentialSubject {
 export interface CredentialStatus {
   id: string,
   type: string,
-  revocationListIndex: string,
+  revocationListIndex: number,
   revocationListCredential: string,
 }
 
@@ -228,9 +228,9 @@ export interface BbsPresentationProof {
 }
 
 export interface BbsProofVerification {
-    proof: string,
-    status: string,
-    reason?: string,
+  proof: string,
+  status: string,
+  reason?: string,
 }
 
 /*
