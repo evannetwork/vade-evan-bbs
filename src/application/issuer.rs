@@ -329,7 +329,7 @@ impl Issuer {
     ) -> Result<RevocationListCredential, Box<dyn Error>> {
         let revocation_id = revocation_id
             .parse::<usize>()
-            .map_err(|e| format!("Error parsing revocation_list_id: {}", e))?;
+            .map_err(|e| format!("Error parsing revocation_id: {}", e))?;
 
         if revocation_id > MAX_REVOCATION_ENTRIES {
             let error = format!(
