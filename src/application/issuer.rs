@@ -55,6 +55,9 @@ pub struct Issuer {}
 
 const MAX_REVOCATION_ENTRIES: usize = 131072;
 
+// Master secret is always incorporated, without being mentioned in the credential schema
+pub const ADDITIONAL_HIDDEN_MESSAGES_COUNT: usize = 1;
+
 impl Issuer {
     /// Creates a new credential schema specifying properties credentials issued under this schema need to incorporate.
     /// The schema needs to be stored in a publicly available and temper-proof way.
@@ -127,6 +130,7 @@ impl Issuer {
     pub fn offer_credential(
         credential_proposal: &CredentialProposal,
         issuer_did: &str,
+        nquad_count: usize,
     ) -> Result<BbsCredentialOffer, Box<dyn Error>> {
         let nonce = base64::encode(BbsIssuer::generate_signing_nonce().to_bytes_compressed_form());
         if credential_proposal.issuer != issuer_did {
@@ -140,6 +144,7 @@ impl Issuer {
             subject: credential_proposal.subject.to_owned(),
             r#type: CREDENTIAL_OFFER_TYPE.to_string(),
             schema: credential_proposal.schema.to_owned(),
+            credential_message_count: nquad_count + ADDITIONAL_HIDDEN_MESSAGES_COUNT,
             nonce,
         })
     }
@@ -198,14 +203,14 @@ impl Issuer {
             r#type: CREDENTIAL_SCHEMA_TYPE.to_string(),
         };
 
-        let blind_signature: BlindSignatureContext =
+        let blind_signature_context: BlindSignatureContext =
             base64::decode(&credential_request.blind_signature_context)?
                 .into_boxed_slice()
                 .try_into()?;
 
         let nonce = ProofNonce::from(base64::decode(&credential_offer.nonce)?.into_boxed_slice());
         let blind_signature = CryptoIssuer::create_signature(
-            &blind_signature,
+            &blind_signature_context,
             &nonce,
             nquads.clone(),
             issuer_public_key,
@@ -219,6 +224,7 @@ impl Issuer {
             proof_purpose: CREDENTIAL_PROOF_PURPOSE.to_owned(),
             verification_method: issuer_public_key_id.to_owned(),
             required_reveal_statements: required_indices,
+            credential_message_count: nquads.len() + ADDITIONAL_HIDDEN_MESSAGES_COUNT,
             blind_signature: base64::encode(blind_signature.to_bytes_compressed_form()),
         };
 
@@ -235,7 +241,7 @@ impl Issuer {
             credential_schema: schema_reference,
             credential_status: CredentialStatus {
                 id: format!("{}#{}", revocation_list_did, revocation_list_id),
-                r#type: "RevocationList2021Status".to_string(),
+                r#type: "RevocationList2020Status".to_string(),
                 revocation_list_index: revocation_list_id.to_string(),
                 revocation_list_credential: revocation_list_did.to_string(),
             },
@@ -275,13 +281,13 @@ impl Issuer {
             id: assigned_did.to_owned(),
             r#type: vec![
                 "VerifiableCredential".to_string(),
-                "StatusList2021Credential".to_string(),
+                "RevocationList2020Credential".to_string(),
             ],
             issuer: issuer_public_key_did.to_owned(),
             issued: get_now_as_iso_string(),
             credential_subject: RevocationListCredentialSubject {
                 id: format!("{}#{}", assigned_did, "list"),
-                r#type: "RevocationList2021".to_string(),
+                r#type: "RevocationList2020".to_string(),
                 encoded_list: base64::encode_config(&compressed_bytes?, base64::URL_SAFE),
             },
         };
@@ -386,7 +392,12 @@ mod tests {
     use std::collections::HashMap;
     use utilities::test_data::{
         accounts::local::{HOLDER_DID, ISSUER_DID, ISSUER_PRIVATE_KEY, ISSUER_PUBLIC_KEY_DID},
-        bbs_coherent_context_test_data::{EXAMPLE_REVOCATION_LIST_DID, REVOCATION_LIST_CREDENTIAL},
+        bbs_coherent_context_test_data::{
+            EXAMPLE_REVOCATION_LIST_DID,
+            PUB_KEY,
+            REVOCATION_LIST_CREDENTIAL,
+            SECRET_KEY,
+        },
         vc_zkp::{EXAMPLE_CREDENTIAL_PROPOSAL, EXAMPLE_CREDENTIAL_SCHEMA},
     };
     use vade_evan_substrate::signing::{LocalSigner, Signer};
@@ -394,13 +405,13 @@ mod tests {
     fn request_credential(
         pub_key: &DeterministicPublicKey,
         offer: &BbsCredentialOffer,
-        amount_of_values: u8,
     ) -> Result<(BbsCredentialRequest, CredentialSchema, Vec<String>), Box<dyn Error>> {
         let schema: CredentialSchema = serde_json::from_str(EXAMPLE_CREDENTIAL_SCHEMA)?;
         let secret = BbsProver::new_link_secret();
         let mut credential_values = HashMap::new();
         credential_values.insert("test_property_string".to_owned(), "value".to_owned());
-        for i in 1..amount_of_values {
+        for i in 1..(offer.credential_message_count - 1) {
+            // Create messages until we have message_count - 1 messages (one is reserved for master secret)
             credential_values.insert(format!("test_property_string{}", i), "value".to_owned());
         }
 
@@ -461,7 +472,7 @@ mod tests {
     #[test]
     fn can_offer_credential() -> Result<(), Box<dyn Error>> {
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
-        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID)?;
+        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID, 1)?;
 
         assert_eq!(&offer.issuer, &ISSUER_DID);
         assert_eq!(&offer.schema, &proposal.schema);
@@ -474,7 +485,7 @@ mod tests {
     #[test]
     fn credential_offer_fails_on_wrong_issuer() -> Result<(), Box<dyn Error>> {
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
-        let offer = Issuer::offer_credential(&proposal, "random_issuer");
+        let offer = Issuer::offer_credential(&proposal, "random_issuer", 1);
 
         match offer {
             Ok(_) => assert!(false),
@@ -489,11 +500,12 @@ mod tests {
 
     #[test]
     fn can_issue_credential_one_property() -> Result<(), Box<dyn Error>> {
+        let message_count = 1;
         let (dpk, sk) = BbsIssuer::new_short_keys(None);
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
-        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID)?;
+        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID, message_count)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
-        let (credential_request, schema, nquads) = request_credential(&dpk, &offer, 1)?;
+        let (credential_request, schema, nquads) = request_credential(&dpk, &offer)?;
 
         match Issuer::issue_credential(
             &ISSUER_DID,
@@ -507,7 +519,7 @@ mod tests {
             [1].to_vec(),
             nquads,
             EXAMPLE_REVOCATION_LIST_DID,
-            "0",
+            &"0".to_string(),
         ) {
             Ok(cred) => {
                 assert_credential(
@@ -524,11 +536,16 @@ mod tests {
 
     #[test]
     fn can_issue_credential_five_properties() -> Result<(), Box<dyn Error>> {
-        let (dpk, sk) = BbsIssuer::new_short_keys(None);
+        let message_count = 5;
+
+        let nonce_bytes = base64::decode(&PUB_KEY)?.into_boxed_slice();
+        let dpk = DeterministicPublicKey::from(nonce_bytes);
+        let nonce_bytes = base64::decode(&SECRET_KEY)?.into_boxed_slice();
+        let sk = SecretKey::from(nonce_bytes);
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
-        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID)?;
+        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID, message_count)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
-        let (credential_request, schema, nquads) = request_credential(&dpk, &offer, 5)?;
+        let (credential_request, schema, nquads) = request_credential(&dpk, &offer)?;
 
         match Issuer::issue_credential(
             &ISSUER_DID,
@@ -542,7 +559,7 @@ mod tests {
             [1].to_vec(),
             nquads,
             EXAMPLE_REVOCATION_LIST_DID,
-            "0",
+            &"0".to_string(),
         ) {
             Ok(cred) => {
                 assert_credential(
@@ -559,11 +576,12 @@ mod tests {
 
     #[test]
     fn cannot_issue_credential_larger_revocation_id() -> Result<(), Box<dyn Error>> {
+        let message_count = 5;
         let (dpk, sk) = BbsIssuer::new_short_keys(None);
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
-        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID)?;
+        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID, message_count)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
-        let (credential_request, schema, nquads) = request_credential(&dpk, &offer, 5)?;
+        let (credential_request, schema, nquads) = request_credential(&dpk, &offer)?;
 
         let result = Issuer::issue_credential(
             &ISSUER_DID,

@@ -14,7 +14,10 @@
   limitations under the License.
 */
 
-use crate::application::datatypes::{BbsSubProofRequest, KEY_SIZE};
+use crate::application::{
+    datatypes::{BbsCredentialSignature, BbsSubProofRequest, BbsUnfinishedCredentialSignature},
+    issuer::ADDITIONAL_HIDDEN_MESSAGES_COUNT,
+};
 use bbs::{
     keys::DeterministicPublicKey,
     messages::{HiddenMessage, ProofMessage},
@@ -28,12 +31,14 @@ use bbs::{
     BlindSignatureContext,
     HashElem,
     ProofNonce,
+    RandomElem,
     SignatureBlinding,
     SignatureMessage,
     SignatureProof,
 };
 use std::{
     collections::{BTreeMap, HashMap, HashSet},
+    convert::TryInto,
     error::Error,
     iter::FromIterator,
     panic,
@@ -46,9 +51,10 @@ impl CryptoProver {
         issuer_pub_key: &DeterministicPublicKey,
         master_secret: &SignatureMessage,
         credential_offering_nonce: &ProofNonce,
+        credential_message_count: usize,
     ) -> Result<(BlindSignatureContext, SignatureBlinding), Box<dyn Error>> {
         let pk = issuer_pub_key
-            .to_public_key(KEY_SIZE) // + 1 for master secret
+            .to_public_key(credential_message_count)
             .map_err(|e| format!("{}", e))?;
         let mut messages = BTreeMap::new();
         messages.insert(0, master_secret.clone());
@@ -63,9 +69,20 @@ impl CryptoProver {
         credential_messages: Vec<String>,
         master_secret: &SignatureMessage,
         issuer_public_key: &DeterministicPublicKey,
-        blind_signature: &BlindSignature,
+        signature: &BbsUnfinishedCredentialSignature,
         blinding_factor: &SignatureBlinding,
     ) -> Result<Signature, Box<dyn Error>> {
+        let raw: Box<[u8]> = base64::decode(signature.blind_signature.clone())?.into_boxed_slice();
+        let blind_signature: BlindSignature = raw.try_into()?;
+
+        if signature.credential_message_count
+            != (credential_messages.len() + ADDITIONAL_HIDDEN_MESSAGES_COUNT)
+        {
+            return Err(Box::from(
+                "Provided number of nquads differ from number used in signature",
+            ));
+        }
+
         let mut messages: Vec<SignatureMessage> = Vec::new();
         let mut i = 1;
         messages.insert(0, master_secret.clone());
@@ -74,12 +91,8 @@ impl CryptoProver {
             i += 1;
         }
 
-        for j in i..KEY_SIZE {
-            messages.insert(j, SignatureMessage::hash(""));
-        }
-
         let verkey = issuer_public_key
-            .to_public_key(KEY_SIZE)
+            .to_public_key(signature.credential_message_count)
             .map_err(|e| format!("Error finishing credential: {}", e))?;
 
         BbsProver::complete_signature(&verkey, &messages, &blind_signature, &blinding_factor)
@@ -88,13 +101,13 @@ impl CryptoProver {
 
     pub fn create_proof_of_knowledge(
         sub_proof_request: &BbsSubProofRequest,
-        credential_signature: &str,
+        credential_signature: &BbsCredentialSignature,
         public_key: &DeterministicPublicKey,
         master_secret: &SignatureMessage,
         nquads: Vec<String>,
     ) -> Result<PoKOfSignature, Box<dyn Error>> {
         let pk = public_key
-            .to_public_key(KEY_SIZE)
+            .to_public_key(credential_signature.credential_message_count)
             .map_err(|e| format!("Cannot create proof: Error converting public key: {}", e))?;
 
         let crypto_proof_request =
@@ -105,7 +118,12 @@ impl CryptoProver {
             HashSet::from_iter(sub_proof_request.revealed_attributes.iter().cloned());
 
         let mut commitment_messages = Vec::new();
-        commitment_messages.insert(0, pm_hidden_raw!(master_secret.clone()));
+        let link_secret_blinding = ProofNonce::random();
+        commitment_messages.insert(
+            0,
+            pm_hidden_raw!(master_secret.clone(), link_secret_blinding),
+        );
+
         let mut i = 1;
         for nquad in nquads.iter() {
             let msg;
@@ -118,11 +136,7 @@ impl CryptoProver {
             i += 1;
         }
 
-        for j in i..KEY_SIZE {
-            commitment_messages.insert(j, pm_hidden!(""))
-        }
-
-        let signature_bytes = base64::decode(credential_signature)?.into_boxed_slice();
+        let signature_bytes = base64::decode(&credential_signature.signature)?.into_boxed_slice();
         let signature = panic::catch_unwind(|| Signature::from(signature_bytes))
             .map_err(|_| "Error parsing signature")?;
 
@@ -173,7 +187,7 @@ mod tests {
         utils::get_dpk_from_string,
     };
     use bbs::{issuer::Issuer as CryptoIssuer, prover::Prover};
-    use std::convert::{From, TryInto};
+    use std::convert::From;
     use utilities::test_data::bbs_coherent_context_test_data::{
         FINISHED_CREDENTIAL,
         MASTER_SECRET,
@@ -193,7 +207,12 @@ mod tests {
     #[test]
     fn can_create_blind_signature_context() {
         let (dpk, master_secret, nonce) = setup_tests();
-        let ctx = CryptoProver::create_blind_signature_context(&dpk, &master_secret, &nonce);
+        let ctx = CryptoProver::create_blind_signature_context(
+            &dpk,
+            &master_secret,
+            &nonce,
+            100, /*random value*/
+        );
         assert!(ctx.is_ok());
     }
 
@@ -208,15 +227,11 @@ mod tests {
         let blinding: SignatureBlinding =
             SignatureBlinding::from(base64::decode(&SIGNATURE_BLINDING)?.into_boxed_slice());
 
-        let raw: Box<[u8]> =
-            base64::decode(unfinished_credential.proof.blind_signature.clone())?.into_boxed_slice();
-        let blind_signature: BlindSignature = raw.try_into()?;
-
         CryptoProver::finish_credential_signature(
             nquads.clone(),
             &master_secret,
             &public_key,
-            &blind_signature,
+            &unfinished_credential.proof,
             &blinding,
         )?;
 
@@ -237,7 +252,7 @@ mod tests {
 
         match CryptoProver::create_proof_of_knowledge(
             &sub_proof_request,
-            &credential.proof.signature,
+            &credential.proof,
             &public_key,
             &master_secret,
             nquads,
@@ -263,7 +278,7 @@ mod tests {
 
         let pok = CryptoProver::create_proof_of_knowledge(
             &sub_proof_request,
-            &credential.proof.signature,
+            &credential.proof,
             &public_key,
             &master_secret,
             nquads,

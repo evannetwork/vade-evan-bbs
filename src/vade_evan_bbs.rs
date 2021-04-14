@@ -21,6 +21,7 @@ use crate::{
             BbsCredentialOffer,
             BbsCredentialRequest,
             BbsProofRequest,
+            BbsProofVerification,
             CredentialProposal,
             CredentialSchema,
             CredentialSubject,
@@ -95,6 +96,7 @@ pub struct IssueCredentialPayload {
 pub struct OfferCredentialPayload {
     pub issuer: String,
     pub credential_proposal: CredentialProposal,
+    pub nquad_count: usize,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -547,8 +549,11 @@ impl VadePlugin for VadeEvanBbs {
         ignore_unrelated!(method, options);
 
         let payload: OfferCredentialPayload = parse!(&payload, "payload");
-        let result: BbsCredentialOffer =
-            Issuer::offer_credential(&payload.credential_proposal, &payload.issuer)?;
+        let result: BbsCredentialOffer = Issuer::offer_credential(
+            &payload.credential_proposal,
+            &payload.issuer,
+            payload.nquad_count,
+        )?;
         Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
             &result,
         )?)))
@@ -764,7 +769,7 @@ impl VadePlugin for VadeEvanBbs {
     /// * `payload` - serialized [`ValidateProofPayload`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.ValidateProofPayload.html)
     ///
     /// # Returns
-    /// * `Option<String>` - A JSON object representing a `ProofVerification` type, specifying whether verification was successful
+    /// * `Option<String>` - A JSON object representing a `BbsProofVerification` type, specifying whether verification was successful
     async fn vc_zkp_verify_proof(
         &mut self,
         method: &str,
@@ -781,27 +786,35 @@ impl VadePlugin for VadeEvanBbs {
                 .insert(schema_did.clone(), get_dpk_from_string(base64_public_key)?);
         }
 
-        Verifier::verify_proof(
+        let mut verfication_result = Verifier::verify_proof(
             &payload.presentation,
             &payload.proof_request,
             &public_key_schema_map,
             &payload.signer_address,
         )?;
-
-        // check revocation status
-        for cred in &payload.presentation.verifiable_credential {
-            let revocation_list: RevocationListCredential = get_document!(
-                &mut self.vade,
-                &cred.credential_status.revocation_list_credential,
-                "revocationlist"
-            );
-            let revoked = CryptoVerifier::is_revoked(&cred.credential_status, &revocation_list)?;
-            if revoked {
-                return Err(Box::from(format!("Credential id {} is revoked", cred.id)));
+        if verfication_result.status != "rejected" {
+            // check revocation status
+            for cred in &payload.presentation.verifiable_credential {
+                let revocation_list: RevocationListCredential = get_document!(
+                    &mut self.vade,
+                    &cred.credential_status.revocation_list_credential,
+                    "revocationlist"
+                );
+                let revoked =
+                    CryptoVerifier::is_revoked(&cred.credential_status, &revocation_list)?;
+                if revoked {
+                    verfication_result = BbsProofVerification {
+                        presented_proof: payload.presentation.id.to_string(),
+                        status: "rejected".to_string(),
+                        reason: Some(format!("Credential id {} is revoked", cred.id)),
+                    };
+                }
             }
         }
 
-        Ok(VadePluginResultValue::Success(None))
+        Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
+            &verfication_result,
+        )?)))
     }
 
     /// Finishes a credential, e.g. by incorporating the prover's master secret into the credential signature after issuance.

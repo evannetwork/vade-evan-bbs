@@ -27,14 +27,13 @@ pub const CREDENTIAL_SCHEMA_TYPE: &str = "EvanZKPSchema";
 pub const CREDENTIAL_PROOF_PURPOSE: &str = "assertionMethod";
 pub const DEFAULT_CREDENTIAL_CONTEXTS: [&'static str; 3] = [
     "https://www.w3.org/2018/credentials/v1",
-    "https:://schema.org",
-    "https://w3id.org/vc-status-list-2021/v1",
+    "https://schema.org",
+    "https://w3id.org/vc-revocation-list-2020/v1",
 ];
 pub const DEFAULT_REVOCATION_CONTEXTS: [&'static str; 2] = [
     "https://www.w3.org/2018/credentials/v1",
-    "https://w3id.org/vc-status-list-2021/v1",
+    "https://w3id.org/vc-revocation-list-2020/v1",
 ];
-pub const KEY_SIZE: usize = 500;
 
 /// Message following a `BbsCredentialOffer`, sent by a potential credential prover.
 /// Provides the values that need to be signed by the issuer in both encoded/cleartext, and blinded format.
@@ -117,6 +116,7 @@ pub struct BbsCredentialOffer {
     pub r#type: String,
     pub schema: String,
     pub nonce: String,
+    pub credential_message_count: usize,
 }
 
 /// Message to initiate credential issuance, sent by (potential) prover.
@@ -173,6 +173,7 @@ impl BbsCredential {
                 proof_purpose: cred.proof.proof_purpose,
                 required_reveal_statements: cred.proof.required_reveal_statements,
                 signature: signature,
+                credential_message_count: cred.proof.credential_message_count,
                 r#type: cred.proof.r#type,
                 verification_method: cred.proof.verification_method,
             },
@@ -233,6 +234,7 @@ pub struct BbsCredentialSignature {
     pub created: String,
     pub proof_purpose: String,
     pub verification_method: String,
+    pub credential_message_count: usize,
     pub required_reveal_statements: Vec<u32>,
     pub signature: String,
 }
@@ -244,6 +246,7 @@ pub struct BbsUnfinishedCredentialSignature {
     pub created: String,
     pub proof_purpose: String,
     pub verification_method: String,
+    pub credential_message_count: usize,
     pub required_reveal_statements: Vec<u32>,
     pub blind_signature: String,
 }
@@ -332,6 +335,7 @@ impl BbsPresentation {
                 created: cred.proof.created,
                 proof_purpose: cred.proof.proof_purpose,
                 proof: base64::encode(proof.to_bytes_compressed_form()),
+                credential_message_count: cred.proof.credential_message_count,
                 r#type: PROOF_SIGNATURE_TYPE.to_owned(),
                 verification_method: cred.proof.verification_method,
                 nonce: base64::encode(nonce.to_bytes_compressed_form()),
@@ -347,9 +351,19 @@ pub struct BbsPresentationProof {
     pub r#type: String,
     pub created: String,
     pub proof_purpose: String,
+    pub credential_message_count: usize,
     pub verification_method: String,
     pub nonce: String,
     pub proof: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BbsProofVerification {
+    pub presented_proof: String,
+    pub status: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
 }
 
 /// `RevocationListCredential` without a proof (for internal use only).

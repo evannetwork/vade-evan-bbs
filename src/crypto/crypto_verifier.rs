@@ -15,13 +15,7 @@
 */
 
 use crate::application::{
-    datatypes::{
-        BbsProofRequest,
-        CredentialStatus,
-        ProofPresentation,
-        RevocationListCredential,
-        KEY_SIZE,
-    },
+    datatypes::{BbsProofRequest, CredentialStatus, ProofPresentation, RevocationListCredential},
     utils::get_nonce_from_string,
 };
 use bbs::{
@@ -98,13 +92,14 @@ impl CryptoVerifier {
                     "Missing revealed messages for schema {}",
                     cred.credential_schema.id
                 ))?;
+            let message_count: usize = cred.proof.credential_message_count;
             let key = keys_to_schema_map
                 .get(&cred.credential_schema.id)
                 .ok_or(format!(
                     "Missing key for schema {}",
                     cred.credential_schema.id
                 ))?
-                .to_public_key(KEY_SIZE)
+                .to_public_key(message_count)
                 .map_err(|e| format!("Error converting key for proof verification: {}", e))?;
 
             proof_requests.insert(

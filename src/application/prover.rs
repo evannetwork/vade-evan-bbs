@@ -38,16 +38,11 @@ use bbs::{
     keys::DeterministicPublicKey,
     pok_sig::PoKOfSignature,
     prover::Prover as BbsProver,
-    signature::BlindSignature,
     SignatureBlinding,
     SignatureMessage,
     ToVariableLengthBytes,
 };
-use std::{
-    collections::HashMap,
-    convert::{From, TryInto},
-    error::Error,
-};
+use std::{collections::HashMap, convert::From, error::Error};
 use vade_evan_substrate::signing::Signer;
 
 pub struct Prover {}
@@ -83,6 +78,7 @@ impl Prover {
     /// * `master_secret` - The master secret to be incorporated as a blinded value to be signed by the issuer
     /// * `credential_values` - A mapping of property names to their stringified cleartext values
     /// * `issuer_pub_key` - Public key of the issuer
+    /// * `credential_message_count` - Number of messages to be signed in this credential by the issuer (all required schema properties + the optional ones the prover wants to provide values for)
     ///
     /// # Returns
     /// * `BbsCredentialRequest` - The request to be sent to the issuer
@@ -111,14 +107,18 @@ impl Prover {
         }
 
         let nonce = get_nonce_from_string(&credential_offering.nonce)?;
-        let (blind_signature_context, blinding) =
-            CryptoProver::create_blind_signature_context(&issuer_pub_key, &master_secret, &nonce)
-                .map_err(|e| {
-                format!(
-                    "Cannot request credential: Could not create signature blinding: {}",
-                    e
-                )
-            })?;
+        let (blind_signature_context, blinding) = CryptoProver::create_blind_signature_context(
+            &issuer_pub_key,
+            &master_secret,
+            &nonce,
+            credential_offering.credential_message_count,
+        )
+        .map_err(|e| {
+            format!(
+                "Cannot request credential: Could not create signature blinding: {}",
+                e
+            )
+        })?;
 
         Ok((
             BbsCredentialRequest {
@@ -152,14 +152,11 @@ impl Prover {
         issuer_public_key: &DeterministicPublicKey,
         blinding: &SignatureBlinding,
     ) -> Result<BbsCredential, Box<dyn Error>> {
-        let raw: Box<[u8]> =
-            base64::decode(unfinished_credential.proof.blind_signature.clone())?.into_boxed_slice();
-        let blind_signature: BlindSignature = raw.try_into()?;
         let final_signature = CryptoProver::finish_credential_signature(
             nquads.clone(),
             master_secret,
             issuer_public_key,
-            &blind_signature,
+            &unfinished_credential.proof,
             blinding,
         )?;
 
@@ -223,7 +220,7 @@ impl Prover {
 
             let proof_of_knowledge = CryptoProver::create_proof_of_knowledge(
                 sub_proof_request,
-                &credential.proof.signature,
+                &credential.proof,
                 &dpk,
                 &master_secret,
                 nquads,

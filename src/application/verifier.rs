@@ -16,13 +16,41 @@
 
 use crate::{
     application::{
-        datatypes::{BbsProofRequest, BbsSubProofRequest, ProofPresentation, KEY_SIZE},
+        datatypes::{BbsProofRequest, BbsProofVerification, BbsSubProofRequest, ProofPresentation},
         utils::get_now_as_iso_string,
     },
     crypto::{crypto_utils::check_assertion_proof, crypto_verifier::CryptoVerifier},
+    BbsPresentation,
 };
-use bbs::{keys::DeterministicPublicKey, verifier::Verifier as BbsVerifier, SignatureProof};
+use bbs::{
+    keys::DeterministicPublicKey,
+    prelude::PublicKey,
+    verifier::Verifier as BbsVerifier,
+    ProofChallenge,
+    SignatureProof,
+};
 use std::{collections::HashMap, error::Error, panic};
+
+fn verify_presentation(
+    proof: &SignatureProof,
+    key: &PublicKey,
+    challenge: &ProofChallenge,
+    cred: &BbsPresentation,
+) -> Result<(), Box<dyn Error>> {
+    let verified_proof = proof
+        .proof
+        .verify(&key, &proof.revealed_messages, &challenge)
+        .map_err(|e| format!("Error during proof verification: {}", e))?;
+
+    if !verified_proof.is_valid() {
+        return Err(Box::from(format!(
+            "Invalid proof for credential {}, with error message: {}",
+            &cred.id, verified_proof
+        )));
+    }
+
+    Ok(())
+}
 
 pub struct Verifier {}
 
@@ -73,13 +101,13 @@ impl Verifier {
     /// * `signer_address` - Address of the `AssertionProof` signer (usually the prover)
     ///
     /// # Returns
-    /// `()` - Finishes if proof is valid, throws an `Error` otherwise
+    /// * `ProofVerification` - States whether the verification was successful or not
     pub fn verify_proof(
         presentation: &ProofPresentation,
         proof_request: &BbsProofRequest,
         keys_to_schema_map: &HashMap<String, DeterministicPublicKey>,
         signer_address: &str,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<BbsProofVerification, Box<dyn Error>> {
         if presentation.verifiable_credential.len() == 0 {
             return Err(Box::from("Invalid presentation: No credentials provided"));
         }
@@ -90,13 +118,14 @@ impl Verifier {
             CryptoVerifier::create_challenge(&presentation, &proof_request, &keys_to_schema_map)?;
 
         for cred in &presentation.verifiable_credential {
+            let message_count: usize = cred.proof.credential_message_count;
             let key = keys_to_schema_map
                 .get(&cred.credential_schema.id)
                 .ok_or(format!(
                     "Missing public key for schema {}",
                     &cred.credential_schema.id
                 ))?
-                .to_public_key(KEY_SIZE)
+                .to_public_key(message_count)
                 .map_err(|e| {
                     format!(
                         "Error converting deterministic public key while verifying proof: {}",
@@ -108,20 +137,23 @@ impl Verifier {
             let proof = panic::catch_unwind(|| SignatureProof::from(proof_bytes))
                 .map_err(|_| "Error parsing signature")?;
 
-            let verified_proof = proof
-                .proof
-                .verify(&key, &proof.revealed_messages, &challenge)
-                .map_err(|e| format!("Error during proof verification: {}", e))?;
-
-            if !verified_proof.is_valid() {
-                return Err(Box::from(format!(
-                    "Invalid proof for credential {}, with error message: {}",
-                    &cred.id, verified_proof
-                )));
+            match verify_presentation(&proof, &key, &challenge, &cred) {
+                Err(e) => {
+                    return Ok(BbsProofVerification {
+                        presented_proof: presentation.id.to_string(),
+                        status: "rejected".to_string(),
+                        reason: Some(e.to_string()),
+                    })
+                }
+                Ok(()) => (),
             }
         }
 
-        Ok(())
+        Ok(BbsProofVerification {
+            presented_proof: presentation.id.to_string(),
+            status: "verified".to_string(),
+            reason: None,
+        })
     }
 }
 
@@ -222,7 +254,7 @@ mod tests {
 
     #[test]
     fn can_verify_proof() -> Result<(), Box<dyn Error>> {
-        let holder_address = SIGNER_1_ADDRESS;
+        let signer_address = SIGNER_1_ADDRESS;
         let presentation: ProofPresentation = serde_json::from_str(&PROOF_PRESENTATION)?;
         let proof_request: BbsProofRequest =
             serde_json::from_str(&PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES)?;
@@ -241,7 +273,7 @@ mod tests {
             &presentation,
             &proof_request,
             &keys_to_schema_map,
-            holder_address,
+            signer_address,
         )?;
 
         Ok(())
