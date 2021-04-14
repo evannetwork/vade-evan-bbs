@@ -279,12 +279,12 @@ async fn create_proof_request(vade: &mut Vade) -> Result<BbsProofRequest, Box<dy
 async fn revoke_credential(
     vade: &mut Vade,
     revocation_list_did: String,
-    revocation_list_id: usize,
+    revocation_list_id: String,
 ) -> Result<(), Box<dyn Error>> {
     let revoke_credential_payload = RevokeCredentialPayload {
         issuer: ISSUER_DID.to_string(),
         revocation_list: revocation_list_did,
-        revocation_id: revocation_list_id,
+        revocation_id: revocation_list_id.to_string(),
         issuer_public_key_did: ISSUER_PUBLIC_KEY_DID.to_string(),
         issuer_proving_key: ISSUER_PRIVATE_KEY.to_string(),
     };
@@ -743,7 +743,7 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
     .await?;
 
     // revoke credential
-    revoke_credential(&mut vade, revocation_list.id, 0).await?;
+    revoke_credential(&mut vade, revocation_list.id, "0".to_string()).await?;
 
     // create proof request
     let proof_request = create_proof_request(&mut vade).await?;

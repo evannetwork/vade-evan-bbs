@@ -144,7 +144,7 @@ pub struct RequestProofPayload {
 pub struct RevokeCredentialPayload {
     pub issuer: String,
     pub revocation_list: String,
-    pub revocation_id: usize,
+    pub revocation_id: String,
     pub issuer_public_key_did: String,
     pub issuer_proving_key: String,
 }
@@ -740,7 +740,7 @@ impl VadePlugin for VadeEvanBbs {
         let updated_list = Issuer::revoke_credential(
             &payload.issuer,
             rev_list,
-            payload.revocation_id,
+            &payload.revocation_id,
             &payload.issuer_public_key_did,
             &payload.issuer_proving_key,
             &self.signer,

@@ -322,11 +322,15 @@ impl Issuer {
     pub async fn revoke_credential(
         issuer: &str,
         mut revocation_list: RevocationListCredential,
-        revocation_id: usize,
+        revocation_id: &str,
         issuer_public_key_did: &str,
         issuer_proving_key: &str,
         signer: &Box<dyn Signer>,
     ) -> Result<RevocationListCredential, Box<dyn Error>> {
+        let revocation_id = revocation_id
+            .parse::<usize>()
+            .map_err(|e| format!("Error parsing revocation_id: {}", e))?;
+
         if revocation_id > MAX_REVOCATION_ENTRIES {
             let error = format!(
                 "Cannot revoke credential: revocation_id {} is larger than list limit of {}",
@@ -636,7 +640,7 @@ mod tests {
         let result = Issuer::revoke_credential(
             ISSUER_DID,
             revocation_list.clone(),
-            MAX_REVOCATION_ENTRIES + 1,
+            &(MAX_REVOCATION_ENTRIES + 1).to_string(),
             ISSUER_PUBLIC_KEY_DID,
             ISSUER_PRIVATE_KEY,
             &signer,
@@ -666,7 +670,7 @@ mod tests {
         let updated_revocation_list = Issuer::revoke_credential(
             ISSUER_DID,
             revocation_list.clone(),
-            1,
+            "1",
             ISSUER_PUBLIC_KEY_DID,
             ISSUER_PRIVATE_KEY,
             &signer,
