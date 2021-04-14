@@ -88,7 +88,7 @@ export interface BbsCredentialOffer {
   issuer: string,
   subject: string,
   type: string,
-  messageCount: number,
+  credentialMessageCount: number,
   schema: string,
   nonce: string,
 }
