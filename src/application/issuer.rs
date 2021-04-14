@@ -237,7 +237,7 @@ impl Issuer {
             credential_schema: schema_reference,
             credential_status: CredentialStatus {
                 id: format!("{}#{}", revocation_list_did, revocation_list_id),
-                r#type: "RevocationList2021Status".to_string(),
+                r#type: "RevocationList2020Status".to_string(),
                 revocation_list_index: revocation_list_id,
                 revocation_list_credential: revocation_list_did.to_string(),
             },
@@ -277,13 +277,13 @@ impl Issuer {
             id: assigned_did.to_owned(),
             r#type: vec![
                 "VerifiableCredential".to_string(),
-                "StatusList2021Credential".to_string(),
+                "RevocationList2020Credential".to_string(),
             ],
             issuer: issuer_public_key_did.to_owned(),
             issued: get_now_as_iso_string(),
             credential_subject: RevocationListCredentialSubject {
                 id: format!("{}#{}", assigned_did, "list"),
-                r#type: "RevocationList2021".to_string(),
+                r#type: "RevocationList2020".to_string(),
                 encoded_list: base64::encode_config(&compressed_bytes?, base64::URL_SAFE),
             },
         };
