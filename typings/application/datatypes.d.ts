@@ -228,9 +228,9 @@ export interface BbsPresentationProof {
 }
 
 export interface BbsProofVerification {
-    proof: string,
-    status: string,
-    reason?: string,
+  proof: string,
+  status: string,
+  reason?: string,
 }
 
 /*
