@@ -525,7 +525,6 @@ mod tests {
     #[test]
     fn can_issue_credential_five_properties() -> Result<(), Box<dyn Error>> {
         let message_count = 5;
-        // let (dpk, sk) = BbsIssuer::new_short_keys(None);
 
         let nonce_bytes = base64::decode(&PUB_KEY)?.into_boxed_slice();
         let dpk = DeterministicPublicKey::from(nonce_bytes);
