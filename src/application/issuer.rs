@@ -670,7 +670,7 @@ mod tests {
         let updated_revocation_list = Issuer::revoke_credential(
             ISSUER_DID,
             revocation_list.clone(),
-            &"1".to_string(),
+            "1",
             ISSUER_PUBLIC_KEY_DID,
             ISSUER_PRIVATE_KEY,
             &signer,
