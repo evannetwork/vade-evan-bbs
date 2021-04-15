@@ -37,7 +37,7 @@ use crate::{
             DEFAULT_CREDENTIAL_CONTEXTS,
             DEFAULT_REVOCATION_CONTEXTS,
         },
-        utils::{generate_uuid, get_now_as_iso_string},
+        utils::{decode_base64, decode_base64_config, generate_uuid, get_now_as_iso_string},
     },
     crypto::{crypto_issuer::CryptoIssuer, crypto_utils::create_assertion_proof},
 };
@@ -204,11 +204,11 @@ impl Issuer {
         };
 
         let blind_signature_context: BlindSignatureContext =
-            base64::decode(&credential_request.blind_signature_context)?
+            decode_base64(&credential_request.blind_signature_context)?
                 .into_boxed_slice()
                 .try_into()?;
 
-        let nonce = ProofNonce::from(base64::decode(&credential_offer.nonce)?.into_boxed_slice());
+        let nonce = ProofNonce::from(decode_base64(&credential_offer.nonce)?.into_boxed_slice());
         let blind_signature = CryptoIssuer::create_signature(
             &blind_signature_context,
             &nonce,
@@ -339,8 +339,8 @@ impl Issuer {
             return Err(Box::from(error));
         }
 
-        let encoded_list = base64::decode_config(
-            revocation_list.credential_subject.encoded_list.to_string(),
+        let encoded_list = decode_base64_config(
+            &revocation_list.credential_subject.encoded_list,
             base64::URL_SAFE,
         )?;
         let mut decoder = GzDecoder::new(&encoded_list[..]);
@@ -438,7 +438,7 @@ mod tests {
     }
 
     fn is_base_64(input: String) -> bool {
-        match base64::decode(input) {
+        match decode_base64(encoded: &str)(input) {
             Ok(_) => true,
             Err(_) => false,
         }
@@ -542,9 +542,9 @@ mod tests {
     fn can_issue_credential_five_properties() -> Result<(), Box<dyn Error>> {
         let message_count = 5;
 
-        let nonce_bytes = base64::decode(&PUB_KEY)?.into_boxed_slice();
+        let nonce_bytes = decode_base64(&PUB_KEY)?.into_boxed_slice();
         let dpk = DeterministicPublicKey::from(nonce_bytes);
-        let nonce_bytes = base64::decode(&SECRET_KEY)?.into_boxed_slice();
+        let nonce_bytes = decode_base64(&SECRET_KEY)?.into_boxed_slice();
         let sk = SecretKey::from(nonce_bytes);
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
         let offer = Issuer::offer_credential(&proposal, &ISSUER_DID, message_count)?;
