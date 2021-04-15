@@ -232,7 +232,7 @@ impl Issuer {
             blind_signature: base64::encode(blind_signature.to_bytes_compressed_form()),
         };
 
-        let credential_id = generate_uuid();
+        let credential_id = format!("uuid:{}", generate_uuid());
         let credential = UnfinishedBbsCredential {
             context: DEFAULT_CREDENTIAL_CONTEXTS
                 .iter()
