@@ -125,7 +125,6 @@ pub struct CreateCredentialProposalPayload {
 #[serde(rename_all = "camelCase")]
 pub struct RequestCredentialPayload {
     pub credential_offering: BbsCredentialOffer,
-    pub credential_schema: String,
     pub master_secret: String,
     pub credential_values: HashMap<String, String>,
     pub issuer_pub_key: String,
@@ -662,8 +661,11 @@ impl VadePlugin for VadeEvanBbs {
         let public_key: DeterministicPublicKey = DeterministicPublicKey::from(
             base64::decode(&payload.issuer_pub_key)?.into_boxed_slice(),
         );
-        let schema: CredentialSchema =
-            get_document!(&mut self.vade, &payload.credential_schema, "schema");
+        let schema: CredentialSchema = get_document!(
+            &mut self.vade,
+            &payload.credential_offering.schema,
+            "schema"
+        );
         let (credential_request, signature_blinding): (BbsCredentialRequest, SignatureBlinding) =
             Prover::request_credential(
                 &payload.credential_offering,
