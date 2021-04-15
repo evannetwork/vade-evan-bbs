@@ -203,12 +203,16 @@ impl Issuer {
             r#type: CREDENTIAL_SCHEMA_TYPE.to_string(),
         };
 
-        let blind_signature_context: BlindSignatureContext =
-            decode_base64(&credential_request.blind_signature_context)?
-                .into_boxed_slice()
-                .try_into()?;
+        let blind_signature_context: BlindSignatureContext = decode_base64(
+            &credential_request.blind_signature_context,
+            "Blind Signature Context",
+        )?
+        .into_boxed_slice()
+        .try_into()?;
 
-        let nonce = ProofNonce::from(decode_base64(&credential_offer.nonce)?.into_boxed_slice());
+        let nonce = ProofNonce::from(
+            decode_base64(&credential_offer.nonce, "Credential Offer Nonce")?.into_boxed_slice(),
+        );
         let blind_signature = CryptoIssuer::create_signature(
             &blind_signature_context,
             &nonce,
@@ -342,6 +346,7 @@ impl Issuer {
         let encoded_list = decode_base64_config(
             &revocation_list.credential_subject.encoded_list,
             base64::URL_SAFE,
+            "Encoded revocation list",
         )?;
         let mut decoder = GzDecoder::new(&encoded_list[..]);
         let mut decoded_list = Vec::new();
@@ -437,8 +442,8 @@ mod tests {
         return Ok((credential_request, schema, nquads));
     }
 
-    fn is_base_64(input: String) -> bool {
-        match decode_base64(encoded: &str)(input) {
+    fn is_base_64(input: &str) -> bool {
+        match decode_base64(input, "Test input") {
             Ok(_) => true,
             Err(_) => false,
         }
@@ -459,7 +464,7 @@ mod tests {
         assert_eq!(&cred.proof.proof_purpose, CREDENTIAL_PROOF_PURPOSE);
         assert_eq!(&cred.proof.verification_method, pub_key_id);
         assert!(
-            is_base_64(cred.proof.blind_signature.to_owned()),
+            is_base_64(&cred.proof.blind_signature),
             "Signature seems not to be base64 encoded"
         );
         // Credential subject
@@ -542,9 +547,9 @@ mod tests {
     fn can_issue_credential_five_properties() -> Result<(), Box<dyn Error>> {
         let message_count = 5;
 
-        let nonce_bytes = decode_base64(&PUB_KEY)?.into_boxed_slice();
+        let nonce_bytes = decode_base64(&PUB_KEY, "Public Key")?.into_boxed_slice();
         let dpk = DeterministicPublicKey::from(nonce_bytes);
-        let nonce_bytes = decode_base64(&SECRET_KEY)?.into_boxed_slice();
+        let nonce_bytes = decode_base64(&SECRET_KEY, "Secret Key")?.into_boxed_slice();
         let sk = SecretKey::from(nonce_bytes);
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
         let offer = Issuer::offer_credential(&proposal, &ISSUER_DID, message_count)?;

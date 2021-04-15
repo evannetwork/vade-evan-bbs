@@ -17,7 +17,7 @@
 use crate::{
     application::{
         datatypes::{BbsProofRequest, BbsProofVerification, BbsSubProofRequest, ProofPresentation},
-        utils::get_now_as_iso_string,
+        utils::{decode_base64, get_now_as_iso_string},
     },
     crypto::{crypto_utils::check_assertion_proof, crypto_verifier::CryptoVerifier},
     BbsPresentation,
@@ -133,7 +133,7 @@ impl Verifier {
                     )
                 })?;
 
-            let proof_bytes = base64::decode(&cred.proof.proof)?.into_boxed_slice();
+            let proof_bytes = decode_base64(&cred.proof.proof, "VP Proof")?.into_boxed_slice();
             let proof = panic::catch_unwind(|| SignatureProof::from(proof_bytes))
                 .map_err(|_| "Error parsing signature")?;
 
@@ -204,7 +204,7 @@ mod tests {
                 );
                 assert_eq!(proof_request.sub_proof_requests[0].schema, schema.id);
                 // Nonce properly encoded
-                assert!(base64::decode(&proof_request.nonce).is_ok());
+                assert!(decode_base64(&proof_request.nonce, "Proof request nonce").is_ok());
             }
             Err(e) => assert!(false, "Test unexpectedly failed with error: {}", e),
         }
@@ -244,7 +244,7 @@ mod tests {
                 );
                 assert_eq!(proof_request.sub_proof_requests[1].schema, schema.id);
                 // Nonce properly encoded
-                assert!(base64::decode(proof_request.nonce).is_ok());
+                assert!(decode_base64(&proof_request.nonce, "Proof request nonce").is_ok());
             }
             Err(e) => assert!(false, "Test unexpectedly failed with error: {}", e),
         }
