@@ -189,7 +189,6 @@ async fn create_credential_request(
 
     let request = RequestCredentialPayload {
         credential_offering: offer,
-        credential_schema: SCHEMA_DID.to_string(),
         master_secret: MASTER_SECRET.to_string(),
         credential_values: credential_values.clone(),
         issuer_pub_key: PUB_KEY.to_string(),
