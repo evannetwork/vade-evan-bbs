@@ -31,7 +31,12 @@ use super::datatypes::{
     DEFAULT_CREDENTIAL_CONTEXTS,
 };
 use crate::{
-    application::utils::{generate_uuid, get_nonce_from_string, get_now_as_iso_string},
+    application::utils::{
+        decode_base64,
+        generate_uuid,
+        get_nonce_from_string,
+        get_now_as_iso_string,
+    },
     crypto::{crypto_prover::CryptoProver, crypto_utils::create_assertion_proof},
 };
 use bbs::{
@@ -472,8 +477,9 @@ mod tests {
         let master_secret: SignatureMessage = get_signature_message_from_string(&MASTER_SECRET)?;
         let nquads: Vec<String> = NQUADS.iter().map(|q| q.to_string()).collect();
         let public_key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;
-        let blinding: SignatureBlinding =
-            SignatureBlinding::from(base64::decode(&SIGNATURE_BLINDING)?.into_boxed_slice());
+        let blinding: SignatureBlinding = SignatureBlinding::from(
+            decode_base64(&SIGNATURE_BLINDING, "Signature Blinding")?.into_boxed_slice(),
+        );
 
         match Prover::finish_credential(
             &unfinished_credential,
@@ -484,7 +490,7 @@ mod tests {
         ) {
             Ok(cred) => {
                 // There is now a property 'signature' and it is base64 encoded
-                assert!(base64::decode(&cred.proof.signature).is_ok());
+                assert!(decode_base64(&cred.proof.signature, "Proof Signature").is_ok());
             }
             Err(e) => {
                 assert!(false, "Unexpected error when finishing credential: {}", e);
@@ -504,8 +510,9 @@ mod tests {
             nquads_schema_map,
         ) = get_creat_proof_data()?;
 
-        let master_secret: SignatureMessage =
-            SignatureMessage::from(base64::decode(&MASTER_SECRET)?.into_boxed_slice());
+        let master_secret: SignatureMessage = SignatureMessage::from(
+            decode_base64(&MASTER_SECRET, "Master Secret")?.into_boxed_slice(),
+        );
         let holder_secret_key = SIGNER_1_PRIVATE_KEY;
 
         let signer: Box<dyn Signer> = Box::new(LocalSigner::new());

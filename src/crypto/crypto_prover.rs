@@ -15,8 +15,9 @@
 */
 
 use crate::application::{
-    datatypes::{BbsCredentialSignature, BbsSubProofRequest, BbsUnfinishedCredentialSignature},
+    datatypes::{BbsCredentialSignature, BbsSubProofRequest, UnfinishedBbsCredentialSignature},
     issuer::ADDITIONAL_HIDDEN_MESSAGES_COUNT,
+    utils::decode_base64,
 };
 use bbs::{
     keys::DeterministicPublicKey,
@@ -69,10 +70,11 @@ impl CryptoProver {
         credential_messages: Vec<String>,
         master_secret: &SignatureMessage,
         issuer_public_key: &DeterministicPublicKey,
-        signature: &BbsUnfinishedCredentialSignature,
+        signature: &UnfinishedBbsCredentialSignature,
         blinding_factor: &SignatureBlinding,
     ) -> Result<Signature, Box<dyn Error>> {
-        let raw: Box<[u8]> = base64::decode(signature.blind_signature.clone())?.into_boxed_slice();
+        let raw: Box<[u8]> =
+            decode_base64(&signature.blind_signature, "VC Blind Signature")?.into_boxed_slice();
         let blind_signature: BlindSignature = raw.try_into()?;
 
         if signature.credential_message_count
@@ -136,7 +138,8 @@ impl CryptoProver {
             i += 1;
         }
 
-        let signature_bytes = base64::decode(&credential_signature.signature)?.into_boxed_slice();
+        let signature_bytes =
+            decode_base64(&credential_signature.signature, "VC Signature")?.into_boxed_slice();
         let signature = panic::catch_unwind(|| Signature::from(signature_bytes))
             .map_err(|_| "Error parsing signature")?;
 
@@ -220,12 +223,14 @@ mod tests {
     fn can_finish_credential_signature() -> Result<(), Box<dyn Error>> {
         let unfinished_credential: UnfinishedBbsCredential =
             serde_json::from_str(&UNFINISHED_CREDENTIAL)?;
-        let master_secret: SignatureMessage =
-            SignatureMessage::from(base64::decode(&MASTER_SECRET)?.into_boxed_slice());
+        let master_secret: SignatureMessage = SignatureMessage::from(
+            decode_base64(&MASTER_SECRET, "Master Secret")?.into_boxed_slice(),
+        );
         let nquads: Vec<String> = NQUADS.iter().map(|q| q.to_string()).collect();
         let public_key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;
-        let blinding: SignatureBlinding =
-            SignatureBlinding::from(base64::decode(&SIGNATURE_BLINDING)?.into_boxed_slice());
+        let blinding: SignatureBlinding = SignatureBlinding::from(
+            decode_base64(&SIGNATURE_BLINDING, "Signature Blinding")?.into_boxed_slice(),
+        );
 
         CryptoProver::finish_credential_signature(
             nquads.clone(),
@@ -247,8 +252,9 @@ mod tests {
             revealed_attributes: vec![1],
             schema: credential.credential_schema.id.clone(),
         };
-        let master_secret: SignatureMessage =
-            SignatureMessage::from(base64::decode(&MASTER_SECRET)?.into_boxed_slice());
+        let master_secret: SignatureMessage = SignatureMessage::from(
+            decode_base64(&MASTER_SECRET, "Master Secret")?.into_boxed_slice(),
+        );
 
         match CryptoProver::create_proof_of_knowledge(
             &sub_proof_request,
@@ -273,8 +279,9 @@ mod tests {
             revealed_attributes: vec![1],
             schema: credential.credential_schema.id.clone(),
         };
-        let master_secret: SignatureMessage =
-            SignatureMessage::from(base64::decode(&MASTER_SECRET)?.into_boxed_slice());
+        let master_secret: SignatureMessage = SignatureMessage::from(
+            decode_base64(&MASTER_SECRET, "Master Secret")?.into_boxed_slice(),
+        );
 
         let pok = CryptoProver::create_proof_of_knowledge(
             &sub_proof_request,

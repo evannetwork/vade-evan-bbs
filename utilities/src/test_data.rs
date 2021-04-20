@@ -279,6 +279,7 @@ pub mod bbs_coherent_context_test_data {
               "test_property_string3":"value"
            }
         },
+        "issuanceDate": "2021-04-20T08:35:56+0000",
         "credentialSchema":{
            "id":"did:evan:zkp:0xd641c26161e769cef4b41760211972b274a8f37f135a34083e4e48b3f1035eda",
            "type":"EvanZKPSchema"
@@ -343,6 +344,40 @@ pub mod bbs_coherent_context_test_data {
               1
            ],
            "signature":"oE+ETDgwAaCqmtqBhuKgft2CiCO92+hgG3uNr+GmVgRy9HLN/6SLktVURqw7AzlvbRiQqKoa65eVk++gdvY4Dj34MIOnNFMRAqQB2S0y1MliczPHpGAAlQkz6IzrPhwjfq9ZO9FlXdd4OwbfHRaJtA=="
+        }
+     }"###;
+
+    pub const UNSIGNED_CREDENTIAL: &str = r###"{
+        "@context":[
+           "https://www.w3.org/2018/credentials/v1",
+           "https:://schema.org",
+           "https://w3id.org/vc-status-list-2021/v1"
+        ],
+        "id":"94450c72-5dc4-4e46-8df0-106819064656",
+        "type":[
+           "VerifiableCredential"
+        ],
+        "issuer":"did:evan:testcore:0x6240cedfc840579b7fdcd686bdc65a9a8c42dea6",
+        "credentialSubject":{
+           "id":"did:evan:testcore:0x67ce8b01b3b75a9ba4a1462139a1edaa0d2f539f",
+           "data":{
+              "test_property_string4":"value",
+              "test_property_string":"value",
+              "test_property_string2":"value",
+              "test_property_string1":"value",
+              "test_property_string3":"value"
+           }
+        },
+        "issuanceDate": "2021-04-20T08:35:56+0000",
+        "credentialSchema":{
+           "id":"did:evan:zkp:0xd641c26161e769cef4b41760211972b274a8f37f135a34083e4e48b3f1035eda",
+           "type":"EvanZKPSchema"
+        },
+        "credentialStatus":{
+           "id":"did:evan:zkp:0xcac3f4186e273083820c8c59f3c52efb713a755de255d0eb997b4990253ea388#0",
+           "type":"RevocationList2021Status",
+           "revocationListIndex": "1",
+           "revocationListCredential":"did:evan:zkp:0xcac3f4186e273083820c8c59f3c52efb713a755de255d0eb997b4990253ea388"
         }
      }"###;
 

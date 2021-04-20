@@ -16,7 +16,7 @@
 
 use crate::application::{
     datatypes::{BbsProofRequest, CredentialStatus, ProofPresentation, RevocationListCredential},
-    utils::get_nonce_from_string,
+    utils::{decode_base64, decode_base64_config, get_nonce_from_string},
 };
 use bbs::{
     keys::DeterministicPublicKey,
@@ -43,9 +43,10 @@ impl CryptoVerifier {
         credential_status: &CredentialStatus,
         revocation_list: &RevocationListCredential,
     ) -> Result<bool, Box<dyn Error>> {
-        let encoded_list = base64::decode_config(
+        let encoded_list = decode_base64_config(
             revocation_list.credential_subject.encoded_list.to_string(),
             base64::URL_SAFE,
+            "Encoded Revocation List",
         )?;
         let mut decoder = GzDecoder::new(&encoded_list[..]);
         let mut decoded_list = Vec::new();
@@ -79,7 +80,7 @@ impl CryptoVerifier {
         }
 
         for cred in &presentation.verifiable_credential {
-            let proof_bytes = base64::decode(&cred.proof.proof)?.into_boxed_slice();
+            let proof_bytes = decode_base64(&cred.proof.proof, "VP Proof")?.into_boxed_slice();
             let signature =
                 panic::catch_unwind(|| SignatureProof::from(proof_bytes)).map_err(|_| {
                     format!("Error parsing signature proof for credential {}", &cred.id)
