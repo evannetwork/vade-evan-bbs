@@ -190,6 +190,7 @@ pub struct UnsignedBbsCredential {
     pub id: String,
     pub r#type: Vec<String>,
     pub issuer: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub valid_until: Option<String>,
     pub issuance_date: String,
     pub credential_subject: CredentialSubject,
@@ -206,6 +207,7 @@ pub struct UnfinishedBbsCredential {
     pub id: String,
     pub r#type: Vec<String>,
     pub issuer: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub valid_until: Option<String>,
     pub issuance_date: String,
     pub credential_subject: CredentialSubject,
