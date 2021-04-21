@@ -237,6 +237,7 @@ impl Issuer {
             id: credential_id,
             r#type: vec!["VerifiableCredential".to_string()],
             issuer: issuer_did.to_owned(),
+            issuance_date: get_now_as_iso_string(),
             credential_subject,
             credential_schema: schema_reference,
             credential_status: CredentialStatus {
