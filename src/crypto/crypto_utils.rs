@@ -14,7 +14,10 @@
   limitations under the License.
 */
 
-use crate::application::{datatypes::AssertionProof, utils::get_now_as_iso_string};
+use crate::application::{
+    datatypes::AssertionProof,
+    utils::{decode_base64_config, get_now_as_iso_string},
+};
 use base64;
 use secp256k1::{recover, Message, RecoveryId, Signature};
 use serde::{Deserialize, Serialize};
@@ -167,31 +170,41 @@ pub fn recover_address_and_data(jwt: &str) -> Result<(String, String), Box<dyn E
     let header_and_data = format!("{}.{}", header, data);
 
     // recover data for later checks
-    let data_decoded = match base64::decode_config(data.as_bytes(), base64::URL_SAFE) {
+    let data_decoded = match decode_base64_config(data.as_bytes(), base64::URL_SAFE, "") {
         Ok(decoded) => decoded,
-        Err(_) => match base64::decode_config(format!("{}=", data).as_bytes(), base64::URL_SAFE) {
-            Ok(decoded) => decoded,
-            Err(_) => {
-                match base64::decode_config(format!("{}==", data).as_bytes(), base64::URL_SAFE) {
-                    Ok(decoded) => decoded,
-                    Err(_) => {
-                        base64::decode_config(format!("{}===", data).as_bytes(), base64::URL_SAFE)?
+        Err(_) => {
+            match decode_base64_config(&format!("{}=", data).as_bytes(), base64::URL_SAFE, "") {
+                Ok(decoded) => decoded,
+                Err(_) => {
+                    match decode_base64_config(
+                        &format!("{}==", data).as_bytes(),
+                        base64::URL_SAFE,
+                        "",
+                    ) {
+                        Ok(decoded) => decoded,
+                        Err(_) => decode_base64_config(
+                            &format!("{}===", data).as_bytes(),
+                            base64::URL_SAFE,
+                            "JWT Data",
+                        )?,
                     }
                 }
             }
-        },
+        }
     };
     let data_string = String::from_utf8(data_decoded)?;
 
     // decode signature for validation
-    let signature_decoded = match base64::decode_config(signature.as_bytes(), base64::URL_SAFE) {
+    let signature_decoded = match decode_base64_config(signature.as_bytes(), base64::URL_SAFE, "") {
         Ok(decoded) => decoded,
         Err(_) => {
-            match base64::decode_config(format!("{}=", signature).as_bytes(), base64::URL_SAFE) {
+            match decode_base64_config(format!("{}=", signature).as_bytes(), base64::URL_SAFE, "") {
                 Ok(decoded) => decoded,
-                Err(_) => {
-                    base64::decode_config(format!("{}==", signature).as_bytes(), base64::URL_SAFE)?
-                }
+                Err(_) => decode_base64_config(
+                    format!("{}==", signature).as_bytes(),
+                    base64::URL_SAFE,
+                    "JWT Data",
+                )?,
             }
         }
     };

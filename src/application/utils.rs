@@ -14,6 +14,7 @@
   limitations under the License.
 */
 
+use base64::Config;
 use bbs::{keys::DeterministicPublicKey, ProofNonce, SignatureMessage};
 #[cfg(not(target_arch = "wasm32"))]
 use chrono::Utc;
@@ -32,7 +33,7 @@ pub fn generate_uuid() -> String {
 }
 
 pub fn get_nonce_from_string(nonce: &str) -> Result<ProofNonce, Box<dyn Error>> {
-    let key_bytes = base64::decode(nonce)?.into_boxed_slice();
+    let key_bytes = decode_base64(nonce, "Nonce")?.into_boxed_slice();
     let key = panic::catch_unwind(|| ProofNonce::from(key_bytes))
         .map_err(|_| format!("Error parsing nonce, invalid sequence"))?;
 
@@ -40,7 +41,7 @@ pub fn get_nonce_from_string(nonce: &str) -> Result<ProofNonce, Box<dyn Error>> 
 }
 
 pub fn get_dpk_from_string(dpk: &str) -> Result<DeterministicPublicKey, Box<dyn Error>> {
-    let nonce_bytes = base64::decode(dpk)?.into_boxed_slice();
+    let nonce_bytes = decode_base64(dpk, "Deterministic public key")?.into_boxed_slice();
     let nonce = panic::catch_unwind(|| DeterministicPublicKey::from(nonce_bytes))
         .map_err(|_| format!("Error parsing key, invalid sequence"))?;
 
@@ -48,10 +49,41 @@ pub fn get_dpk_from_string(dpk: &str) -> Result<DeterministicPublicKey, Box<dyn 
 }
 
 #[allow(dead_code)]
-pub fn get_signature_message_from_string(dpk: &str) -> Result<SignatureMessage, Box<dyn Error>> {
-    let msg_bytes = base64::decode(dpk)?.into_boxed_slice();
+pub fn get_signature_message_from_string(sig: &str) -> Result<SignatureMessage, Box<dyn Error>> {
+    let msg_bytes = decode_base64(sig, "Signature Message")?.into_boxed_slice();
     let msg = panic::catch_unwind(|| SignatureMessage::from(msg_bytes))
         .map_err(|_| format!("Error parsing signature message, invalid sequence"))?;
 
     return Ok(msg);
+}
+
+#[allow(dead_code)]
+pub fn decode_base64<T: AsRef<[u8]>>(
+    encoded: T,
+    error_message_context: &str,
+) -> Result<Vec<u8>, Box<dyn Error>> {
+    let decoded = base64::decode(encoded).map_err(|_| {
+        format!(
+            "Error interpreting {} as base64. Wrong encoding?",
+            error_message_context
+        )
+    })?;
+
+    Ok(decoded)
+}
+
+#[allow(dead_code)]
+pub fn decode_base64_config<T: AsRef<[u8]>>(
+    encoded: T,
+    config: Config,
+    error_message_context: &str,
+) -> Result<Vec<u8>, Box<dyn Error>> {
+    let decoded = base64::decode_config(encoded, config).map_err(|_| {
+        format!(
+            "Error interpreting {} as base64. Wrong encoding?",
+            error_message_context
+        )
+    })?;
+
+    Ok(decoded)
 }
