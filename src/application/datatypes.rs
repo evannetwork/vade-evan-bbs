@@ -144,6 +144,7 @@ pub struct BbsCredential {
     pub id: String,
     pub r#type: Vec<String>,
     pub issuer: String,
+    pub issuance_date: String,
     pub credential_subject: CredentialSubject,
     pub credential_schema: CredentialSchemaReference,
     pub credential_status: CredentialStatus,
@@ -157,6 +158,7 @@ impl BbsCredential {
             id: cred.id,
             r#type: cred.r#type,
             issuer: cred.issuer,
+            issuance_date: cred.issuance_date,
             credential_subject: CredentialSubject {
                 id: cred.credential_subject.id,
                 data: cred.credential_subject.data,
