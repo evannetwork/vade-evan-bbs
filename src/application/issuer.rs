@@ -672,7 +672,7 @@ mod tests {
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
         let offer = Issuer::offer_credential(&proposal, &ISSUER_DID, message_count)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
-        let (credential_request, schema, nquads) = request_credential(&dpk, &offer)?;
+        let (credential_request, _, nquads) = request_credential(&dpk, &offer)?;
         let unsigned_vc: UnsignedBbsCredential = serde_json::from_str(UNSIGNED_CREDENTIAL)?;
 
         match Issuer::sign_nquads(

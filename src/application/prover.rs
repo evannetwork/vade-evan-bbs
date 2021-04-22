@@ -31,12 +31,7 @@ use super::datatypes::{
     DEFAULT_CREDENTIAL_CONTEXTS,
 };
 use crate::{
-    application::utils::{
-        decode_base64,
-        generate_uuid,
-        get_nonce_from_string,
-        get_now_as_iso_string,
-    },
+    application::utils::{generate_uuid, get_nonce_from_string, get_now_as_iso_string},
     crypto::{crypto_prover::CryptoProver, crypto_utils::create_assertion_proof},
 };
 use bbs::{
@@ -293,7 +288,11 @@ mod tests {
     extern crate utilities;
     use super::*;
     use crate::{
-        application::utils::{get_dpk_from_string, get_signature_message_from_string},
+        application::utils::{
+            decode_base64,
+            get_dpk_from_string,
+            get_signature_message_from_string,
+        },
         crypto::crypto_utils::check_assertion_proof,
     };
     use bbs::{

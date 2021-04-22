@@ -314,6 +314,7 @@ pub mod bbs_coherent_context_test_data {
            "VerifiableCredential"
         ],
         "issuer":"did:evan:testcore:0x6240cedfc840579b7fdcd686bdc65a9a8c42dea6",
+        "issuanceDate": "2021-04-20T08:35:56+0000",
         "credentialSubject":{
            "id":"did:evan:testcore:0x67ce8b01b3b75a9ba4a1462139a1edaa0d2f539f",
            "data":{
@@ -458,6 +459,7 @@ pub mod bbs_coherent_context_test_data {
         "verifier":"did:evan:testcore:0x1234512345123451234512345123451234512345",
         "createdAt":"2021-04-13T12:53:19.000Z",
         "nonce":"XWgrfaNTKs1owMRpmKNj8+CuRZJBC5BRCIErRv+DPUs=",
+        "type": "BBS",
         "subProofRequests":[
            {
               "schema":"did:evan:zkp:0xd641c26161e769cef4b41760211972b274a8f37f135a34083e4e48b3f1035eda",

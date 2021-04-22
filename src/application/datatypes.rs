@@ -35,6 +35,8 @@ pub const DEFAULT_REVOCATION_CONTEXTS: [&'static str; 2] = [
     "https://w3id.org/vc-revocation-list-2020/v1",
 ];
 
+pub const BBS_PROOF_TYPE: &str = "BBS";
+
 /// Message following a `BbsCredentialOffer`, sent by a potential credential prover.
 /// Provides the values that need to be signed by the issuer in both encoded/cleartext, and blinded format.
 /// Incorporates the nonce value sent in `BbsCredentialOffer`.
@@ -55,6 +57,7 @@ pub struct BbsProofRequest {
     pub verifier: String,
     pub created_at: String,
     pub nonce: String,
+    pub r#type: String,
     pub sub_proof_requests: Vec<BbsSubProofRequest>,
 }
 
