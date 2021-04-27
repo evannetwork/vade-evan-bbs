@@ -826,7 +826,9 @@ impl VadePlugin for VadeEvanBbs {
             &payload.proof_request,
             &public_key_schema_map,
             &payload.signer_address,
+            &HashMap::new(),
         )?;
+        return Err(Box::from("Undo me"));
         if verfication_result.status != "rejected" {
             // check revocation status
             for cred in &payload.presentation.verifiable_credential {
