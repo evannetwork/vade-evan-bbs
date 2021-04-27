@@ -15,7 +15,7 @@
 */
 
 use crate::application::{
-    datatypes::{BbsCredentialSignature, BbsSubProofRequest, BbsUnfinishedCredentialSignature},
+    datatypes::{BbsCredentialSignature, BbsSubProofRequest, UnfinishedBbsCredentialSignature},
     issuer::ADDITIONAL_HIDDEN_MESSAGES_COUNT,
     utils::decode_base64,
 };
@@ -70,7 +70,7 @@ impl CryptoProver {
         credential_messages: Vec<String>,
         master_secret: &SignatureMessage,
         issuer_public_key: &DeterministicPublicKey,
-        signature: &BbsUnfinishedCredentialSignature,
+        signature: &UnfinishedBbsCredentialSignature,
         blinding_factor: &SignatureBlinding,
     ) -> Result<Signature, Box<dyn Error>> {
         let raw: Box<[u8]> =

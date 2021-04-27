@@ -29,6 +29,7 @@ use crate::{
             RevocationListCredential,
             SchemaProperty,
             UnfinishedBbsCredential,
+            UnsignedBbsCredential,
         },
         issuer::Issuer,
         prover::Prover,
@@ -74,21 +75,35 @@ pub struct CreateRevocationListPayload {
     pub issuer_proving_key: String,
 }
 
+// ####### Keep until nquads are implemented in Rust #######
+// #[derive(Serialize, Deserialize)]
+// #[serde(rename_all = "camelCase")]
+// pub struct IssueCredentialPayload {
+//     pub issuer: String,
+//     pub issuer_public_key_id: String,
+//     pub issuer_public_key: String,
+//     pub issuer_secret_key: String,
+//     pub subject: String,
+//     pub schema: String,
+//     pub credential_request: BbsCredentialRequest,
+//     pub credential_offer: BbsCredentialOffer,
+//     pub required_indices: Vec<u32>,
+//     pub nquads: Vec<String>,
+//     pub revocation_list_did: String,
+//     pub revocation_list_id: String,
+// }
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IssueCredentialPayload {
-    pub issuer: String,
+    pub unsigned_vc: UnsignedBbsCredential,
+    pub nquads: Vec<String>,
     pub issuer_public_key_id: String,
     pub issuer_public_key: String,
     pub issuer_secret_key: String,
-    pub subject: String,
-    pub schema: String,
     pub credential_request: BbsCredentialRequest,
     pub credential_offer: BbsCredentialOffer,
     pub required_indices: Vec<u32>,
-    pub nquads: Vec<String>,
-    pub revocation_list_did: String,
-    pub revocation_list_id: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -125,7 +140,6 @@ pub struct CreateCredentialProposalPayload {
 #[serde(rename_all = "camelCase")]
 pub struct RequestCredentialPayload {
     pub credential_offering: BbsCredentialOffer,
-    pub credential_schema: String,
     pub master_secret: String,
     pub credential_values: HashMap<String, String>,
     pub issuer_pub_key: String,
@@ -511,22 +525,32 @@ impl VadePlugin for VadeEvanBbs {
             decode_base64(&payload.issuer_secret_key, "Issuer Secret Key")?.into_boxed_slice(),
         );
 
-        let schema: CredentialSchema = get_document!(&mut self.vade, &payload.schema, "schema");
-
-        let unfinished_credential = Issuer::issue_credential(
-            &payload.issuer,
-            &payload.subject,
+        let unfinished_credential = Issuer::sign_nquads(
+            &payload.unsigned_vc,
             &payload.credential_offer,
             &payload.credential_request,
             &payload.issuer_public_key_id,
             &public_key,
             &sk,
-            schema,
             payload.required_indices,
             payload.nquads,
-            &payload.revocation_list_did,
-            &payload.revocation_list_id,
         )?;
+
+        // ######### Please keep this commented until we have an Rust nquad library #########
+        // let unfinished_credential = Issuer::issue_credential(
+        //     &payload.issuer,
+        //     &payload.subject,
+        //     &payload.credential_offer,
+        //     &payload.credential_request,
+        //     &payload.issuer_public_key_id,
+        //     &public_key,
+        //     &sk,
+        //     schema,
+        //     payload.required_indices,
+        //     payload.nquads,
+        //     &payload.revocation_list_did,
+        //     &payload.revocation_list_id,
+        // )?;
 
         Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
             &unfinished_credential,
@@ -670,8 +694,11 @@ impl VadePlugin for VadeEvanBbs {
             decode_base64(&payload.issuer_pub_key, "Issuer Deterministic Public Key")?
                 .into_boxed_slice(),
         );
-        let schema: CredentialSchema =
-            get_document!(&mut self.vade, &payload.credential_schema, "schema");
+        let schema: CredentialSchema = get_document!(
+            &mut self.vade,
+            &payload.credential_offering.schema,
+            "schema"
+        );
         let (credential_request, signature_blinding): (BbsCredentialRequest, SignatureBlinding) =
             Prover::request_credential(
                 &payload.credential_offering,

@@ -29,7 +29,13 @@ use utilities::test_data::{
         SIGNER_2_PRIVATE_KEY,
         VERIFIER_DID,
     },
-    bbs_coherent_context_test_data::{MASTER_SECRET, PUB_KEY, SECRET_KEY, SUBJECT_DID},
+    bbs_coherent_context_test_data::{
+        MASTER_SECRET,
+        PUB_KEY,
+        SECRET_KEY,
+        SUBJECT_DID,
+        UNSIGNED_CREDENTIAL,
+    },
     did::EXAMPLE_DID_DOCUMENT_2,
     environment::DEFAULT_VADE_EVAN_SUBSTRATE_IP,
     vc_zkp::{SCHEMA_DESCRIPTION, SCHEMA_NAME, SCHEMA_PROPERTIES, SCHEMA_REQUIRED_PROPERTIES},
@@ -183,7 +189,6 @@ async fn create_credential_request(
 
     let request = RequestCredentialPayload {
         credential_offering: offer,
-        credential_schema: SCHEMA_DID.to_string(),
         master_secret: MASTER_SECRET.to_string(),
         credential_values: credential_values.clone(),
         issuer_pub_key: PUB_KEY.to_string(),
@@ -209,19 +214,20 @@ async fn create_unfinished_credential(
     offer: BbsCredentialOffer,
 ) -> Result<UnfinishedBbsCredential, Box<dyn Error>> {
     let key_id = format!("{}#key-1", ISSUER_DID);
+    let unsigned_vc = get_unsigned_vc(
+        revocation_list_did,
+        revocation_list_id,
+        credential_request.credential_values.clone(),
+    )?;
     let issue_cred = IssueCredentialPayload {
-        issuer: ISSUER_DID.to_string(),
+        unsigned_vc,
         issuer_public_key_id: key_id.clone(),
         issuer_public_key: PUB_KEY.to_string(),
         issuer_secret_key: SECRET_KEY.to_string(),
-        subject: offer.clone().subject,
-        schema: SCHEMA_DID.to_string(),
         credential_request: credential_request.clone(),
         credential_offer: offer,
         required_indices: [1].to_vec(),
         nquads: nquads.clone(),
-        revocation_list_did: revocation_list_did.to_string(),
-        revocation_list_id: revocation_list_id,
     };
     let issue_cred_json = serde_json::to_string(&issue_cred)?;
 
@@ -365,6 +371,20 @@ async fn ensure_whitelist(vade: &mut Vade, signer: &str) -> Result<(), Box<dyn E
     );
 
     Ok(())
+}
+
+fn get_unsigned_vc(
+    revocation_list_did: String,
+    revocation_list_id: String,
+    credential_values: HashMap<String, String>,
+) -> Result<UnsignedBbsCredential, Box<dyn Error>> {
+    let mut unsigned_vc: UnsignedBbsCredential = serde_json::from_str(UNSIGNED_CREDENTIAL)?;
+    unsigned_vc.credential_status.revocation_list_index = revocation_list_id.clone();
+    unsigned_vc.credential_status.revocation_list_credential = revocation_list_did.clone();
+    unsigned_vc.credential_status.id = format!("{}#{}", revocation_list_did, revocation_list_id);
+    unsigned_vc.credential_subject.data = credential_values;
+
+    return Ok(unsigned_vc);
 }
 
 #[tokio::test]

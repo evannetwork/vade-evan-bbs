@@ -20,7 +20,6 @@ use crate::{
         datatypes::{
             BbsCredentialOffer,
             BbsCredentialRequest,
-            BbsUnfinishedCredentialSignature,
             CredentialProposal,
             CredentialSchema,
             CredentialSchemaReference,
@@ -29,7 +28,9 @@ use crate::{
             RevocationListCredential,
             RevocationListCredentialSubject,
             UnfinishedBbsCredential,
+            UnfinishedBbsCredentialSignature,
             UnproofedRevocationListCredential,
+            UnsignedBbsCredential,
             CREDENTIAL_OFFER_TYPE,
             CREDENTIAL_PROOF_PURPOSE,
             CREDENTIAL_SCHEMA_TYPE,
@@ -149,6 +150,50 @@ impl Issuer {
         })
     }
 
+    pub fn sign_nquads(
+        unsigned_vc: &UnsignedBbsCredential,
+        credential_offer: &BbsCredentialOffer,
+        credential_request: &BbsCredentialRequest,
+        issuer_public_key_id: &str,
+        issuer_public_key: &DeterministicPublicKey,
+        issuer_secret_key: &SecretKey,
+        required_indices: Vec<u32>,
+        nquads: Vec<String>,
+    ) -> Result<UnfinishedBbsCredential, Box<dyn Error>> {
+        let blind_signature_context: BlindSignatureContext = decode_base64(
+            &credential_request.blind_signature_context,
+            "Blind Signature Context",
+        )?
+        .into_boxed_slice()
+        .try_into()?;
+
+        let nonce = ProofNonce::from(
+            decode_base64(&credential_offer.nonce, "Credential Offer Nonce")?.into_boxed_slice(),
+        );
+        let blind_signature = CryptoIssuer::create_signature(
+            &blind_signature_context,
+            &nonce,
+            nquads.clone(),
+            issuer_public_key,
+            issuer_secret_key,
+        )
+        .map_err(|e| format!("Error creating bbs+ signature: {}", e))?;
+
+        let vc_signature = UnfinishedBbsCredentialSignature {
+            r#type: CREDENTIAL_SIGNATURE_TYPE.to_string(),
+            created: get_now_as_iso_string(),
+            proof_purpose: CREDENTIAL_PROOF_PURPOSE.to_owned(),
+            verification_method: issuer_public_key_id.to_owned(),
+            required_reveal_statements: required_indices,
+            credential_message_count: nquads.len() + ADDITIONAL_HIDDEN_MESSAGES_COUNT,
+            blind_signature: base64::encode(blind_signature.to_bytes_compressed_form()),
+        };
+
+        let credential = UnfinishedBbsCredential::new(unsigned_vc.clone(), vc_signature);
+
+        Ok(credential)
+    }
+
     /// Issues a new unfinished credential, that still needs post-processing by the credential subject.
     ///
     /// # Arguments
@@ -167,6 +212,8 @@ impl Issuer {
     ///
     /// # Returns
     /// * `UnfinishedBbsCredential` - Credential including signature that needs to be post-processed by the subject
+    //
+    // ######### Please keep this commented until we have an Rust nquad library #########
     pub fn issue_credential(
         issuer_did: &str,
         subject_did: &str,
@@ -180,6 +227,7 @@ impl Issuer {
         nquads: Vec<String>,
         revocation_list_did: &str,
         revocation_list_id: &str,
+        valid_until: Option<String>,
     ) -> Result<UnfinishedBbsCredential, Box<dyn Error>> {
         let revocation_list_index_number = revocation_list_id
             .parse::<usize>()
@@ -222,7 +270,7 @@ impl Issuer {
         )
         .map_err(|e| format!("Error creating bbs+ signature: {}", e))?;
 
-        let vc_signature = BbsUnfinishedCredentialSignature {
+        let vc_signature = UnfinishedBbsCredentialSignature {
             r#type: CREDENTIAL_SIGNATURE_TYPE.to_string(),
             created: get_now_as_iso_string(),
             proof_purpose: CREDENTIAL_PROOF_PURPOSE.to_owned(),
@@ -242,6 +290,8 @@ impl Issuer {
             r#type: vec!["VerifiableCredential".to_string()],
             issuer: issuer_did.to_owned(),
             credential_subject,
+            valid_until,
+            issuance_date: get_now_as_iso_string(),
             credential_schema: schema_reference,
             credential_status: CredentialStatus {
                 id: format!("{}#{}", revocation_list_did, revocation_list_id),
@@ -406,6 +456,7 @@ mod tests {
             PUB_KEY,
             REVOCATION_LIST_CREDENTIAL,
             SECRET_KEY,
+            UNSIGNED_CREDENTIAL,
         },
         vc_zkp::{EXAMPLE_CREDENTIAL_PROPOSAL, EXAMPLE_CREDENTIAL_SCHEMA},
     };
@@ -449,11 +500,30 @@ mod tests {
         }
     }
 
+    fn assert_credential_proof(
+        cred: UnfinishedBbsCredential,
+        pub_key_id: &str,
+        required_reveal_statements: Vec<u32>,
+    ) {
+        assert_eq!(
+            &cred.proof.required_reveal_statements,
+            &required_reveal_statements
+        );
+        assert_eq!(&cred.proof.r#type, CREDENTIAL_SIGNATURE_TYPE);
+        assert_eq!(&cred.proof.proof_purpose, CREDENTIAL_PROOF_PURPOSE);
+        assert_eq!(&cred.proof.verification_method, pub_key_id);
+        assert!(
+            is_base_64(&cred.proof.blind_signature),
+            "Signature seems not to be base64 encoded"
+        );
+    }
+
     fn assert_credential(
         credential_request: BbsCredentialRequest,
         cred: UnfinishedBbsCredential,
         pub_key_id: &str,
         schema_id: &str,
+        valid_until: Option<String>,
     ) {
         assert_eq!(&cred.issuer, ISSUER_DID);
         assert_eq!(&cred.credential_subject.id, HOLDER_DID);
@@ -476,6 +546,9 @@ mod tests {
             .all(|key| credential_request.credential_values.contains_key(key)
                 && credential_request.credential_values.get(key)
                     == cred.credential_subject.data.get(key)));
+        if valid_until.is_some() {
+            assert_eq!(cred.valid_until, valid_until);
+        }
     }
 
     #[test]
@@ -515,6 +588,7 @@ mod tests {
         let offer = Issuer::offer_credential(&proposal, &ISSUER_DID, message_count)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
         let (credential_request, schema, nquads) = request_credential(&dpk, &offer)?;
+        let valid_until = get_now_as_iso_string();
 
         match Issuer::issue_credential(
             &ISSUER_DID,
@@ -529,6 +603,7 @@ mod tests {
             nquads,
             EXAMPLE_REVOCATION_LIST_DID,
             &"0".to_string(),
+            Some(valid_until.clone()),
         ) {
             Ok(cred) => {
                 assert_credential(
@@ -536,6 +611,7 @@ mod tests {
                     cred.clone(),
                     &key_id,
                     &schema.id,
+                    Some(valid_until),
                 );
             }
             Err(e) => assert!(false, "Received error when issuing credential: {}", e),
@@ -569,6 +645,7 @@ mod tests {
             nquads,
             EXAMPLE_REVOCATION_LIST_DID,
             &"0".to_string(),
+            None,
         ) {
             Ok(cred) => {
                 assert_credential(
@@ -576,8 +653,39 @@ mod tests {
                     cred.clone(),
                     &key_id,
                     &schema.id,
+                    None,
                 );
             }
+            Err(e) => assert!(false, "Received error when issuing credential: {}", e),
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn can_sign_nquads_five_properties() -> Result<(), Box<dyn Error>> {
+        let message_count = 5;
+
+        let nonce_bytes = decode_base64(&PUB_KEY, "Public Key")?.into_boxed_slice();
+        let dpk = DeterministicPublicKey::from(nonce_bytes);
+        let nonce_bytes = decode_base64(&SECRET_KEY, "Secret Key")?.into_boxed_slice();
+        let sk = SecretKey::from(nonce_bytes);
+        let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
+        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID, message_count)?;
+        let key_id = format!("{}#key-1", ISSUER_DID);
+        let (credential_request, _, nquads) = request_credential(&dpk, &offer)?;
+        let unsigned_vc: UnsignedBbsCredential = serde_json::from_str(UNSIGNED_CREDENTIAL)?;
+
+        match Issuer::sign_nquads(
+            &unsigned_vc,
+            &offer,
+            &credential_request,
+            &key_id,
+            &dpk,
+            &sk,
+            [1].to_vec(),
+            nquads,
+        ) {
+            Ok(cred) => assert_credential_proof(cred, &key_id, [1].to_vec()),
             Err(e) => assert!(false, "Received error when issuing credential: {}", e),
         }
         Ok(())
@@ -605,6 +713,7 @@ mod tests {
             nquads,
             EXAMPLE_REVOCATION_LIST_DID,
             &(MAX_REVOCATION_ENTRIES + 1).to_string(),
+            None,
         )
         .map_err(|e| format!("{}", e))
         .err();

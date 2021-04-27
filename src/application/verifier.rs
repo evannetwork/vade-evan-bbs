@@ -16,7 +16,13 @@
 
 use crate::{
     application::{
-        datatypes::{BbsProofRequest, BbsProofVerification, BbsSubProofRequest, ProofPresentation},
+        datatypes::{
+            BbsProofRequest,
+            BbsProofVerification,
+            BbsSubProofRequest,
+            ProofPresentation,
+            BBS_PROOF_TYPE,
+        },
         utils::{decode_base64, get_now_as_iso_string},
     },
     crypto::{crypto_utils::check_assertion_proof, crypto_verifier::CryptoVerifier},
@@ -88,6 +94,7 @@ impl Verifier {
             nonce: base64::encode(nonce.to_bytes_compressed_form()),
             created_at: get_now_as_iso_string(),
             verifier: verifier_did,
+            r#type: BBS_PROOF_TYPE.to_string(),
             sub_proof_requests: sub_proof_requests,
         });
     }

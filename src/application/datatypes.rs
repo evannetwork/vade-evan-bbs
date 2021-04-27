@@ -35,6 +35,8 @@ pub const DEFAULT_REVOCATION_CONTEXTS: [&'static str; 2] = [
     "https://w3id.org/vc-revocation-list-2020/v1",
 ];
 
+pub const BBS_PROOF_TYPE: &str = "BBS";
+
 /// Message following a `BbsCredentialOffer`, sent by a potential credential prover.
 /// Provides the values that need to be signed by the issuer in both encoded/cleartext, and blinded format.
 /// Incorporates the nonce value sent in `BbsCredentialOffer`.
@@ -55,6 +57,7 @@ pub struct BbsProofRequest {
     pub verifier: String,
     pub created_at: String,
     pub nonce: String,
+    pub r#type: String,
     pub sub_proof_requests: Vec<BbsSubProofRequest>,
 }
 
@@ -141,6 +144,7 @@ pub struct BbsCredential {
     pub id: String,
     pub r#type: Vec<String>,
     pub issuer: String,
+    pub issuance_date: String,
     pub credential_subject: CredentialSubject,
     pub credential_schema: CredentialSchemaReference,
     pub credential_status: CredentialStatus,
@@ -154,6 +158,7 @@ impl BbsCredential {
             id: cred.id,
             r#type: cred.r#type,
             issuer: cred.issuer,
+            issuance_date: cred.issuance_date,
             credential_subject: CredentialSubject {
                 id: cred.credential_subject.id,
                 data: cred.credential_subject.data,
@@ -184,16 +189,56 @@ impl BbsCredential {
 /// A verifiable credential with a blind signature that still needs to be processed by the holder
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
+pub struct UnsignedBbsCredential {
+    #[serde(rename(serialize = "@context", deserialize = "@context"))]
+    pub context: Vec<String>,
+    pub id: String,
+    pub r#type: Vec<String>,
+    pub issuer: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub valid_until: Option<String>,
+    pub issuance_date: String,
+    pub credential_subject: CredentialSubject,
+    pub credential_schema: CredentialSchemaReference,
+    pub credential_status: CredentialStatus,
+}
+
+/// A verifiable credential with a blind signature that still needs to be processed by the holder
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct UnfinishedBbsCredential {
     #[serde(rename(serialize = "@context", deserialize = "@context"))]
     pub context: Vec<String>,
     pub id: String,
     pub r#type: Vec<String>,
     pub issuer: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub valid_until: Option<String>,
+    pub issuance_date: String,
     pub credential_subject: CredentialSubject,
     pub credential_schema: CredentialSchemaReference,
     pub credential_status: CredentialStatus,
-    pub proof: BbsUnfinishedCredentialSignature,
+    pub proof: UnfinishedBbsCredentialSignature,
+}
+
+impl UnfinishedBbsCredential {
+    pub fn new(
+        unsigned_vc: UnsignedBbsCredential,
+        signature: UnfinishedBbsCredentialSignature,
+    ) -> UnfinishedBbsCredential {
+        UnfinishedBbsCredential {
+            context: unsigned_vc.context,
+            id: unsigned_vc.id,
+            r#type: unsigned_vc.r#type,
+            issuer: unsigned_vc.issuer,
+            valid_until: unsigned_vc.valid_until,
+            issuance_date: unsigned_vc.issuance_date,
+            credential_schema: unsigned_vc.credential_schema,
+            credential_subject: unsigned_vc.credential_subject,
+            credential_status: unsigned_vc.credential_status,
+            proof: signature,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -241,7 +286,7 @@ pub struct BbsCredentialSignature {
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct BbsUnfinishedCredentialSignature {
+pub struct UnfinishedBbsCredentialSignature {
     pub r#type: String,
     pub created: String,
     pub proof_purpose: String,
