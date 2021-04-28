@@ -193,6 +193,7 @@ pub struct VerifyProofPayload {
     pub proof_request: BbsProofRequest,
     pub keys_to_schema_map: HashMap<String, String>,
     pub signer_address: String,
+    pub nquads_to_schema_map: HashMap<String, Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -826,9 +827,8 @@ impl VadePlugin for VadeEvanBbs {
             &payload.proof_request,
             &public_key_schema_map,
             &payload.signer_address,
-            &HashMap::new(),
+            &payload.nquads_to_schema_map,
         )?;
-        return Err(Box::from("Undo me"));
         if verfication_result.status != "rejected" {
             // check revocation status
             for cred in &payload.presentation.verifiable_credential {

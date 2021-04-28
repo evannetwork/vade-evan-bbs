@@ -693,7 +693,8 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
     .await?;
 
     // create proof request
-    let proof_request = create_proof_request(&mut vade).await?;
+    let mut proof_request = create_proof_request(&mut vade).await?;
+    proof_request.sub_proof_requests[0].revealed_attributes = vec![1, 3];
 
     // create proof
     let mut public_key_schema_map = HashMap::new();
@@ -707,12 +708,22 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
     )
     .await?;
 
+    let mut nqsm: HashMap<String, Vec<String>> = HashMap::new();
+    nqsm.insert(
+        SCHEMA_DID.to_string(),
+        vec![
+            "test_property_string: value".to_string(),
+            "test_property_string2: value".to_string(),
+        ],
+    );
+
     // verify proof
     let verify_proof_payload = VerifyProofPayload {
         presentation: presentation.clone(),
         proof_request: proof_request.clone(),
         keys_to_schema_map: public_key_schema_map,
         signer_address: SIGNER_1_ADDRESS.to_string(),
+        nquads_to_schema_map: nqsm,
     };
     let verify_proof_json = serde_json::to_string(&verify_proof_payload)?;
     vade.vc_zkp_verify_proof(EVAN_METHOD, TYPE_OPTIONS, &verify_proof_json)
@@ -780,6 +791,11 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
     )
     .await?;
 
+    let mut nqsm: HashMap<String, Vec<String>> = HashMap::new();
+    nqsm.insert(
+        SCHEMA_DID.to_string(),
+        vec!["test_property_string: value".to_string()],
+    );
     // verify proof
     let presentation_id = &presentation.id.to_owned();
     let verify_proof_payload = VerifyProofPayload {
@@ -787,6 +803,7 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
         proof_request,
         keys_to_schema_map: public_key_schema_map,
         signer_address: SIGNER_1_ADDRESS.to_string(),
+        nquads_to_schema_map: nqsm,
     };
     let verify_proof_json = serde_json::to_string(&verify_proof_payload)?;
     let results = vade
