@@ -66,23 +66,21 @@ fn verify_revealed_messages(
 ) -> Result<(), Box<dyn Error>> {
     let revealed = proof.revealed_messages.keys().len();
     let required = nquads.len();
-    if revealed != required {
+    if revealed < required {
         return Err(Box::from(format!(
-            "Revealed statements count differs from required statements count. Required: {}, Revealed: {}",
+            "Required more statements to be revealed than are actually revealed. Required: {}, Revealed: {}",
             required, revealed
         )));
     }
 
-    // TODO: This is just naively assuming correct order
-    // TODO: Also this assumes that additional properties that are not requried here
-    //  all come after the required nquads in the proof
     let mut i = 0;
     for revealed in &proof.revealed_messages {
-        assert!(
-            *revealed.1 == SignatureMessage::hash(nquads[i].clone()),
-            "Revealed message invalid for expected nquad: {}",
-            nquads[i]
-        );
+        if *revealed.1 != SignatureMessage::hash(nquads[i].clone()) {
+            return Err(Box::from(format!(
+                "Revealed message invalid for expected nquad: \"{}\"",
+                nquads[i],
+            )));
+        }
         i += 1;
     }
 
@@ -226,7 +224,6 @@ mod tests {
         },
         crypto::crypto_utils::create_assertion_proof,
     };
-    use bbs::{HashElem, SignatureMessage, ToVariableLengthBytes};
     use serde_json::Value;
     use utilities::test_data::{
         accounts::local::{SIGNER_1_ADDRESS, SIGNER_1_DID, SIGNER_1_PRIVATE_KEY, VERIFIER_DID},
@@ -335,7 +332,7 @@ mod tests {
                 .credential_schema
                 .id
                 .clone(),
-            vec![NQUADS[1].to_string()],
+            vec![NQUADS[0].to_string()],
         );
 
         Verifier::verify_proof(
@@ -377,22 +374,29 @@ mod tests {
             key,
         );
 
-        // match Verifier::verify_proof(
-        //     &presentation,
-        //     &proof_request,
-        //     &keys_to_schema_map,
-        //     holder_address,
-        // ) {
-        //     Ok(_) => assert!(false, "This test should have failed"),
-        //     Err(e) => assert_eq!(
-        //         format!(
-        //             "Error parsing signature proof for credential {}",
-        //             presentation.verifiable_credential[0].id.clone()
-        //         ),
-        //         format!("{}", e)
-        //     ),
-        // }
-        return Err(Box::from("Undo me"));
+        let mut nqsm: HashMap<String, Vec<String>> = HashMap::new();
+        nqsm.insert(
+            proof_request.sub_proof_requests[0].schema.clone(),
+            vec![NQUADS[0].to_string()],
+        );
+
+        match Verifier::verify_proof(
+            &presentation,
+            &proof_request,
+            &keys_to_schema_map,
+            holder_address,
+            &nqsm,
+        ) {
+            Ok(_) => assert!(false, "This test should have failed"),
+            Err(e) => assert_eq!(
+                format!(
+                    "Error parsing signature proof for credential {}",
+                    presentation.verifiable_credential[0].id.clone()
+                ),
+                format!("{}", e)
+            ),
+        }
+
         Ok(())
     }
 
@@ -420,19 +424,26 @@ mod tests {
             key,
         );
 
-        // match Verifier::verify_proof(
-        //     &presentation,
-        //     &proof_request,
-        //     &keys_to_schema_map,
-        //     holder_address,
-        // ) {
-        //     Ok(_) => assert!(false, "This test should have failed"),
-        //     Err(e) => assert_eq!(
-        //         "recovered VC document and given VC document do not match",
-        //         format!("{}", e)
-        //     ),
-        // }
-        return Err(Box::from("Undo me"));
+        let mut nqsm: HashMap<String, Vec<String>> = HashMap::new();
+        nqsm.insert(
+            proof_request.sub_proof_requests[0].schema.clone(),
+            vec![NQUADS[0].to_string()],
+        );
+
+        match Verifier::verify_proof(
+            &presentation,
+            &proof_request,
+            &keys_to_schema_map,
+            holder_address,
+            &nqsm,
+        ) {
+            Ok(_) => assert!(false, "This test should have failed"),
+            Err(e) => assert_eq!(
+                "recovered VC document and given VC document do not match",
+                format!("{}", e)
+            ),
+        }
+
         Ok(())
     }
 
@@ -447,21 +458,77 @@ mod tests {
         let proof_request: BbsProofRequest =
             serde_json::from_str(&PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES)?;
 
-        // let keys_to_schema_map = HashMap::new();
+        let keys_to_schema_map = HashMap::new();
 
-        // match Verifier::verify_proof(
-        //     &presentation,
-        //     &proof_request,
-        //     &keys_to_schema_map,
-        //     holder_address,
-        // ) {
-        //     Ok(_) => assert!(false, "This test should have failed"),
-        //     Err(e) => assert_eq!(
-        //         "Invalid presentation: No credentials provided",
-        //         format!("{}", e)
-        //     ),
-        // }
-        return Err(Box::from("Undo me"));
+        let mut nqsm: HashMap<String, Vec<String>> = HashMap::new();
+        nqsm.insert(
+            proof_request.sub_proof_requests[0].schema.clone(),
+            vec![NQUADS[0].to_string()],
+        );
+
+        match Verifier::verify_proof(
+            &presentation,
+            &proof_request,
+            &keys_to_schema_map,
+            holder_address,
+            &nqsm,
+        ) {
+            Ok(_) => assert!(false, "This test should have failed"),
+            Err(e) => assert_eq!(
+                "Invalid presentation: No credentials provided",
+                format!("{}", e)
+            ),
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn deems_proof_invalid_on_unexpected_values() -> Result<(), Box<dyn Error>> {
+        let holder_address = SIGNER_1_ADDRESS;
+        // Our assertion got corrupted mysteriously
+        let presentation: ProofPresentation = serde_json::from_str(&PROOF_PRESENTATION)?;
+
+        let proof_request: BbsProofRequest =
+            serde_json::from_str(&PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES)?;
+        let key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;
+
+        let mut keys_to_schema_map = HashMap::new();
+        keys_to_schema_map.insert(
+            presentation.verifiable_credential[0]
+                .credential_schema
+                .id
+                .clone(),
+            key,
+        );
+
+        let mut nqsm: HashMap<String, Vec<String>> = HashMap::new();
+        nqsm.insert(
+            proof_request.sub_proof_requests[0].schema.clone(),
+            vec!["We expect this value".to_string()], // Proof reveals NQUADS[0] but we expect different value
+        );
+
+        match Verifier::verify_proof(
+            &presentation,
+            &proof_request,
+            &keys_to_schema_map,
+            holder_address,
+            &nqsm,
+        ) {
+            Ok(result) => {
+                assert_eq!(result.status, "rejected");
+                assert!(result
+                    .reason
+                    .ok_or("Missing reason for proof rejection")?
+                    .contains("Revealed message invalid for expected nquad: "));
+            }
+            Err(e) => assert!(
+                false,
+                "This test shouldn't have failed but it failed with Reason: {}",
+                e
+            ),
+        }
+
         Ok(())
     }
 }
