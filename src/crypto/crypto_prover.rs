@@ -114,7 +114,7 @@ impl CryptoProver {
 
         let crypto_proof_request =
             BbsVerifier::new_proof_request(&sub_proof_request.revealed_attributes.as_slice(), &pk)
-                .unwrap();
+                .map_err(|e| format!("could not create new proof request; {}", &e))?;
 
         let indices: HashSet<usize> =
             HashSet::from_iter(sub_proof_request.revealed_attributes.iter().cloned());
