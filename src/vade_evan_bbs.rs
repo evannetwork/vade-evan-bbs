@@ -63,6 +63,8 @@ pub struct TypeOptions {
 }
 
 /// Contains information necessary to make on-chain transactions (e.g. updating a DID Document).
+/// - `private_key`: Reference to the private key, will be forwarded to external signer if available
+/// - `identity`: DID of the identity
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AuthenticationOptions {
@@ -71,6 +73,9 @@ pub struct AuthenticationOptions {
 }
 
 /// API payload needed to create a revocation list
+/// `issuer_did`: DID of the issuer
+/// `issuer_public_key_did`: DID of the issuer's public key used to verify the credential's signature
+/// `issuer_proving_key`: Private key of the issuer used to sign the credential
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateRevocationListPayload {
@@ -100,6 +105,14 @@ pub struct CreateRevocationListPayload {
 /// API payload for issuing a new credential
 /// Currently needs both an unsigned verifiable credential containing all the data
 /// and the nquad representation of this verifiable credential.
+/// `unsigned_vc`: The VC to sign, without any appended proof
+/// `nquads`: Nquads representation of the VC without any appended proof
+/// `issuer_public_key_id`: DID url of the public key of the issuer used to later verify the signature
+/// `issuer_public_key`: The public bbs+ key of the issuer used to later verify the signature
+/// `issuer_secret_key`: The secret bbs+ key used to create the signature
+/// `credential_request`: Credential request
+/// `credential_offer`: Credential offer linked to the credential request
+/// `required_indices`: Indices of nquads to be marked as requiredRevealStatements in the credential
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IssueCredentialPayload {
@@ -115,6 +128,9 @@ pub struct IssueCredentialPayload {
 
 /// API payload for creating a BbsCredentialOffer to be sent by an issuer.
 /// Contains information about how many messages the final credential will hold.
+/// `issuer`: - DID of the issuer
+/// `credential_proposal`: Proposal that precedes the offer
+/// `nquad_count`: Number of total nquads in the final credential
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OfferCredentialPayload {
