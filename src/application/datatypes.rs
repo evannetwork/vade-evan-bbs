@@ -87,6 +87,7 @@ pub struct CredentialSchema {
     pub proof: Option<AssertionProof>,
 }
 
+/// Metadata about a property of a credential schema
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SchemaProperty {
@@ -97,7 +98,7 @@ pub struct SchemaProperty {
     pub items: Option<Vec<String>>,
 }
 
-/// AssertionProof, typically used to ensure authenticity and integrity of a VC document
+/// AssertionProof, typically used to ensure authenticity and integrity of a verifiable credential
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct AssertionProof {
@@ -203,7 +204,7 @@ pub struct UnsignedBbsCredential {
     pub credential_status: CredentialStatus,
 }
 
-/// A verifiable credential with a blind signature that still needs to be processed by the holder
+/// A verifiable credential containing a blind signature that still needs to be processed by the holder/receiver.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UnfinishedBbsCredential {
@@ -241,6 +242,7 @@ impl UnfinishedBbsCredential {
     }
 }
 
+/// Payload/data part of a verifiable credential.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct CredentialSubject {
@@ -248,6 +250,7 @@ pub struct CredentialSubject {
     pub data: HashMap<String, String>,
 }
 
+/// 'credentialStatus' property of a verifiable credential containing revocation information.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CredentialStatus {
@@ -257,6 +260,7 @@ pub struct CredentialStatus {
     pub revocation_list_credential: String,
 }
 
+/// Payload part of a revocation list credential.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RevocationListCredentialSubject {
@@ -265,6 +269,7 @@ pub struct RevocationListCredentialSubject {
     pub encoded_list: String,
 }
 
+/// Reference to a credential schema.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CredentialSchemaReference {
@@ -272,6 +277,7 @@ pub struct CredentialSchemaReference {
     pub r#type: String,
 }
 
+/// The signature ('proof' part) of a BBS+ verifiable credential.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct BbsCredentialSignature {
@@ -284,6 +290,8 @@ pub struct BbsCredentialSignature {
     pub signature: String,
 }
 
+/// A blinded signature created by an issuer that needs to be finished
+/// by the holder/receiver of this signature.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UnfinishedBbsCredentialSignature {
@@ -402,6 +410,8 @@ pub struct BbsPresentationProof {
     pub proof: String,
 }
 
+/// Result of a call to the verifyProof endpoint. Gives the status of a verification (i.e. whether it
+/// was successful or not) and a reason, if rejected.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BbsProofVerification {
@@ -424,7 +434,7 @@ pub struct UnproofedRevocationListCredential {
     pub credential_subject: RevocationListCredentialSubject,
 }
 
-/// A revocation list credential associating VC revocation IDs to their revocation status as a bit list. See
+/// A revocation list credential associating verifiable credential revocation IDs to their revocation status as a bit list. See
 /// <https://w3c-ccg.github.io/vc-status-rl-2020/#revocationlist2020credential>
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]

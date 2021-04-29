@@ -54,12 +54,15 @@ const EVAN_METHOD: &str = "did:evan";
 const EVAN_METHOD_ZKP: &str = "did:evan:zkp";
 const PROOF_METHOD_BBS: &str = "bbs";
 
+/// Message passed to vade containing the desired credential type.
+/// Does not perform action if type does not indicate credential type BBS+.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TypeOptions {
     pub r#type: Option<String>,
 }
 
+/// Contains information necessary to make on-chain transactions (e.g. updating a DID Document).
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AuthenticationOptions {
@@ -67,6 +70,7 @@ pub struct AuthenticationOptions {
     pub identity: String,
 }
 
+/// API payload needed to create a revocation list
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateRevocationListPayload {
@@ -93,6 +97,9 @@ pub struct CreateRevocationListPayload {
 //     pub revocation_list_id: String,
 // }
 
+/// API payload for issuing a new credential
+/// Currently needs both an unsigned verifiable credential containing all the data
+/// and the nquad representation of this verifiable credential.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IssueCredentialPayload {
@@ -106,6 +113,8 @@ pub struct IssueCredentialPayload {
     pub required_indices: Vec<u32>,
 }
 
+/// API payload for creating a BbsCredentialOffer to be sent by an issuer.
+/// Contains information about how many messages the final credential will hold.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OfferCredentialPayload {
@@ -114,6 +123,9 @@ pub struct OfferCredentialPayload {
     pub nquad_count: usize,
 }
 
+/// API payload for creating a zero-knowledge proof out of a BBS+ signature.
+/// Among others it contains the proof request sent by a verifier and all relevant credentials
+/// and the respective nquads, each referenced via the requested credential schema ID.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PresentProofPayload {
@@ -128,6 +140,7 @@ pub struct PresentProofPayload {
     pub prover_proving_key: String,
 }
 
+/// API payload to create a credential proposal to be sent by a holder.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateCredentialProposalPayload {
@@ -136,6 +149,8 @@ pub struct CreateCredentialProposalPayload {
     pub schema: String,
 }
 
+/// API payload to create a credential request to be sent by a holder as a response
+/// to a BbsCredentialOffer.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RequestCredentialPayload {
@@ -145,6 +160,7 @@ pub struct RequestCredentialPayload {
     pub issuer_pub_key: String,
 }
 
+/// API payload to create a BbsProofRequest to be sent by a verifier.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RequestProofPayload {
@@ -153,6 +169,7 @@ pub struct RequestProofPayload {
     pub reveal_attributes: HashMap<String, Vec<usize>>,
 }
 
+/// API payload to revoke a credential as this credential's issuer.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RevokeCredentialPayload {
@@ -163,6 +180,7 @@ pub struct RevokeCredentialPayload {
     pub issuer_proving_key: String,
 }
 
+/// API payload for creating a credential schema.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateCredentialSchemaPayload {
@@ -176,6 +194,7 @@ pub struct CreateCredentialSchemaPayload {
     pub issuer_proving_key: String,
 }
 
+/// API payload for finishing a UnfinishedBbsCredential as a holder.  
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FinishCredentialPayload {
@@ -186,6 +205,7 @@ pub struct FinishCredentialPayload {
     pub blinding: String,
 }
 
+/// API payload for verifying a received proof as a verifer.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VerifyProofPayload {
@@ -195,6 +215,7 @@ pub struct VerifyProofPayload {
     pub signer_address: String,
 }
 
+/// API payload to create new BBS+ keys and persist them on the DID document.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateKeysPayload {
