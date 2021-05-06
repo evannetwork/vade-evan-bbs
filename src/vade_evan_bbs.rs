@@ -56,6 +56,7 @@ const PROOF_METHOD_BBS: &str = "bbs";
 
 /// Message passed to vade containing the desired credential type.
 /// Does not perform action if type does not indicate credential type BBS+.
+/// This can be done by passing "bbs" as the value for "type".
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TypeOptions {
