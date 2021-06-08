@@ -25,6 +25,7 @@ use serde_json::{value::RawValue, Value};
 use sha2::{Digest, Sha256};
 use sha3::Keccak256;
 use std::{convert::TryInto, error::Error};
+use vade::ResultSyncifier;
 use vade_evan_substrate::signing::Signer;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -48,7 +49,7 @@ pub async fn create_assertion_proof(
     verification_method: &str,
     issuer: &str,
     private_key: &str,
-    signer: &Box<dyn Signer>,
+    signer: &Box<dyn Signer + Send + Sync>,
 ) -> Result<AssertionProof, Box<dyn Error>> {
     // create to-be-signed jwt
     let header_str = r#"{"typ":"JWT","alg":"ES256K-R"}"#;
@@ -75,7 +76,10 @@ pub async fn create_assertion_proof(
     // sign this hash
     let hash_arr: [u8; 32] = hash.try_into().map_err(|_| "slice with incorrect length")?;
     let message = format!("0x{}", &hex::encode(hash_arr));
-    let (sig_and_rec, _): ([u8; 65], _) = signer.sign_message(&message, &private_key).await?;
+    let (sig_and_rec, _): ([u8; 65], _) = signer
+        .sign_message(&message, &private_key)
+        .await
+        .syncify()?;
     let padded = base64::encode_config(&sig_and_rec, base64::URL_SAFE);
     let sig_base64url = padded.trim_end_matches('=');
 
