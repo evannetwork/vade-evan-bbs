@@ -54,24 +54,34 @@ const EVAN_METHOD: &str = "did:evan";
 const EVAN_METHOD_ZKP: &str = "did:evan:zkp";
 const PROOF_METHOD_BBS: &str = "bbs";
 
+/// Message passed to vade containing the desired credential type.
+/// Does not perform action if type does not indicate credential type BBS+.
+/// This can be done by passing "bbs" as the value for "type".
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TypeOptions {
     pub r#type: Option<String>,
 }
 
+/// Contains information necessary to make on-chain transactions (e.g. updating a DID Document).
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AuthenticationOptions {
+    /// Reference to the private key, will be forwarded to external signer if available
     pub private_key: String,
+    /// DID of the identity
     pub identity: String,
 }
 
+/// API payload needed to create a revocation list
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateRevocationListPayload {
+    /// DID of the issuer
     pub issuer_did: String,
+    /// DID of the issuer's public key used to verify the credential's signature
     pub issuer_public_key_did: String,
+    /// Private key of the issuer used to sign the credential
     pub issuer_proving_key: String,
 }
 
@@ -93,109 +103,176 @@ pub struct CreateRevocationListPayload {
 //     pub revocation_list_id: String,
 // }
 
+/// API payload for issuing a new credential
+/// Currently needs both an unsigned verifiable credential containing all the data
+/// and the nquad representation of this verifiable credential.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IssueCredentialPayload {
+    /// The VC to sign, without any appended proof
     pub unsigned_vc: UnsignedBbsCredential,
+    /// Nquads representation of the VC without any appended proof
     pub nquads: Vec<String>,
+    /// DID url of the public key of the issuer used to later verify the signature
     pub issuer_public_key_id: String,
+    /// The public bbs+ key of the issuer used to later verify the signature
     pub issuer_public_key: String,
+    /// The secret bbs+ key used to create the signature
     pub issuer_secret_key: String,
+    /// Credential request
     pub credential_request: BbsCredentialRequest,
+    /// Credential offer linked to the credential request
     pub credential_offer: BbsCredentialOffer,
+    /// Indices of nquads to be marked as requiredRevealStatements in the credential
     pub required_indices: Vec<u32>,
 }
 
+/// API payload for creating a BbsCredentialOffer to be sent by an issuer.
+/// Contains information about how many messages the final credential will hold.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OfferCredentialPayload {
+    /// DID of the issuer
     pub issuer: String,
+    /// Proposal that precedes the offer
     pub credential_proposal: CredentialProposal,
+    /// Number of total nquads in the final credential
     pub nquad_count: usize,
 }
 
+/// API payload for creating a zero-knowledge proof out of a BBS+ signature.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PresentProofPayload {
+    /// The proof request sent by a verifier
     pub proof_request: BbsProofRequest,
+    /// All relevant credentials references via the requested credential schema ID
     pub credential_schema_map: HashMap<String, BbsCredential>,
+    /// Properties to be revealed for each credential by schema ID
     pub revealed_properties_schema_map: HashMap<String, CredentialSubject>,
+    /// Public key per credential by schema ID
     pub public_key_schema_map: HashMap<String, String>,
+    /// The respective nquads by respective credential's schema ID
     pub nquads_schema_map: HashMap<String, Vec<String>>,
+    /// Prover's master secret
     pub master_secret: String,
+    /// DID of the prover
     pub prover_did: String,
+    /// Key DID of the prover's public key for the created assertion proof
     pub prover_public_key_did: String,
+    /// Prover's secret key to create an assertion proof with
     pub prover_proving_key: String,
 }
 
+/// API payload to create a credential proposal to be sent by a holder.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateCredentialProposalPayload {
+    /// DID of the issuer
     pub issuer: String,
+    /// DID of the subject
     pub subject: String,
+    /// DID of a credential schema to propose
     pub schema: String,
 }
 
+/// API payload to create a credential request to be sent by a holder as a response
+/// to a BbsCredentialOffer.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RequestCredentialPayload {
+    /// Credential offering sent by an issuer
     pub credential_offering: BbsCredentialOffer,
+    /// Master secret of the holder/receiver
     pub master_secret: String,
+    /// Cleartext values to be signed in the credential
     pub credential_values: HashMap<String, String>,
+    /// Public key of the issuer
     pub issuer_pub_key: String,
 }
 
+/// API payload to create a BbsProofRequest to be sent by a verifier.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RequestProofPayload {
+    /// DID of the verifier
     pub verifier_did: String,
+    /// List of schema IDs to request
     pub schemas: Vec<String>,
+    /// Attributes to reveal per schema ID
     pub reveal_attributes: HashMap<String, Vec<usize>>,
 }
 
+/// API payload to revoke a credential as this credential's issuer.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RevokeCredentialPayload {
+    /// DID of the issuer
     pub issuer: String,
+    /// DID of the revocation list credential
     pub revocation_list: String,
+    /// Credential ID to revoke
     pub revocation_id: String,
+    /// DID of the issuer's public key for verifying assertion proofs
     pub issuer_public_key_did: String,
+    /// DID of the issuer's secret key for creating assertion proofs
     pub issuer_proving_key: String,
 }
 
+/// API payload needed to create a credential schema needed for issuing credentials
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateCredentialSchemaPayload {
+    /// DID of the schema issuer/owner
     pub issuer: String,
+    /// Name given to the schema
     pub schema_name: String,
+    /// A text describing the schema's purpose
     pub description: String,
+    /// The properties the schema holds
     pub properties: HashMap<String, SchemaProperty>,
+    /// Names of required properties
     pub required_properties: Vec<String>,
+    /// Tells a verifier whether properties not found in the schema are to be deemed valid
     pub allow_additional_properties: bool,
+    /// DID of the issuer's public key to validate the schema's assertion proof
     pub issuer_public_key_did: String,
+    /// Secret key to sign the schema with
     pub issuer_proving_key: String,
 }
 
+/// API payload for finishing a UnfinishedBbsCredential as a holder.  
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FinishCredentialPayload {
+    /// Credential with blind signature to finish
     pub credential: UnfinishedBbsCredential,
+    /// Holder's master secret
     pub master_secret: String,
+    /// Signed values of the credential's signature
     pub nquads: Vec<String>,
+    /// Issuer's BBS+ public key
     pub issuer_public_key: String,
+    /// Blinding created during credential request creation
     pub blinding: String,
 }
 
+/// API payload for verifying a received proof as a verifer.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VerifyProofPayload {
+    /// BBS+ Presentation to verify
     pub presentation: ProofPresentation,
+    /// Proof request sent by verifier
     pub proof_request: BbsProofRequest,
+    /// Relevant BBS+ public keys for each credential schema occuring in this proof
     pub keys_to_schema_map: HashMap<String, String>,
+    /// Signer address
     pub signer_address: String,
     pub nquads_to_schema_map: HashMap<String, Vec<String>>,
 }
 
+/// API payload to create new BBS+ keys and persist them on the DID document.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateKeysPayload {
