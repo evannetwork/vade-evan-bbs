@@ -351,7 +351,7 @@ mod tests {
         let proofless_presentation: UnfinishedProofPresentation =
             serde_json::from_str(PROOF_PRESENTATION_INVALID_SIGNATURE_AND_WITHOUT_JWS)?;
         let holder_address = SIGNER_1_ADDRESS;
-        let signer: Box<dyn Signer> = Box::new(LocalSigner::new());
+        let signer: Box<dyn Signer + Send + Sync> = Box::new(LocalSigner::new());
         let assertion_proof = create_assertion_proof(
             &serde_json::to_value(&proofless_presentation)?,
             &format!("{}#key-1", SIGNER_1_DID),

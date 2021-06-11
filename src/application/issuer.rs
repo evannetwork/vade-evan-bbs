@@ -87,7 +87,7 @@ impl Issuer {
         allow_additional_properties: bool,
         issuer_public_key_did: &str,
         issuer_proving_key: &str,
-        signer: &Box<dyn Signer>,
+        signer: &Box<dyn Signer + Send + Sync>,
     ) -> Result<CredentialSchema, Box<dyn Error>> {
         let created_at = get_now_as_iso_string();
 
@@ -214,6 +214,7 @@ impl Issuer {
     /// * `UnfinishedBbsCredential` - Credential including signature that needs to be post-processed by the subject
     //
     // ######### Please keep this commented until we have an Rust nquad library #########
+    #[allow(dead_code)]
     pub fn issue_credential(
         issuer_did: &str,
         subject_did: &str,
@@ -321,7 +322,7 @@ impl Issuer {
         issuer_did: &str,
         issuer_public_key_did: &str,
         issuer_proving_key: &str,
-        signer: &Box<dyn Signer>,
+        signer: &Box<dyn Signer + Send + Sync>,
     ) -> Result<RevocationListCredential, Box<dyn Error>> {
         let available_bytes = [0u8; MAX_REVOCATION_ENTRIES / 8];
         let mut gzip_encoder = GzEncoder::new(Vec::new(), Compression::default());
@@ -379,7 +380,7 @@ impl Issuer {
         revocation_id: &str,
         issuer_public_key_did: &str,
         issuer_proving_key: &str,
-        signer: &Box<dyn Signer>,
+        signer: &Box<dyn Signer + Send + Sync>,
     ) -> Result<RevocationListCredential, Box<dyn Error>> {
         let revocation_id = revocation_id
             .parse::<usize>()
@@ -730,7 +731,7 @@ mod tests {
 
     #[tokio::test]
     async fn revocation_can_create_revocation_registry() -> Result<(), Box<dyn Error>> {
-        let signer: Box<dyn Signer> = Box::new(LocalSigner::new());
+        let signer: Box<dyn Signer + Send + Sync> = Box::new(LocalSigner::new());
 
         Issuer::create_revocation_list(
             EXAMPLE_REVOCATION_LIST_DID,
@@ -746,7 +747,7 @@ mod tests {
 
     #[tokio::test]
     async fn revocation_throws_error_when_max_count_reached() -> Result<(), Box<dyn Error>> {
-        let signer: Box<dyn Signer> = Box::new(LocalSigner::new());
+        let signer: Box<dyn Signer + Send + Sync> = Box::new(LocalSigner::new());
 
         let revocation_list: RevocationListCredential =
             serde_json::from_str(&REVOCATION_LIST_CREDENTIAL)?;
@@ -776,7 +777,7 @@ mod tests {
 
     #[tokio::test]
     async fn revocation_can_set_revoked_status() -> Result<(), Box<dyn Error>> {
-        let signer: Box<dyn Signer> = Box::new(LocalSigner::new());
+        let signer: Box<dyn Signer + Send + Sync> = Box::new(LocalSigner::new());
 
         let revocation_list: RevocationListCredential =
             serde_json::from_str(&REVOCATION_LIST_CREDENTIAL)?;
