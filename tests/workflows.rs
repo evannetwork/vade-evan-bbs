@@ -40,7 +40,7 @@ use utilities::test_data::{
     environment::DEFAULT_VADE_EVAN_SUBSTRATE_IP,
     vc_zkp::{SCHEMA_DESCRIPTION, SCHEMA_NAME, SCHEMA_PROPERTIES, SCHEMA_REQUIRED_PROPERTIES},
 };
-use vade::{ResultSyncifier, Vade};
+use vade::Vade;
 use vade_evan_bbs::*;
 use vade_evan_substrate::{
     signing::{LocalSigner, Signer},
@@ -54,7 +54,7 @@ const SCHEMA_DID: &str =
     "did:evan:zkp:0xd641c26161e769cef4b41760211972b274a8f37f135a34083e4e48b3f1035eda";
 
 fn get_resolver() -> VadeEvanSubstrate {
-    let signer: Box<dyn Signer + Send + Sync> = Box::new(LocalSigner::new());
+    let signer: Box<dyn Signer> = Box::new(LocalSigner::new());
     VadeEvanSubstrate::new(ResolverConfig {
         signer,
         target: env::var("VADE_EVAN_SUBSTRATE_IP")
@@ -76,7 +76,7 @@ fn get_vade_evan() -> VadeEvanBbs {
     let mut internal_vade = Vade::new();
     internal_vade.register_plugin(Box::from(substrate_resolver));
 
-    let signer: Box<dyn Signer + Send + Sync> = Box::new(LocalSigner::new());
+    let signer: Box<dyn Signer> = Box::new(LocalSigner::new());
     VadeEvanBbs::new(internal_vade, signer)
 }
 
@@ -102,8 +102,7 @@ async fn _create_credential_schema(vade: &mut Vade) -> Result<CredentialSchema, 
     );
     let results = vade
         .vc_zkp_create_credential_schema(EVAN_METHOD, &get_options(), &payload)
-        .await
-        .syncify()?;
+        .await?;
 
     // check results
     assert_eq!(results.len(), 1);
@@ -125,8 +124,7 @@ async fn create_revocation_list(
     );
     let results = vade
         .vc_zkp_create_revocation_registry_definition(EVAN_METHOD, &get_options(), &payload)
-        .await
-        .syncify()?;
+        .await?;
 
     // check results
     assert_eq!(results.len(), 1);
@@ -155,8 +153,7 @@ async fn create_credential_proposal(vade: &mut Vade) -> Result<CredentialProposa
     let proposal_payload_json = serde_json::to_string(&proposal_payload)?;
     let result = vade
         .vc_zkp_create_credential_proposal(EVAN_METHOD, TYPE_OPTIONS, &proposal_payload_json)
-        .await
-        .syncify()?;
+        .await?;
     let proposal: CredentialProposal = serde_json::from_str(&result[0].as_ref().unwrap())?;
 
     Ok(proposal)
@@ -169,8 +166,7 @@ async fn create_credential_offer(
     let offer_payload_json = serde_json::to_string(&offer_payload)?;
     let result = vade
         .vc_zkp_create_credential_offer(EVAN_METHOD, TYPE_OPTIONS, &offer_payload_json)
-        .await
-        .syncify()?;
+        .await?;
 
     let offering: BbsCredentialOffer = serde_json::from_str(&result[0].as_ref().unwrap())?;
 
@@ -201,8 +197,7 @@ async fn create_credential_request(
     let request_json = serde_json::to_string(&request)?;
     let result = vade
         .vc_zkp_request_credential(EVAN_METHOD, TYPE_OPTIONS, &request_json)
-        .await
-        .syncify()?;
+        .await?;
 
     let (credential_request, signature_blinding_base64): (BbsCredentialRequest, String) =
         serde_json::from_str(&result[0].as_ref().unwrap())?;
@@ -238,8 +233,7 @@ async fn create_unfinished_credential(
 
     let result = vade
         .vc_zkp_issue_credential(EVAN_METHOD, TYPE_OPTIONS, &issue_cred_json)
-        .await
-        .syncify()?;
+        .await?;
 
     let unfinished_credential: UnfinishedBbsCredential =
         serde_json::from_str(&result[0].as_ref().unwrap())?;
@@ -264,8 +258,7 @@ async fn create_finished_credential(
     let finish_request_json = serde_json::to_string(&finish_request)?;
     let result = vade
         .vc_zkp_finish_credential(EVAN_METHOD, TYPE_OPTIONS, &finish_request_json)
-        .await
-        .syncify()?;
+        .await?;
 
     let finished_credential: BbsCredential = serde_json::from_str(&result[0].as_ref().unwrap())?;
 
@@ -283,8 +276,7 @@ async fn create_proof_request(vade: &mut Vade) -> Result<BbsProofRequest, Box<dy
     let proof_request_json = serde_json::to_string(&proof_request_payload)?;
     let result = vade
         .vc_zkp_request_proof(EVAN_METHOD, TYPE_OPTIONS, &proof_request_json)
-        .await
-        .syncify()?;
+        .await?;
     let proof_request: BbsProofRequest = serde_json::from_str(&result[0].as_ref().unwrap())?;
 
     Ok(proof_request)
@@ -304,8 +296,7 @@ async fn revoke_credential(
     };
     let revoke_credential_json = serde_json::to_string(&revoke_credential_payload)?;
     vade.vc_zkp_revoke_credential(EVAN_METHOD, &get_options(), &revoke_credential_json)
-        .await
-        .syncify()?;
+        .await?;
     Ok(())
 }
 
@@ -345,8 +336,7 @@ async fn create_presentation(
     let present_proof_json = serde_json::to_string(&present_proof_payload)?;
     let result = vade
         .vc_zkp_present_proof(EVAN_METHOD, TYPE_OPTIONS, &present_proof_json)
-        .await
-        .syncify()?;
+        .await?;
     let presentation: ProofPresentation = serde_json::from_str(&result[0].as_ref().unwrap())?;
 
     Ok(presentation)
@@ -377,8 +367,7 @@ async fn ensure_whitelist(vade: &mut Vade, signer: &str) -> Result<(), Box<dyn E
         true,
         resolver
             .is_whitelisted(&SIGNER_2_DID, &SIGNER_2_PRIVATE_KEY)
-            .await
-            .syncify()?
+            .await?
     );
 
     Ok(())
@@ -738,8 +727,7 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
     };
     let verify_proof_json = serde_json::to_string(&verify_proof_payload)?;
     vade.vc_zkp_verify_proof(EVAN_METHOD, TYPE_OPTIONS, &verify_proof_json)
-        .await
-        .syncify()?;
+        .await?;
 
     Ok(())
 }
@@ -820,8 +808,7 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
     let verify_proof_json = serde_json::to_string(&verify_proof_payload)?;
     let results = vade
         .vc_zkp_verify_proof(EVAN_METHOD, TYPE_OPTIONS, &verify_proof_json)
-        .await
-        .syncify()?;
+        .await?;
 
     let result: BbsProofVerification =
         serde_json::from_str(&results[0].as_ref().ok_or("could not get result")?)?;
@@ -861,8 +848,7 @@ async fn whitelist_and_create_did_doc_for_signer_2(
         &serde_json::to_string(&json_editable)?,
         &EXAMPLE_DID_DOCUMENT_2,
     )
-    .await
-    .syncify()?;
+    .await?;
 
     Ok(())
 }
@@ -891,8 +877,7 @@ async fn workflow_can_create_and_persist_keys() -> Result<(), Box<dyn Error>> {
 
     let result = vade
         .run_custom_function(EVAN_METHOD, "create_new_keys", &options, &payload)
-        .await
-        .syncify()?;
+        .await?;
 
     // Get values from plugin result
     let created_keys: Value = serde_json::from_str(
@@ -909,7 +894,7 @@ async fn workflow_can_create_and_persist_keys() -> Result<(), Box<dyn Error>> {
     let created_pub_key_raw = base64::decode(created_pub_key_b64)?;
 
     // Resolve the (hopefully) updated did document
-    let resolve_result = vade.did_resolve(&SIGNER_2_DID).await.syncify()?[0].clone();
+    let resolve_result = vade.did_resolve(&SIGNER_2_DID).await?[0].clone();
     let updated_doc: Value =
         serde_json::from_str(&resolve_result.ok_or("Return value was empty")?)?;
     let assertion_methods = updated_doc["assertionMethod"]
