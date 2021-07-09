@@ -36,7 +36,7 @@ vade = { path = "../vade", version = "0.0.8" }
 vade-evan-substrate = { path = "../vade-evan-substrate", version = "0.0.1" }
 
 [dev-dependencies]
-tokio = { version = "0.2.21", features = ["macros", "rt-threaded"] }
+tokio = { version = "1.7.1", features = ["macros", "rt-multi-thread"] }
 utilities = { path = "utilities" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
