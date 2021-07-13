@@ -193,7 +193,7 @@ impl Prover {
         prover_did: &str,
         prover_public_key_did: &str,
         prover_proving_key: &str,
-        signer: &Box<dyn Signer + Send + Sync>,
+        signer: &Box<dyn Signer>,
     ) -> Result<ProofPresentation, Box<dyn Error>> {
         let mut poks: HashMap<String, PoKOfSignature> = HashMap::new();
         for sub_proof_request in &proof_request.sub_proof_requests {
@@ -514,7 +514,7 @@ mod tests {
         );
         let holder_secret_key = SIGNER_1_PRIVATE_KEY;
 
-        let signer: Box<dyn Signer + Send + Sync> = Box::new(LocalSigner::new());
+        let signer: Box<dyn Signer> = Box::new(LocalSigner::new());
 
         let proof = Prover::present_proof(
             &proof_request,
