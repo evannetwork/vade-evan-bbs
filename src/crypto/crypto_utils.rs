@@ -147,9 +147,10 @@ pub fn check_assertion_proof(
             .as_str()
             .ok_or("could not get verificationMethod from proof")?;
         if address != signer_address {
-            return Err(Box::from(
-                "recovered and signing given address do not match",
-            ));
+            return Err(Box::from(format!(
+                "recovered ({}) and signing given address ({}) do not match",
+                &address, &signer_address,
+            )));
         }
 
         Ok(())
