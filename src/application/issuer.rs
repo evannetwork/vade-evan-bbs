@@ -214,6 +214,7 @@ impl Issuer {
     /// * `UnfinishedBbsCredential` - Credential including signature that needs to be post-processed by the subject
     //
     // ######### Please keep this commented until we have an Rust nquad library #########
+    #[allow(dead_code)]
     pub fn issue_credential(
         issuer_did: &str,
         subject_did: &str,
