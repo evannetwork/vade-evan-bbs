@@ -241,7 +241,7 @@ pub struct CreateCredentialSchemaPayload {
     pub issuer_proving_key: String,
 }
 
-/// API payload for finishing a UnfinishedBbsCredential as a holder.  
+/// API payload for finishing a UnfinishedBbsCredential as a holder.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FinishCredentialPayload {
@@ -351,7 +351,8 @@ impl VadeEvanBbs {
         let generated_did = result[0]
             .as_ref()
             .ok_or("could not generate DID")?
-            .to_owned();
+            .trim_matches('"')
+            .to_string();
 
         Ok(generated_did)
     }
