@@ -16,11 +16,22 @@ name = "vade_evan_bbs"
 path = "src/lib.rs"
 crate-type = ["cdylib", "rlib"]
 
+[features]
+default = ["portable"]
+
+portable = [
+    "bbs/rayon",
+]
+
+wasm = [
+    "bbs/wasm",
+]
+
 [dependencies]
 async-trait = "0.1.31"
 bs58 = "0.4.0"
 base64 = "0.13.0"
-bbs = "0.4.1"
+bbs = { version = "0.4.1", default-features= false }
 env_logger = "0.7.1"
 flate2 = "1.0.20"
 hex = "0.4.2"
