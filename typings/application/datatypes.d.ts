@@ -110,27 +110,46 @@ export interface CredentialProposal {
  * including revocation info.
  */
 export interface BbsCredential {
-  '@context': string[],
+  '@context': (string | {[key in string]?:{'@type': string}})[],
   id: string,
   type: string[],
   issuer: string,
   credentialSubject: CredentialSubject,
   credentialSchema: CredentialSchemaReference,
   credentialStatus: CredentialStatus,
+  validUntil?: string,
+  issuanceDate: string,
   proof: BbsCredentialSignature,
+}
+
+/*
+* A VC without the proof part (input for vade to sign)
+*/
+export interface UnsignedCredential {
+  '@context': (string | {[key in string]?:{'@type': string}})[],
+  id: string,
+  type: string[],
+  issuer: string,
+  credentialSubject: CredentialSubject,
+  credentialSchema: CredentialSchemaReference,
+  credentialStatus: CredentialStatus,
+  validUntil?: string,
+  issuanceDate: string,
 }
 
 /**
  * A verifiable credential with a blind signature that still needs to be processed by the holder
  */
 export interface UnfinishedBbsCredential {
-  '@context': string[],
+  '@context': (string | {[key in string]?:{'@type': string}})[],
   id: string,
   type: string[],
   issuer: string,
   credentialSubject: CredentialSubject,
   credentialSchema: CredentialSchemaReference,
   credentialStatus: CredentialStatus,
+  validUntil?: string,
+  issuanceDate: string,
   proof: BbsUnfinishedCredentialSignature,
 }
 
@@ -182,7 +201,7 @@ export interface BbsUnfinishedCredentialSignature {
  * a `ProofRequest`.
  */
 export interface ProofPresentation {
-  '@context': string[],
+  '@context': (string | {[key in string]?:{'@type': string}})[],
   id: string,
   type: string[],
   verifiableCredential: BbsPresentation[],
@@ -193,7 +212,7 @@ export interface ProofPresentation {
  * Proof presentation without a proof (just for internal use)
  */
 export interface UnfinishedProofPresentation {
-  '@context': string[],
+  '@context': (string | {[key in string]?:{'@type': string}})[],
   id: string,
   type: string[],
   verifiableCredential: BbsPresentation[],
@@ -203,7 +222,7 @@ export interface UnfinishedProofPresentation {
  * A verifiable credential exposing requested properties of a `BbsCredential` by providing a Bbs signature proof
  */
 export interface BbsPresentation {
-  '@context': string[],
+  '@context': (string | {[key in string]?:{'@type': string}})[],
   id: string,
   type: string[],
   issuer: string,
@@ -237,7 +256,7 @@ export interface BbsProofVerification {
  * `RevocationListCredential` without a proof (for internal use only).
  */
 export interface UnproofedRevocationListCredential {
-  '@context': string[],
+  '@context': (string | {[key in string]?:{'@type': string}})[],
   id: string,
   type: string[],
   issuer: string,
@@ -250,7 +269,7 @@ export interface UnproofedRevocationListCredential {
  * <https://w3c-ccg.github.io/vc-status-rl-2020/#revocationlist2020credential>
  */
 export interface RevocationListCredential {
-  '@context': string[],
+  '@context': (string | {[key in string]?:{'@type': string}})[],
   id: string,
   type: string[],
   issuer: string,

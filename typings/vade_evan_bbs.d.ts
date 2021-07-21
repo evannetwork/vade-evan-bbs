@@ -24,9 +24,10 @@ import {
   ProofPresentation,
   SchemaProperty,
   UnfinishedBbsCredential,
+  UnsignedCredential,
 } from './application/datatypes';
 
-/** Message passed to vade containing the desired credential type.  
+/** Message passed to vade containing the desired credential type.
 * Does not perform action if type does not indicate credential type BBS+.
 * This can be done by passing "bbs" as the value for "type". */
 export interface TypeOptions {
@@ -197,6 +198,7 @@ export interface VerifyProofPayload {
   keysToSchemaMap: Record<string, string>,
   /** Signer address */
   signerAddress: string,
+  nquadsToSchemaMap: Record<string, string[]>
 }
 
 /** API payload to create new BBS+ keys and persist them on the DID document. */
