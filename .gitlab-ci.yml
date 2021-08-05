@@ -11,8 +11,8 @@ build:
     - apt-get install -y clang
     - cd ..
     - rm -rf vade vade-evan-substrate
-    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN_EVAN_SUBSTRATE}@git.slock.it/equs/interop/vade/vade-evan-substrate.git  --branch develop
-    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN_VADE}@git.slock.it/equs/interop/vade/vade.git --branch develop
+    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@git.slock.it/equs/interop/vade/vade-evan-substrate.git  --branch develop
+    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@git.slock.it/equs/interop/vade/vade.git --branch develop
     - cd vade-evan-bbs
     - cargo build --release --verbose
   artifacts:
@@ -25,7 +25,7 @@ test_unit:
   script:
     - cd ..
     - rm -rf vade vade-evan-substrate
-    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN_EVAN_SUBSTRATE}@git.slock.it/equs/interop/vade/vade-evan-substrate.git  --branch develop
-    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN_VADE}@git.slock.it/equs/interop/vade/vade.git --branch develop
+    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@git.slock.it/equs/interop/vade/vade-evan-substrate.git  --branch develop
+    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@git.slock.it/equs/interop/vade/vade.git --branch develop
     - cd vade-evan-bbs
     - cargo test --release --verbose
