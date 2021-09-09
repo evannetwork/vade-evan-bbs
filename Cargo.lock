@@ -2423,7 +2423,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f559b464de2e2bdabcac6a210d12e9b5a5973c251e102c44c585c71d51bd78e"
 dependencies = [
  "cfg-if 1.0.0",
- "rand 0.8.4",
+ "rand 0.4.6",
  "static_assertions",
 ]
 
@@ -2526,7 +2526,7 @@ dependencies = [
 
 [[package]]
 name = "vade-evan-bbs"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "base64 0.13.0",
@@ -2553,8 +2553,8 @@ dependencies = [
 
 [[package]]
 name = "vade-evan-substrate"
-version = "0.1.0"
-source = "git+ssh://git@git.slock.it/equs/interop/vade/vade-evan-substrate.git?branch=develop#66892148cc9d2618bf2771d749882fe94962f2f3"
+version = "0.1.1"
+source = "git+ssh://git@git.slock.it/equs/interop/vade/vade-evan-substrate.git?branch=develop#a1a9cfa2ba1a12e8fe8d32034e5c092ab001d846"
 dependencies = [
  "async-trait",
  "blake2-rfc",
