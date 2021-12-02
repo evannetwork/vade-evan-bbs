@@ -35,7 +35,7 @@ run_unit_tests:
     - apt-get install -y clang
     - cargo install cargo2junit
     - rm -rf vade-evan-bbs-unit-report && rm -f junit.xml
-    - cargo test --release --verbose -- -Z unstable-options --format json --report-time | cargo2junit > results.xml
+    - cargo test --release --verbose -- -Z unstable-options --format json --report-time | cargo2junit > junit.xml
   after_script:
     - cat junit.xml
     - mkdir vade-evan-bbs-unit-report
