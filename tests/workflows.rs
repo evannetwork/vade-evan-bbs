@@ -72,13 +72,8 @@ fn get_vade() -> Vade {
 }
 
 fn get_vade_evan() -> VadeEvanBbs {
-    // vade to work with
-    let substrate_resolver = get_resolver();
-    let mut internal_vade = Vade::new();
-    internal_vade.register_plugin(Box::from(substrate_resolver));
-
     let signer: Box<dyn Signer> = Box::new(LocalSigner::new());
-    VadeEvanBbs::new(internal_vade, signer)
+    VadeEvanBbs::new(signer)
 }
 
 async fn _create_credential_schema(vade: &mut Vade) -> Result<CredentialSchema, Box<dyn Error>> {
