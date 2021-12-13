@@ -17,18 +17,9 @@
 use crate::{
     application::{
         datatypes::{
-            BbsCredential,
-            BbsCredentialOffer,
-            BbsCredentialRequest,
-            BbsProofRequest,
-            BbsProofVerification,
-            CredentialProposal,
-            CredentialSchema,
-            CredentialSubject,
-            ProofPresentation,
-            RevocationListCredential,
-            SchemaProperty,
-            UnfinishedBbsCredential,
+            BbsCredential, BbsCredentialOffer, BbsCredentialRequest, BbsProofRequest,
+            BbsProofVerification, CredentialProposal, CredentialSchema, CredentialSubject,
+            ProofPresentation, RevocationListCredential, SchemaProperty, UnfinishedBbsCredential,
             UnsignedBbsCredential,
         },
         issuer::Issuer,
@@ -41,8 +32,7 @@ use crate::{
 use async_trait::async_trait;
 use bbs::{
     keys::{DeterministicPublicKey, SecretKey},
-    SignatureBlinding,
-    SignatureMessage,
+    SignatureBlinding, SignatureMessage,
 };
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, error::Error};
@@ -311,9 +301,6 @@ pub struct VadeEvanBbs {
 impl VadeEvanBbs {
     /// Creates new instance of `VadeEvanBbs`.
     pub fn new(signer: Box<dyn Signer>) -> VadeEvanBbs {
-        match env_logger::try_init() {
-            Ok(_) | Err(_) => (),
-        };
         VadeEvanBbs { signer }
     }
 }
