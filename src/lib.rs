@@ -14,7 +14,6 @@
   limitations under the License.
 */
 
-extern crate log;
 extern crate vade_evan_substrate;
 
 pub(crate) mod application;
