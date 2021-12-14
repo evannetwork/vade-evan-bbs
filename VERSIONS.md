@@ -4,6 +4,8 @@
 
 ### Features
 
+- removed internal resolval of did documents, instead the complete did document for revocation registry needs to be passed
+
 ### Fixes
 
 ### Deprecations

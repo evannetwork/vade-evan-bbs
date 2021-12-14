@@ -17,18 +17,9 @@
 use crate::{
     application::{
         datatypes::{
-            BbsCredential,
-            BbsCredentialOffer,
-            BbsCredentialRequest,
-            BbsProofRequest,
-            BbsProofVerification,
-            CredentialProposal,
-            CredentialSchema,
-            CredentialSubject,
-            ProofPresentation,
-            RevocationListCredential,
-            SchemaProperty,
-            UnfinishedBbsCredential,
+            BbsCredential, BbsCredentialOffer, BbsCredentialRequest, BbsProofRequest,
+            BbsProofVerification, CredentialProposal, CredentialSchema, CredentialSubject,
+            ProofPresentation, RevocationListCredential, SchemaProperty, UnfinishedBbsCredential,
             UnsignedBbsCredential,
         },
         issuer::Issuer,
@@ -41,17 +32,14 @@ use crate::{
 use async_trait::async_trait;
 use bbs::{
     keys::{DeterministicPublicKey, SecretKey},
-    SignatureBlinding,
-    SignatureMessage,
+    SignatureBlinding, SignatureMessage,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::{collections::HashMap, error::Error};
-use vade::{Vade, VadePlugin, VadePluginResultValue};
+use vade::{VadePlugin, VadePluginResultValue};
 use vade_evan_substrate::signing::Signer;
 
 const EVAN_METHOD: &str = "did:evan";
-const EVAN_METHOD_ZKP: &str = "did:evan:zkp";
 const PROOF_METHOD_BBS: &str = "bbs";
 
 /// Message passed to vade containing the desired credential type.
@@ -83,6 +71,8 @@ pub struct CreateRevocationListPayload {
     pub issuer_public_key_did: String,
     /// Private key of the issuer used to sign the credential
     pub issuer_proving_key: String,
+    /// future did id for revocation list
+    pub credential_did: String,
 }
 
 // ####### Keep until nquads are implemented in Rust #######
@@ -126,7 +116,6 @@ pub struct IssueCredentialPayload {
     /// Indices of nquads to be marked as requiredRevealStatements in the credential
     pub required_indices: Vec<u32>,
 }
-
 /// API payload for creating a BbsCredentialOffer to be sent by an issuer.
 /// Contains information about how many messages the final credential will hold.
 #[derive(Serialize, Deserialize)]
@@ -189,6 +178,8 @@ pub struct RequestCredentialPayload {
     pub credential_values: HashMap<String, String>,
     /// Public key of the issuer
     pub issuer_pub_key: String,
+    /// Credential Schema credential
+    pub credential_schema: CredentialSchema,
 }
 
 /// API payload to create a BbsProofRequest to be sent by a verifier.
@@ -209,8 +200,8 @@ pub struct RequestProofPayload {
 pub struct RevokeCredentialPayload {
     /// DID of the issuer
     pub issuer: String,
-    /// DID of the revocation list credential
-    pub revocation_list: String,
+    /// revocation list credential
+    pub revocation_list: RevocationListCredential,
     /// Credential ID to revoke
     pub revocation_id: String,
     /// DID of the issuer's public key for verifying assertion proofs
@@ -239,6 +230,8 @@ pub struct CreateCredentialSchemaPayload {
     pub issuer_public_key_did: String,
     /// Secret key to sign the schema with
     pub issuer_proving_key: String,
+    /// DID of the new created schema credential
+    pub credential_did: String,
 }
 
 /// API payload for finishing a UnfinishedBbsCredential as a holder.
@@ -270,6 +263,8 @@ pub struct VerifyProofPayload {
     /// Signer address
     pub signer_address: String,
     pub nquads_to_schema_map: HashMap<String, Vec<String>>,
+    /// revocation list credential
+    pub revocation_list: RevocationListCredential,
 }
 
 /// API payload to create new BBS+ keys and persist them on the DID document.
@@ -283,17 +278,6 @@ macro_rules! parse {
     ($data:expr, $type_name:expr) => {{
         serde_json::from_str($data)
             .map_err(|e| format!("{} when parsing {} {}", &e, $type_name, $data))?
-    }};
-}
-
-macro_rules! get_document {
-    ($vade:expr, $did:expr, $type_name:expr) => {{
-        debug!("fetching {} with did; {}", $type_name, $did);
-        let resolve_result = $vade.did_resolve($did).await?;
-        let result_str = resolve_result[0]
-            .as_ref()
-            .ok_or_else(|| format!("could not get {} did document", $type_name))?;
-        parse!(&result_str, &$type_name)
     }};
 }
 
@@ -312,80 +296,18 @@ macro_rules! ignore_unrelated {
 
 pub struct VadeEvanBbs {
     signer: Box<dyn Signer>,
-    vade: Vade,
 }
 
 impl VadeEvanBbs {
     /// Creates new instance of `VadeEvanBbs`.
-    pub fn new(vade: Vade, signer: Box<dyn Signer>) -> VadeEvanBbs {
-        match env_logger::try_init() {
-            Ok(_) | Err(_) => (),
-        };
-        VadeEvanBbs { signer, vade }
+    pub fn new(signer: Box<dyn Signer>) -> VadeEvanBbs {
+        VadeEvanBbs { signer }
     }
 }
 
 impl VadeEvanBbs {
-    async fn generate_did(
-        &mut self,
-        private_key: &str,
-        identity: &str,
-    ) -> Result<String, Box<dyn Error>> {
-        let options = format!(
-            r###"{{
-                "privateKey": "{}",
-                "identity": "{}"
-            }}"###,
-            private_key, identity
-        );
-        let result = self
-            .vade
-            .did_create(EVAN_METHOD_ZKP, &options, &"".to_string())
-            .await?;
-        if result.is_empty() {
-            return Err(Box::from(
-                "Could not generate DID as no listeners were registered for this method",
-            ));
-        }
-
-        let generated_did = result[0]
-            .as_ref()
-            .ok_or("could not generate DID")?
-            .trim_matches('"')
-            .to_string();
-
-        Ok(generated_did)
-    }
-
-    async fn set_did_document(
-        &mut self,
-        did: &str,
-        payload: &str,
-        private_key: &str,
-        identity: &str,
-    ) -> Result<Option<String>, Box<dyn Error>> {
-        let options = format!(
-            r###"{{
-                "privateKey": "{}",
-                "identity": "{}",
-                "operation": "setDidDocument"
-            }}"###,
-            &private_key, &identity
-        );
-        let result = self.vade.did_update(&did, &options, &payload).await?;
-
-        if result.is_empty() {
-            return Err(Box::from(
-                "Could not set did document as no listeners were registered for this method",
-            ));
-        }
-
-        Ok(Some("".to_string()))
-    }
-
     async fn create_new_keys(
         &mut self,
-        options: AuthenticationOptions,
         payload: CreateKeysPayload,
     ) -> Result<String, Box<dyn Error>> {
         let keys = Issuer::create_new_keys();
@@ -402,34 +324,6 @@ impl VadeEvanBbs {
             }}"###,
             &payload.key_owner_did, key_id, pub_key, secret_key
         );
-
-        let mut did_document: Value =
-            get_document!(&mut self.vade, &payload.key_owner_did, "did document");
-
-        let public_key_values = did_document["assertionMethod"].as_array();
-        let mut public_keys = public_key_values.unwrap_or(&vec![]).clone();
-
-        // See https://w3c-ccg.github.io/ldp-bbs2020/#bls12-381 for explanations why G2 Key (date: 07.04.2021, may be subject to change)
-        let new_key = format!(
-            r###"{{
-                "id": "{}#{}",
-                "type": "Bls12381G2Key2020",
-                "publicKeyBase58": "{}"
-            }}"###,
-            &payload.key_owner_did,
-            &key_id,
-            &bs58::encode(keys.0.to_bytes_compressed_form()).into_string()
-        );
-        public_keys.push(serde_json::from_str(&new_key)?);
-        did_document["assertionMethod"] = serde_json::Value::Array(public_keys);
-
-        self.set_did_document(
-            &payload.key_owner_did,
-            &serde_json::to_string(&did_document)?,
-            &options.private_key,
-            &options.identity,
-        )
-        .await?;
 
         Ok(serialised_keys)
     }
@@ -461,10 +355,9 @@ impl VadePlugin for VadeEvanBbs {
                 serde_json::to_string(&Prover::create_master_secret())?,
             ))),
             "create_new_keys" => {
-                let options: AuthenticationOptions = parse!(&options, "options");
                 let payload: CreateKeysPayload = parse!(&payload, "payload");
                 Ok(VadePluginResultValue::Success(Some(
-                    self.create_new_keys(options, payload).await?,
+                    self.create_new_keys(payload).await?,
                 )))
             }
             _ => Ok(VadePluginResultValue::Ignored),
@@ -478,7 +371,7 @@ impl VadePlugin for VadeEvanBbs {
     /// # Arguments
     ///
     /// * `method` - method to create a credential schema for (e.g. "did:example")
-    /// * `options` - serialized [`AuthenticationOptions`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.AuthenticationOptions.html)
+    /// * `options` - serialized [`TypeOptions`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.TypeOptions.html)
     /// * `payload` - serialized [`CreateCredentialSchemaPayload`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.CreateCredentialSchemaPayload.html)
     ///
     /// # Returns
@@ -490,15 +383,10 @@ impl VadePlugin for VadeEvanBbs {
         payload: &str,
     ) -> Result<VadePluginResultValue<Option<String>>, Box<dyn Error>> {
         ignore_unrelated!(method, options);
-        let options: AuthenticationOptions = parse!(&options, "options");
         let payload: CreateCredentialSchemaPayload = parse!(&payload, "payload");
 
-        let generated_did = self
-            .generate_did(&options.private_key, &options.identity)
-            .await?;
-
         let schema = Issuer::create_credential_schema(
-            &generated_did,
+            &payload.credential_did,
             &payload.issuer,
             &payload.schema_name,
             &payload.description,
@@ -511,16 +399,9 @@ impl VadePlugin for VadeEvanBbs {
         )
         .await?;
 
-        let serialized = serde_json::to_string(&schema)?;
-        self.set_did_document(
-            &generated_did,
-            &serialized,
-            &options.private_key,
-            &options.identity,
-        )
-        .await?;
-
-        Ok(VadePluginResultValue::Success(Some(serialized)))
+        Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
+            &schema,
+        )?)))
     }
 
     /// Creates a new revocation list and stores it on-chain. The list consists of a encoded bit list which can
@@ -532,7 +413,7 @@ impl VadePlugin for VadeEvanBbs {
     /// # Arguments
     ///
     /// * `method` - method to create a revocation list for (e.g. "did:example")
-    /// * `options` - serialized [`AuthenticationOptions`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.AuthenticationOptions.html)
+    /// * `options` - serialized [`TypeOptions`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.TypeOptions.html)
     /// * `payload` - serialized [`CreateRevocationListPayload`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.CreateRevocationListPayload.html)
     ///
     /// # Returns
@@ -544,15 +425,10 @@ impl VadePlugin for VadeEvanBbs {
         payload: &str,
     ) -> Result<VadePluginResultValue<Option<String>>, Box<dyn Error>> {
         ignore_unrelated!(method, options);
-        let options: AuthenticationOptions = parse!(&options, "options");
         let payload: CreateRevocationListPayload = parse!(&payload, "payload");
 
-        let generated_did = self
-            .generate_did(&options.private_key, &options.identity)
-            .await?;
-
         let revocation_list = Issuer::create_revocation_list(
-            &generated_did,
+            &payload.credential_did,
             &payload.issuer_did,
             &payload.issuer_public_key_did,
             &payload.issuer_proving_key,
@@ -561,14 +437,6 @@ impl VadePlugin for VadeEvanBbs {
         .await?;
 
         let serialized_list = serde_json::to_string(&revocation_list)?;
-
-        self.set_did_document(
-            &generated_did,
-            &serialized_list,
-            &options.private_key,
-            &options.identity,
-        )
-        .await?;
 
         Ok(VadePluginResultValue::Success(Some(serialized_list)))
     }
@@ -773,15 +641,10 @@ impl VadePlugin for VadeEvanBbs {
             decode_base64(&payload.issuer_pub_key, "Issuer Deterministic Public Key")?
                 .into_boxed_slice(),
         );
-        let schema: CredentialSchema = get_document!(
-            &mut self.vade,
-            &payload.credential_offering.schema,
-            "schema"
-        );
         let (credential_request, signature_blinding): (BbsCredentialRequest, SignatureBlinding) =
             Prover::request_credential(
                 &payload.credential_offering,
-                &schema,
+                &payload.credential_schema,
                 &master_secret,
                 payload.credential_values,
                 &public_key,
@@ -833,7 +696,7 @@ impl VadePlugin for VadeEvanBbs {
     /// # Arguments
     ///
     /// * `method` - method to revoke a credential for (e.g. "did:example")
-    /// * `options` - serialized [`AuthenticationOptions`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.AuthenticationOptions.html)
+    /// * `options` - serialized [`TypeOptions`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.TypeOptions.html)
     /// * `payload` - serialized [`RevokeCredentialPayload`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.RevokeCredentialPayload.html)
     ///
     /// # Returns
@@ -846,14 +709,10 @@ impl VadePlugin for VadeEvanBbs {
         payload: &str,
     ) -> Result<VadePluginResultValue<Option<String>>, Box<dyn Error>> {
         ignore_unrelated!(method, options);
-        let options: AuthenticationOptions = parse!(&options, "options");
         let payload: RevokeCredentialPayload = parse!(&payload, "payload");
-        let rev_list: RevocationListCredential =
-            get_document!(&mut self.vade, &payload.revocation_list, "revocation list");
-
         let updated_list = Issuer::revoke_credential(
             &payload.issuer,
-            rev_list,
+            payload.revocation_list,
             &payload.revocation_id,
             &payload.issuer_public_key_did,
             &payload.issuer_proving_key,
@@ -862,14 +721,6 @@ impl VadePlugin for VadeEvanBbs {
         .await?;
 
         let serialized = serde_json::to_string(&updated_list)?;
-
-        self.set_did_document(
-            &updated_list.id,
-            &serialized,
-            &options.private_key,
-            &options.identity,
-        )
-        .await?;
 
         Ok(VadePluginResultValue::Success(Some(serialized)))
     }
@@ -910,13 +761,8 @@ impl VadePlugin for VadeEvanBbs {
         if verfication_result.status != "rejected" {
             // check revocation status
             for cred in &payload.presentation.verifiable_credential {
-                let revocation_list: RevocationListCredential = get_document!(
-                    &mut self.vade,
-                    &cred.credential_status.revocation_list_credential,
-                    "revocationlist"
-                );
                 let revoked =
-                    CryptoVerifier::is_revoked(&cred.credential_status, &revocation_list)?;
+                    CryptoVerifier::is_revoked(&cred.credential_status, &payload.revocation_list)?;
                 if revoked {
                     verfication_result = BbsProofVerification {
                         presented_proof: payload.presentation.id.to_string(),

@@ -2516,7 +2516,7 @@ dependencies = [
 [[package]]
 name = "vade"
 version = "0.1.0"
-source = "git+ssh://git@git.slock.it/equs/interop/vade/vade.git?branch=develop#9e76511acb74834bf4558c8e27748e5866d5d591"
+source = "git+https://git.slock.it/equs/interop/vade/vade.git?branch=develop#33b453acc56552951dc8ce5df5bcfceb2b50913a"
 dependencies = [
  "async-trait",
  "env_logger",
@@ -2526,19 +2526,17 @@ dependencies = [
 
 [[package]]
 name = "vade-evan-bbs"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "async-trait",
  "base64 0.13.0",
  "bbs",
  "bs58",
  "chrono",
- "env_logger",
  "flate2",
  "hex",
  "js-sys",
  "libsecp256k1",
- "log",
  "reqwest 0.10.10",
  "serde",
  "serde_json",
@@ -2553,8 +2551,8 @@ dependencies = [
 
 [[package]]
 name = "vade-evan-substrate"
-version = "0.1.1"
-source = "git+ssh://git@git.slock.it/equs/interop/vade/vade-evan-substrate.git?branch=develop#a1a9cfa2ba1a12e8fe8d32034e5c092ab001d846"
+version = "0.1.2"
+source = "git+https://git.slock.it/equs/interop/vade/vade-evan-substrate.git?branch=develop#15340e2adfecb919d757b2fabba352022b260baf"
 dependencies = [
  "async-trait",
  "blake2-rfc",
