@@ -14,6 +14,7 @@
   limitations under the License.
 */
 
+use bs58;
 use serde_json::Value;
 use std::{collections::HashMap, env, error::Error};
 use utilities::test_data::{
@@ -71,13 +72,8 @@ fn get_vade() -> Vade {
 }
 
 fn get_vade_evan() -> VadeEvanBbs {
-    // vade to work with
-    let substrate_resolver = get_resolver();
-    let mut internal_vade = Vade::new();
-    internal_vade.register_plugin(Box::from(substrate_resolver));
-
     let signer: Box<dyn Signer> = Box::new(LocalSigner::new());
-    VadeEvanBbs::new(internal_vade, signer)
+    VadeEvanBbs::new(signer)
 }
 
 async fn _create_credential_schema(vade: &mut Vade) -> Result<CredentialSchema, Box<dyn Error>> {
@@ -118,7 +114,8 @@ async fn create_revocation_list(
         r###"{{
         "issuerDid": "{}",
         "issuerPublicKeyDid": "{}",
-        "issuerProvingKey": "{}"
+        "issuerProvingKey": "{}",
+        "credentialDid": "did:evan:revocation123"
     }}"###,
         ISSUER_DID, ISSUER_PUBLIC_KEY_DID, ISSUER_PRIVATE_KEY
     );
@@ -186,12 +183,15 @@ async fn create_credential_request(
         let string = format!("{}: {}", key, val);
         nquads.insert(nquads.len(), string);
     }
-
+    let resolve_credential_schema = vade.did_resolve(&SCHEMA_DID).await?[0].clone();
+    let credential_schema: CredentialSchema =
+        serde_json::from_str(&resolve_credential_schema.ok_or("Return value was empty")?)?;
     let request = RequestCredentialPayload {
         credential_offering: offer,
         master_secret: MASTER_SECRET.to_string(),
         credential_values: credential_values.clone(),
         issuer_pub_key: PUB_KEY.to_string(),
+        credential_schema: credential_schema,
     };
 
     let request_json = serde_json::to_string(&request)?;
@@ -284,20 +284,24 @@ async fn create_proof_request(vade: &mut Vade) -> Result<BbsProofRequest, Box<dy
 
 async fn revoke_credential(
     vade: &mut Vade,
-    revocation_list_did: String,
+    revocation_list: RevocationListCredential,
     revocation_list_id: String,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<RevocationListCredential, Box<dyn Error>> {
     let revoke_credential_payload = RevokeCredentialPayload {
         issuer: ISSUER_DID.to_string(),
-        revocation_list: revocation_list_did,
+        revocation_list: revocation_list,
         revocation_id: revocation_list_id.to_string(),
         issuer_public_key_did: ISSUER_PUBLIC_KEY_DID.to_string(),
         issuer_proving_key: ISSUER_PRIVATE_KEY.to_string(),
     };
     let revoke_credential_json = serde_json::to_string(&revoke_credential_payload)?;
-    vade.vc_zkp_revoke_credential(EVAN_METHOD, &get_options(), &revoke_credential_json)
-        .await?;
-    Ok(())
+    let updated_revocation_result = vade
+        .vc_zkp_revoke_credential(EVAN_METHOD, &get_options(), &revoke_credential_json)
+        .await?[0]
+        .clone();
+    Ok(serde_json::from_str(
+        &updated_revocation_result.ok_or("Return value was empty")?,
+    )?)
 }
 
 async fn create_presentation(
@@ -677,7 +681,7 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
     let unfinished_credential = create_unfinished_credential(
         &mut vade,
         credential_request,
-        revocation_list.id,
+        revocation_list.id.clone(),
         "0".to_string(),
         nquads.clone(),
         offer,
@@ -724,6 +728,7 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
         keys_to_schema_map: public_key_schema_map,
         signer_address: SIGNER_1_ADDRESS.to_string(),
         nquads_to_schema_map: nqsm,
+        revocation_list: revocation_list.clone(),
     };
     let verify_proof_json = serde_json::to_string(&verify_proof_payload)?;
     vade.vc_zkp_verify_proof(EVAN_METHOD, TYPE_OPTIONS, &verify_proof_json)
@@ -774,7 +779,7 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
     .await?;
 
     // revoke credential
-    revoke_credential(&mut vade, revocation_list.id, "0".to_string()).await?;
+    let updated_revocation = revoke_credential(&mut vade, revocation_list, "0".to_string()).await?;
 
     // create proof request
     let proof_request = create_proof_request(&mut vade).await?;
@@ -804,6 +809,7 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
         keys_to_schema_map: public_key_schema_map,
         signer_address: SIGNER_1_ADDRESS.to_string(),
         nquads_to_schema_map: nqsm,
+        revocation_list: updated_revocation,
     };
     let verify_proof_json = serde_json::to_string(&verify_proof_payload)?;
     let results = vade
@@ -892,6 +898,40 @@ async fn workflow_can_create_and_persist_keys() -> Result<(), Box<dyn Error>> {
         .as_str()
         .ok_or("Expected publicKey field to be a string")?;
     let created_pub_key_raw = base64::decode(created_pub_key_b64)?;
+
+    let did_resolve_result = vade.did_resolve(&SIGNER_2_DID).await?[0].clone();
+    let mut did_document: Value =
+        serde_json::from_str(&did_resolve_result.ok_or("Return value was empty")?)?;
+
+    let public_key_values = did_document["assertionMethod"].as_array();
+    let mut public_keys = public_key_values.unwrap_or(&vec![]).clone();
+
+    // See https://w3c-ccg.github.io/ldp-bbs2020/#bls12-381 for explanations why G2 Key (date: 07.04.2021, may be subject to change)
+    let new_key = format!(
+        r###"{{
+            "id": "{}",
+            "type": "Bls12381G2Key2020",
+            "publicKeyBase58": "{}"
+        }}"###,
+        &created_key_id,
+        &bs58::encode(created_pub_key_raw.clone()).into_string()
+    );
+    public_keys.push(serde_json::from_str(&new_key)?);
+    did_document["assertionMethod"] = serde_json::Value::Array(public_keys);
+    let options = format!(
+        r#"{{
+            "identity": "{}",
+            "privateKey": "{}",
+            "operation": "setDidDocument"
+        }}"#,
+        &SIGNER_2_DID, &SIGNER_2_PRIVATE_KEY
+    );
+    vade.did_update(
+        &SIGNER_2_DID,
+        &options,
+        &serde_json::to_string(&did_document)?,
+    )
+    .await?;
 
     // Resolve the (hopefully) updated did document
     let resolve_result = vade.did_resolve(&SIGNER_2_DID).await?[0].clone();
