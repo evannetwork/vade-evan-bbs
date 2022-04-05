@@ -123,8 +123,8 @@ pub struct IssueCredentialPayload {
 pub struct OfferCredentialPayload {
     /// DID of the issuer
     pub issuer: String,
-    /// Proposal that precedes the offer
-    pub credential_proposal: CredentialProposal,
+    /// DID of the subject
+    pub subject: String,
     /// Number of total nquads in the final credential
     pub nquad_count: usize,
 }
@@ -526,7 +526,7 @@ impl VadePlugin for VadeEvanBbs {
 
         let payload: OfferCredentialPayload = parse!(&payload, "payload");
         let result: BbsCredentialOffer = Issuer::offer_credential(
-            &payload.credential_proposal,
+            &payload.subject,
             &payload.issuer,
             payload.nquad_count,
         )?;

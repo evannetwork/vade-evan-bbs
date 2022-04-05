@@ -20,7 +20,6 @@ use crate::{
         datatypes::{
             BbsCredentialOffer,
             BbsCredentialRequest,
-            CredentialProposal,
             CredentialSchema,
             CredentialSchemaReference,
             CredentialStatus,
@@ -31,7 +30,6 @@ use crate::{
             UnfinishedBbsCredentialSignature,
             UnproofedRevocationListCredential,
             UnsignedBbsCredential,
-            CREDENTIAL_OFFER_TYPE,
             CREDENTIAL_PROOF_PURPOSE,
             CREDENTIAL_SCHEMA_TYPE,
             CREDENTIAL_SIGNATURE_TYPE,
@@ -123,28 +121,21 @@ impl Issuer {
     /// Creates a new credential offer, as a response to a `CredentialProposal` sent by a prover.
     ///
     /// # Arguments
-    /// * `credential_proposal` - The proposal to respond to
+    /// * `subject` - DID of the subject for whom proposal to respond to
     /// * `issuer_did` - DID of the issuer that is supposed to issue the offer
     ///
     /// # Returns
     /// * `BbsCredentialOffer` - The message to be sent to the prover.
     pub fn offer_credential(
-        credential_proposal: &CredentialProposal,
+        subject: &str,
         issuer_did: &str,
         nquad_count: usize,
     ) -> Result<BbsCredentialOffer, Box<dyn Error>> {
         let nonce = base64::encode(BbsIssuer::generate_signing_nonce().to_bytes_compressed_form());
-        if credential_proposal.issuer != issuer_did {
-            return Err(Box::from(
-                "Cannot offer credential: Proposal is not targeted at this issuer",
-            ));
-        }
 
         Ok(BbsCredentialOffer {
             issuer: issuer_did.to_owned(),
-            subject: credential_proposal.subject.to_owned(),
-            r#type: CREDENTIAL_OFFER_TYPE.to_string(),
-            schema: credential_proposal.schema.to_owned(),
+            subject: subject.to_string(),
             credential_message_count: nquad_count + ADDITIONAL_HIDDEN_MESSAGES_COUNT,
             nonce,
         })
@@ -445,7 +436,7 @@ mod tests {
     extern crate utilities;
     use super::*;
     use crate::application::{
-        datatypes::{BbsCredentialOffer, BbsCredentialRequest},
+        datatypes::{BbsCredentialOffer, BbsCredentialRequest, CredentialProposal},
         prover::Prover,
     };
     use bbs::{issuer::Issuer as BbsIssuer, prover::Prover as BbsProver};
@@ -555,28 +546,10 @@ mod tests {
     #[test]
     fn can_offer_credential() -> Result<(), Box<dyn Error>> {
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
-        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID, 1)?;
+        let offer = Issuer::offer_credential(&proposal.subject, &ISSUER_DID, 1)?;
 
         assert_eq!(&offer.issuer, &ISSUER_DID);
-        assert_eq!(&offer.schema, &proposal.schema);
         assert_eq!(&offer.subject, &proposal.subject);
-        assert_eq!(&offer.r#type, &CREDENTIAL_OFFER_TYPE);
-
-        Ok(())
-    }
-
-    #[test]
-    fn credential_offer_fails_on_wrong_issuer() -> Result<(), Box<dyn Error>> {
-        let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
-        let offer = Issuer::offer_credential(&proposal, "random_issuer", 1);
-
-        match offer {
-            Ok(_) => assert!(false),
-            Err(e) => assert_eq!(
-                format!("{}", e),
-                "Cannot offer credential: Proposal is not targeted at this issuer"
-            ),
-        };
 
         Ok(())
     }
@@ -586,7 +559,7 @@ mod tests {
         let message_count = 1;
         let (dpk, sk) = BbsIssuer::new_short_keys(None);
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
-        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID, message_count)?;
+        let offer = Issuer::offer_credential(&proposal.subject, &ISSUER_DID, message_count)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
         let (credential_request, schema, nquads) = request_credential(&dpk, &offer)?;
         let valid_until = get_now_as_iso_string();
@@ -629,7 +602,7 @@ mod tests {
         let nonce_bytes = decode_base64(&SECRET_KEY, "Secret Key")?.into_boxed_slice();
         let sk = SecretKey::from(nonce_bytes);
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
-        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID, message_count)?;
+        let offer = Issuer::offer_credential(&proposal.subject, &ISSUER_DID, message_count)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
         let (credential_request, schema, nquads) = request_credential(&dpk, &offer)?;
 
@@ -671,7 +644,7 @@ mod tests {
         let nonce_bytes = decode_base64(&SECRET_KEY, "Secret Key")?.into_boxed_slice();
         let sk = SecretKey::from(nonce_bytes);
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
-        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID, message_count)?;
+        let offer = Issuer::offer_credential(&proposal.subject, &ISSUER_DID, message_count)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
         let (credential_request, _, nquads) = request_credential(&dpk, &offer)?;
         let unsigned_vc: UnsignedBbsCredential = serde_json::from_str(UNSIGNED_CREDENTIAL)?;
@@ -697,7 +670,7 @@ mod tests {
         let message_count = 5;
         let (dpk, sk) = BbsIssuer::new_short_keys(None);
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
-        let offer = Issuer::offer_credential(&proposal, &ISSUER_DID, message_count)?;
+        let offer = Issuer::offer_credential(&proposal.subject, &ISSUER_DID, message_count)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
         let (credential_request, schema, nquads) = request_credential(&dpk, &offer)?;
 
