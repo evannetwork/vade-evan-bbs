@@ -79,8 +79,8 @@ export interface IssueCredentialPayload {
 export interface OfferCredentialPayload {
   /** DID of the issuer */
   issuer: string,
-  /** Proposal that precedes the offer */
-  credentialProposal: CredentialProposal,
+  /** DID of the subject */
+  subject: string,
   /** Number of total nquads in the final credential */
   nquadCount: number,
 }
