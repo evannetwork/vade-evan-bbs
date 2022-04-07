@@ -20,11 +20,12 @@ import {
   BbsCredentialRequest,
   BbsProofRequest,
   CredentialProposal,
+  CredentialSchema,
   CredentialSubject,
   ProofPresentation,
+  RevocationListCredential,
   SchemaProperty,
   UnfinishedBbsCredential,
-  UnsignedCredential,
 } from './application/datatypes';
 
 /** Message passed to vade containing the desired credential type.
@@ -50,6 +51,8 @@ export interface CreateRevocationListPayload {
   issuerPublicKeyDid: string,
   /** Private key of the issuer used to sign the credential */
   issuerProvingKey: string,
+  /** future did id for revocation list */
+  credentialDid: string,
 }
 
 /** API payload for issuing a new credential
@@ -128,6 +131,8 @@ export interface RequestCredentialPayload {
   credentialValues: Record<string, string>,
   /** Public key of the issuer */
   issuerPubKey: string,
+  /* Credential Schema credential */
+  credentialSchema: CredentialSchema,
 }
 
 /** API payload to create a BbsProofRequest to be sent by a verifier. */
@@ -172,6 +177,8 @@ export interface CreateCredentialSchemaPayload {
   issuerPublicKeyDid: string,
   /** Secret key to sign the schema with */
   issuerProvingKey: string,
+  /** DID of the new created schema credential */
+  credentialDid: string,
 }
 
 /** API payload for finishing a UnfinishedBbsCredential as a holder.   */
@@ -198,7 +205,9 @@ export interface VerifyProofPayload {
   keysToSchemaMap: Record<string, string>,
   /** Signer address */
   signerAddress: string,
-  nquadsToSchemaMap: Record<string, string[]>
+  nquadsToSchemaMap: Record<string, string[]>,
+  /** revocation list credential */
+  revocationList: RevocationListCredential,
 }
 
 /** API payload to create new BBS+ keys and persist them on the DID document. */
