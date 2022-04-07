@@ -3,6 +3,7 @@
 ## Next Version
 
 ### Features
+
 - Refactor data structures and adjust test cases
 
 ### Fixes
