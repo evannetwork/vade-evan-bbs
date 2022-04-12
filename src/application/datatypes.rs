@@ -117,8 +117,6 @@ pub struct AssertionProof {
 pub struct BbsCredentialOffer {
     pub issuer: String,
     pub subject: String,
-    pub r#type: String,
-    pub schema: String,
     pub nonce: String,
     pub credential_message_count: usize,
 }

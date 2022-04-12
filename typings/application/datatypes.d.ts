@@ -87,9 +87,7 @@ export interface AssertionProof {
 export interface BbsCredentialOffer {
   issuer: string,
   subject: string,
-  type: string,
   credentialMessageCount: number,
-  schema: string,
   nonce: string,
 }
 
