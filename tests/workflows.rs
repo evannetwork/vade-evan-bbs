@@ -859,6 +859,7 @@ async fn whitelist_and_create_did_doc_for_signer_2(
     Ok(())
 }
 
+#[ignore]
 #[tokio::test]
 async fn workflow_can_create_and_persist_keys() -> Result<(), Box<dyn Error>> {
     let mut vade = get_vade();
