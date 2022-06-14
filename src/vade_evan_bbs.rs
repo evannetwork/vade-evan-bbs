@@ -17,9 +17,18 @@
 use crate::{
     application::{
         datatypes::{
-            BbsCredential, BbsCredentialOffer, BbsCredentialRequest, BbsProofRequest,
-            BbsProofVerification, CredentialProposal, CredentialSchema, CredentialSubject,
-            ProofPresentation, RevocationListCredential, SchemaProperty, UnfinishedBbsCredential,
+            BbsCredential,
+            BbsCredentialOffer,
+            BbsCredentialRequest,
+            BbsProofRequest,
+            BbsProofVerification,
+            CredentialProposal,
+            CredentialSchema,
+            CredentialSubject,
+            ProofPresentation,
+            RevocationListCredential,
+            SchemaProperty,
+            UnfinishedBbsCredential,
             UnsignedBbsCredential,
         },
         issuer::Issuer,
@@ -32,7 +41,8 @@ use crate::{
 use async_trait::async_trait;
 use bbs::{
     keys::{DeterministicPublicKey, SecretKey},
-    SignatureBlinding, SignatureMessage,
+    SignatureBlinding,
+    SignatureMessage,
 };
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, error::Error};
@@ -124,7 +134,8 @@ pub struct OfferCredentialPayload {
     /// DID of the issuer
     pub issuer: String,
     /// DID of the subject
-    pub subject: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subject: Option<String>,
     /// Number of total nquads in the final credential
     pub nquad_count: usize,
 }
@@ -160,7 +171,8 @@ pub struct CreateCredentialProposalPayload {
     /// DID of the issuer
     pub issuer: String,
     /// DID of the subject
-    pub subject: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subject: Option<String>,
     /// DID of a credential schema to propose
     pub schema: String,
 }
@@ -526,7 +538,7 @@ impl VadePlugin for VadeEvanBbs {
 
         let payload: OfferCredentialPayload = parse!(&payload, "payload");
         let result: BbsCredentialOffer = Issuer::offer_credential(
-            &payload.subject,
+            payload.subject.as_deref(),
             &payload.issuer,
             payload.nquad_count,
         )?;
@@ -604,8 +616,11 @@ impl VadePlugin for VadeEvanBbs {
     ) -> Result<VadePluginResultValue<Option<String>>, Box<dyn Error>> {
         ignore_unrelated!(method, options);
         let payload: CreateCredentialProposalPayload = parse!(&payload, "payload");
-        let result: CredentialProposal =
-            Prover::propose_credential(&payload.issuer, &payload.subject, &payload.schema);
+        let result: CredentialProposal = Prover::propose_credential(
+            &payload.issuer,
+            payload.subject.as_deref(),
+            &payload.schema,
+        );
 
         Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
             &result,

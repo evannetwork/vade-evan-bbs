@@ -144,7 +144,7 @@ fn get_options() -> String {
 async fn create_credential_proposal(vade: &mut Vade) -> Result<CredentialProposal, Box<dyn Error>> {
     let proposal_payload = CreateCredentialProposalPayload {
         issuer: ISSUER_DID.to_string(),
-        subject: SUBJECT_DID.to_string(),
+        subject: Some(SUBJECT_DID.to_string()),
         schema: SCHEMA_DID.to_string(),
     };
     let proposal_payload_json = serde_json::to_string(&proposal_payload)?;
@@ -317,7 +317,7 @@ async fn create_presentation(
     let revealed_data = finished_credential.credential_subject.data.clone();
     let mut revealed_properties_schema_map = HashMap::new();
     let revealed = CredentialSubject {
-        id: HOLDER_DID.to_string(),
+        id: Some(HOLDER_DID.to_string()),
         data: revealed_data,
     };
     revealed_properties_schema_map.insert(SCHEMA_DID.to_string(), revealed);
@@ -397,7 +397,7 @@ async fn workflow_can_create_credential_proposal() -> Result<(), Box<dyn Error>>
 
     let proposal = create_credential_proposal(&mut vade).await?;
 
-    assert_eq!(&proposal.subject, &SUBJECT_DID);
+    assert_eq!(proposal.subject.as_ref(), Some(&SUBJECT_DID.to_string()));
     assert_eq!(&proposal.issuer, &ISSUER_DID);
     assert_eq!(&proposal.schema, &SCHEMA_DID.clone());
     assert_eq!(&proposal.r#type, CREDENTIAL_PROPOSAL_TYPE);
@@ -424,7 +424,6 @@ async fn workflow_can_create_credential_offer_with_proposal() -> Result<(), Box<
 
     Ok(())
 }
-
 
 #[tokio::test]
 async fn workflow_can_create_credential_request() -> Result<(), Box<dyn Error>> {
@@ -597,7 +596,10 @@ async fn workflow_can_create_finished_credential() -> Result<(), Box<dyn Error>>
     .await?;
 
     assert_eq!(&finished_credential.issuer, ISSUER_DID);
-    assert_eq!(&finished_credential.credential_subject.id, SUBJECT_DID);
+    assert_eq!(
+        finished_credential.credential_subject.id,
+        Some(SUBJECT_DID.to_string())
+    );
     assert_eq!(&finished_credential.credential_schema.id, &SCHEMA_DID);
     assert_eq!(
         &finished_credential.proof.required_reveal_statements,
