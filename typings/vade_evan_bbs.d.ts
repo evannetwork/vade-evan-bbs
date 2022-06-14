@@ -19,7 +19,6 @@ import {
   BbsCredentialOffer,
   BbsCredentialRequest,
   BbsProofRequest,
-  CredentialProposal,
   CredentialSchema,
   CredentialSubject,
   ProofPresentation,
@@ -29,196 +28,196 @@ import {
 } from './application/datatypes';
 
 /** Message passed to vade containing the desired credential type.
-* Does not perform action if type does not indicate credential type BBS+.
-* This can be done by passing "bbs" as the value for "type". */
+ * Does not perform action if type does not indicate credential type BBS+.
+ * This can be done by passing "bbs" as the value for "type". */
 export interface TypeOptions {
-  type?: string,
+  type?: string;
 }
 
 /** Contains information necessary to make on-chain transactions (e.g. updating a DID Document). */
 export interface AuthenticationOptions {
   /** Reference to the private key, will be forwarded to external signer if available */
-  privateKey: string,
+  privateKey: string;
   /** DID of the identity */
-  identity: string,
+  identity: string;
 }
 
 /** API payload needed to create a revocation list */
 export interface CreateRevocationListPayload {
   /** DID of the issuer */
-  issuerDid: string,
+  issuerDid: string;
   /** DID of the issuer's public key used to verify the credential's signature */
-  issuerPublicKeyDid: string,
+  issuerPublicKeyDid: string;
   /** Private key of the issuer used to sign the credential */
-  issuerProvingKey: string,
+  issuerProvingKey: string;
   /** future did id for revocation list */
-  credentialDid: string,
+  credentialDid: string;
 }
 
 /** API payload for issuing a new credential
-* Currently needs both an unsigned verifiable credential containing all the data
-* and the nquad representation of this verifiable credential.  */
+ * Currently needs both an unsigned verifiable credential containing all the data
+ * and the nquad representation of this verifiable credential.  */
 export interface IssueCredentialPayload {
   /** The VC to sign, without any appended proof */
-  unsignedVc: Partial<BbsCredential>,
+  unsignedVc: Partial<BbsCredential>;
   /** Nquads representation of the VC without any appended proof */
-  nquads: string[],
+  nquads: string[];
   /** DID url of the public key of the issuer used to later verify the signature */
-  issuerPublicKeyId: string,
+  issuerPublicKeyId: string;
   /** The public bbs+ key of the issuer used to later verify the signature */
-  issuerPublicKey: string,
+  issuerPublicKey: string;
   /** The secret bbs+ key used to create the signature */
-  issuerSecretKey: string,
+  issuerSecretKey: string;
   /** Credential request */
-  credentialRequest: BbsCredentialRequest,
+  credentialRequest: BbsCredentialRequest;
   /** Credential offer linked to the credential request */
-  credentialOffer: BbsCredentialOffer,
+  credentialOffer: BbsCredentialOffer;
   /** Indices of nquads to be marked as requiredRevealStatements in the credential */
-  requiredIndices: number[],
+  requiredIndices: number[];
 }
 
 /** API payload for creating a BbsCredentialOffer to be sent by an issuer.
-* Contains information about how many messages the final credential will hold. */
+ * Contains information about how many messages the final credential will hold. */
 export interface OfferCredentialPayload {
   /** DID of the issuer */
-  issuer: string,
-  /** DID of the subject */
-  subject: string,
+  issuer: string;
   /** Number of total nquads in the final credential */
-  nquadCount: number,
+  nquadCount: number;
+  /** subject for credential */
+  subject: string;
 }
 
 /** API payload for creating a zero-knowledge proof out of a BBS+ signature. */
 export interface PresentProofPayload {
   /** The proof request sent by a verifier */
-  proofRequest: BbsProofRequest,
+  proofRequest: BbsProofRequest;
   /** All relevant credentials references via the requested credential schema ID */
-  credentialSchemaMap: Record<string, BbsCredential>,
+  credentialSchemaMap: Record<string, BbsCredential>;
   /** Properties to be revealed for each credential by schema ID */
-  revealedPropertiesSchemaMap: Record<string, CredentialSubject>,
+  revealedPropertiesSchemaMap: Record<string, CredentialSubject>;
   /** Public key per credential by schema ID */
-  publicKeySchemaMap: Record<string, string>,
+  publicKeySchemaMap: Record<string, string>;
   /** The respective nquads by respective credential's schema ID */
-  nquadsSchemaMap: Record<string, string[]>,
+  nquadsSchemaMap: Record<string, string[]>;
   /** Prover's master secret */
-  masterSecret: string,
+  masterSecret: string;
   /** DID of the prover */
-  proverDid: string,
+  proverDid: string;
   /** Key DID of the prover's public key for the created assertion proof */
-  proverPublicKeyDid: string,
+  proverPublicKeyDid: string;
   /** Prover's secret key to create an assertion proof with */
-  proverProvingKey: string,
+  proverProvingKey: string;
 }
 
 /** API payload to create a credential proposal to be sent by a holder. */
 export interface CreateCredentialProposalPayload {
-   /** DID of the issuer */
-  issuer: string,
+  /** DID of the issuer */
+  issuer: string;
   /** DID of the subject */
-  subject: string,
+  subject: string;
   /** DID of a credential schema to propose */
-  schema: string,
+  schema: string;
 }
 
 /** API payload to create a credential request to be sent by a holder as a response
-* to a BbsCredentialOffer. */
+ * to a BbsCredentialOffer. */
 export interface RequestCredentialPayload {
   /** Credential offering sent by an issuer */
-  credentialOffering: BbsCredentialOffer,
+  credentialOffering: BbsCredentialOffer;
   /** Master secret of the holder/receiver */
-  masterSecret: string,
+  masterSecret: string;
   /** Cleartext values to be signed in the credential */
-  credentialValues: Record<string, string>,
+  credentialValues: Record<string, string>;
   /** Public key of the issuer */
-  issuerPubKey: string,
+  issuerPubKey: string;
   /* Credential Schema credential */
-  credentialSchema: CredentialSchema,
+  credentialSchema: CredentialSchema;
 }
 
 /** API payload to create a BbsProofRequest to be sent by a verifier. */
 export interface RequestProofPayload {
   /** DID of the verifier */
-  verifierDid: string,
+  verifierDid: string;
   /** List of schema IDs to request */
-  schemas: string[],
+  schemas: string[];
   /** Attributes to reveal per schema ID */
-  revealAttributes: Record<string, number[]>,
+  revealAttributes: Record<string, number[]>;
 }
 
 /** API payload to revoke a credential as this credential's issuer. */
 export interface RevokeCredentialPayload {
   /** DID of the issuer */
-  issuer: string,
+  issuer: string;
   /** DID of the revocation list credential */
-  revocationList: string,
+  revocationList: string;
   /** Credential ID to revoke */
-  revocationId: string,
-   /** DID of the issuer's public key for verifying assertion proofs */
-  issuerPublicKeyDid: string,
+  revocationId: string;
+  /** DID of the issuer's public key for verifying assertion proofs */
+  issuerPublicKeyDid: string;
   /** DID of the issuer's secret key for creating assertion proofs */
-  issuerProvingKey: string,
+  issuerProvingKey: string;
 }
 
 /** API payload needed to create a credential schema needed for issuing credentials */
 export interface CreateCredentialSchemaPayload {
   /** DID of the schema issuer/owner */
-  issuer: string,
+  issuer: string;
   /** Name given to the schema */
-  schemaName: string,
+  schemaName: string;
   /** A text describing the schema's purpose */
-  description: string,
+  description: string;
   /** The properties the schema holds */
-  properties: Record<string, SchemaProperty>,
+  properties: Record<string, SchemaProperty>;
   /** Names of required properties */
-  requiredProperties: string[],
+  requiredProperties: string[];
   /** Tells a verifier whether properties not found in the schema are to be deemed valid */
-  allowAdditionalProperties: boolean,
+  allowAdditionalProperties: boolean;
   /** DID of the issuer's public key to validate the schema's assertion proof */
-  issuerPublicKeyDid: string,
+  issuerPublicKeyDid: string;
   /** Secret key to sign the schema with */
-  issuerProvingKey: string,
+  issuerProvingKey: string;
   /** DID of the new created schema credential */
-  credentialDid: string,
+  credentialDid: string;
 }
 
 /** API payload for finishing a UnfinishedBbsCredential as a holder.   */
 export interface FinishCredentialPayload {
   /** Credential with blind signature to finish */
-  credential: UnfinishedBbsCredential,
+  credential: UnfinishedBbsCredential;
   /** Holder's master secret */
-  masterSecret: string,
+  masterSecret: string;
   /** Signed values of the credential's signature */
-  nquads: string[],
+  nquads: string[];
   /** Issuer's BBS+ public key */
-  issuerPublicKey: string,
+  issuerPublicKey: string;
   /** Blinding created during credential request creation */
-  blinding: string,
+  blinding: string;
 }
 
 /** API payload for verifying a received proof as a verifer. */
 export interface VerifyProofPayload {
   /** BBS+ Presentation to verify */
-  presentation: ProofPresentation,
+  presentation: ProofPresentation;
   /** Proof request sent by verifier */
-  proofRequest: BbsProofRequest,
+  proofRequest: BbsProofRequest;
   /** Relevant BBS+ public keys for each credential schema occuring in this proof */
-  keysToSchemaMap: Record<string, string>,
+  keysToSchemaMap: Record<string, string>;
   /** Signer address */
-  signerAddress: string,
-  nquadsToSchemaMap: Record<string, string[]>,
+  signerAddress: string;
+  nquadsToSchemaMap: Record<string, string[]>;
   /** revocation list credential */
-  revocationList: RevocationListCredential,
+  revocationList: RevocationListCredential;
 }
 
 /** API payload to create new BBS+ keys and persist them on the DID document. */
 export interface CreateKeysPayload {
-  keyOwnerDid: string,
+  keyOwnerDid: string;
 }
 
 /** Result of the createKeys method for BBS+ */
 export interface BbsKeys {
   /** DID Url of the persisted public key */
-  didUrl: string,
-  publicKey: string,
-  secretKey: string,
+  didUrl: string;
+  publicKey: string;
+  secretKey: string;
 }
