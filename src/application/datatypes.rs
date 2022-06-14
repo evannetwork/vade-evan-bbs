@@ -43,7 +43,8 @@ pub const BBS_PROOF_TYPE: &str = "BBS";
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct BbsCredentialRequest {
-    pub subject: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subject: Option<String>,
     pub schema: String,
     pub r#type: String,
     pub blind_signature_context: String,
@@ -116,7 +117,8 @@ pub struct AssertionProof {
 #[serde(rename_all = "camelCase")]
 pub struct BbsCredentialOffer {
     pub issuer: String,
-    pub subject: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subject: Option<String>,
     pub nonce: String,
     pub credential_message_count: usize,
 }
@@ -127,7 +129,8 @@ pub struct BbsCredentialOffer {
 #[serde(rename_all = "camelCase")]
 pub struct CredentialProposal {
     pub issuer: String,
-    pub subject: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subject: Option<String>,
     pub r#type: String,
     pub schema: String,
 }
@@ -244,7 +247,8 @@ impl UnfinishedBbsCredential {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct CredentialSubject {
-    pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
     pub data: HashMap<String, String>,
 }
 

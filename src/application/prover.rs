@@ -59,12 +59,12 @@ impl Prover {
     /// * `CredentialProposal` - The message to be sent to an issuer
     pub fn propose_credential(
         issuer_did: &str,
-        subject_did: &str,
+        subject_did: Option<&str>,
         schema_did: &str,
     ) -> CredentialProposal {
         CredentialProposal {
             issuer: issuer_did.to_owned(),
-            subject: subject_did.to_owned(),
+            subject: subject_did.map(|value| value.to_string()),
             schema: schema_did.to_owned(),
             r#type: CREDENTIAL_PROPOSAL_TYPE.to_string(),
         }
@@ -368,7 +368,7 @@ mod tests {
         revealed_data.remove("test_property_string4");
 
         let revealed = CredentialSubject {
-            id: HOLDER_DID.to_string(),
+            id: Some(HOLDER_DID.to_string()),
             data: revealed_data,
         };
         let mut revealed_properties_map = HashMap::new();
@@ -436,8 +436,8 @@ mod tests {
 
     #[test]
     fn can_propose_credential() {
-        let proposal = Prover::propose_credential(&ISSUER_DID, &HOLDER_DID, "schemadid");
-        assert_eq!(&proposal.subject, &HOLDER_DID);
+        let proposal = Prover::propose_credential(&ISSUER_DID, Some(&HOLDER_DID), "schemadid");
+        assert_eq!(proposal.subject, Some(HOLDER_DID.to_string()));
         assert_eq!(&proposal.issuer, &ISSUER_DID);
         assert_eq!(&proposal.schema, "schemadid");
         assert_eq!(&proposal.r#type, CREDENTIAL_PROPOSAL_TYPE);

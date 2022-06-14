@@ -152,7 +152,7 @@ export interface UnfinishedBbsCredential {
 }
 
 export interface CredentialSubject {
-  id: string;
+  id?: string;
   data: Record<string, string>;
 }
 
