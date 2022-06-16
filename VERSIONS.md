@@ -6,6 +6,7 @@
 
 - Refactor data structures and adjust test cases
 - make credential subject id (and respective properties in credential flow) optional
+- make the "verifierDid" optional for generating proof requests
 
 ### Fixes
 

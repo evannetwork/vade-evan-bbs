@@ -199,7 +199,7 @@ pub struct RequestCredentialPayload {
 #[serde(rename_all = "camelCase")]
 pub struct RequestProofPayload {
     /// DID of the verifier
-    pub verifier_did: String,
+    pub verifier_did: Option<String>,
     /// List of schema IDs to request
     pub schemas: Vec<String>,
     /// Attributes to reveal per schema ID

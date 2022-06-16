@@ -269,7 +269,7 @@ async fn create_proof_request(vade: &mut Vade) -> Result<BbsProofRequest, Box<dy
     let mut reveal_attributes = HashMap::new();
     reveal_attributes.insert(SCHEMA_DID.clone().to_string(), vec![1]);
     let proof_request_payload = RequestProofPayload {
-        verifier_did: VERIFIER_DID.to_string(),
+        verifier_did: Some(VERIFIER_DID.to_string()),
         schemas: vec![SCHEMA_DID.to_string()],
         reveal_attributes,
     };

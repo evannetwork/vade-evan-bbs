@@ -100,7 +100,7 @@ impl Verifier {
     /// # Returns
     /// `BbsProofRequest` - Proof request
     pub fn create_proof_request(
-        verifier_did: String,
+        verifier_did: Option<String>,
         schemas: Vec<String>,
         reveal_attributes: HashMap<String, Vec<usize>>,
     ) -> Result<BbsProofRequest, Box<dyn Error>> {
@@ -232,6 +232,7 @@ mod tests {
             PROOF_PRESENTATION,
             PROOF_PRESENTATION_INVALID_SIGNATURE_AND_WITHOUT_JWS,
             PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES,
+            PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES_WITHOUT_VERIFIER,
             PUB_KEY,
             REVOCATION_LIST_CREDENTIAL,
         },
@@ -248,12 +249,38 @@ mod tests {
         reveal_attributes.insert(schema.clone().id, vec![1]);
 
         match Verifier::create_proof_request(
-            VERIFIER_DID.to_string(),
+            Some(VERIFIER_DID.to_string()),
             schemas.clone(),
             reveal_attributes.clone(),
         ) {
             Ok(proof_request) => {
-                assert_eq!(proof_request.verifier, VERIFIER_DID);
+                assert_eq!(proof_request.verifier, Some(VERIFIER_DID.to_string()));
+                assert_eq!(proof_request.sub_proof_requests.len(), 1);
+                assert_eq!(
+                    proof_request.sub_proof_requests[0].revealed_attributes,
+                    vec![1]
+                );
+                assert_eq!(proof_request.sub_proof_requests[0].schema, schema.id);
+                // Nonce properly encoded
+                assert!(decode_base64(&proof_request.nonce, "Proof request nonce").is_ok());
+            }
+            Err(e) => assert!(false, "Test unexpectedly failed with error: {}", e),
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn can_create_proof_request_without_verifier() -> Result<(), Box<dyn Error>> {
+        let schema: CredentialSchema =
+            serde_json::from_str(&EXAMPLE_CREDENTIAL_SCHEMA_FIVE_PROPERTIES)?;
+        let schemas: Vec<String> = vec![schema.id.clone()];
+        let mut reveal_attributes = HashMap::new();
+        reveal_attributes.insert(schema.clone().id, vec![1]);
+
+        match Verifier::create_proof_request(None, schemas.clone(), reveal_attributes.clone()) {
+            Ok(proof_request) => {
+                assert_eq!(proof_request.verifier, None);
                 assert_eq!(proof_request.sub_proof_requests.len(), 1);
                 assert_eq!(
                     proof_request.sub_proof_requests[0].revealed_attributes,
@@ -280,12 +307,12 @@ mod tests {
         reveal_attributes.insert(another_schema.clone().id, vec![1]);
 
         match Verifier::create_proof_request(
-            VERIFIER_DID.to_string(),
+            Some(VERIFIER_DID.to_string()),
             schemas.clone(),
             reveal_attributes.clone(),
         ) {
             Ok(proof_request) => {
-                assert_eq!(proof_request.verifier, VERIFIER_DID);
+                assert_eq!(proof_request.verifier, Some(VERIFIER_DID.to_string()));
                 assert_eq!(proof_request.sub_proof_requests.len(), 2);
                 assert_eq!(
                     proof_request.sub_proof_requests[0].revealed_attributes,
@@ -315,6 +342,43 @@ mod tests {
         let presentation: ProofPresentation = serde_json::from_str(&PROOF_PRESENTATION)?;
         let proof_request: BbsProofRequest =
             serde_json::from_str(&PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES)?;
+        let key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;
+
+        let mut keys_to_schema_map = HashMap::new();
+        keys_to_schema_map.insert(
+            presentation.verifiable_credential[0]
+                .credential_schema
+                .id
+                .clone(),
+            key,
+        );
+
+        let mut nquads_to_schema_map = HashMap::new();
+        nquads_to_schema_map.insert(
+            presentation.verifiable_credential[0]
+                .credential_schema
+                .id
+                .clone(),
+            vec![NQUADS[0].to_string()],
+        );
+
+        Verifier::verify_proof(
+            &presentation,
+            &proof_request,
+            &keys_to_schema_map,
+            signer_address,
+            &nquads_to_schema_map,
+        )?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn can_verify_proof_without_verifier() -> Result<(), Box<dyn Error>> {
+        let signer_address = SIGNER_1_ADDRESS;
+        let presentation: ProofPresentation = serde_json::from_str(&PROOF_PRESENTATION)?;
+        let proof_request: BbsProofRequest =
+            serde_json::from_str(&PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES_WITHOUT_VERIFIER)?;
         let key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;
 
         let mut keys_to_schema_map = HashMap::new();
