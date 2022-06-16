@@ -470,6 +470,20 @@ pub mod bbs_coherent_context_test_data {
         ]
      }"###;
 
+    pub const PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES_WITHOUT_VERIFIER: &str = r###"{
+        "createdAt":"2021-04-13T12:53:19.000Z",
+        "nonce":"XWgrfaNTKs1owMRpmKNj8+CuRZJBC5BRCIErRv+DPUs=",
+        "type": "BBS",
+        "subProofRequests":[
+           {
+              "schema":"did:evan:zkp:0xd641c26161e769cef4b41760211972b274a8f37f135a34083e4e48b3f1035eda",
+              "revealedAttributes":[
+                 1
+              ]
+           }
+        ]
+     }"###;
+
     pub const PROOF_PRESENTATION: &str = r###"
     {
         "@context":[

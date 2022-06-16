@@ -19,23 +19,11 @@ use serde_json::Value;
 use std::{collections::HashMap, env, error::Error};
 use utilities::test_data::{
     accounts::local::{
-        HOLDER_DID,
-        ISSUER_DID,
-        ISSUER_PRIVATE_KEY,
-        ISSUER_PUBLIC_KEY_DID,
-        SIGNER_1_ADDRESS,
-        SIGNER_1_DID,
-        SIGNER_1_PRIVATE_KEY,
-        SIGNER_2_DID,
-        SIGNER_2_PRIVATE_KEY,
-        VERIFIER_DID,
+        HOLDER_DID, ISSUER_DID, ISSUER_PRIVATE_KEY, ISSUER_PUBLIC_KEY_DID, SIGNER_1_ADDRESS,
+        SIGNER_1_DID, SIGNER_1_PRIVATE_KEY, SIGNER_2_DID, SIGNER_2_PRIVATE_KEY, VERIFIER_DID,
     },
     bbs_coherent_context_test_data::{
-        MASTER_SECRET,
-        PUB_KEY,
-        SECRET_KEY,
-        SUBJECT_DID,
-        UNSIGNED_CREDENTIAL,
+        MASTER_SECRET, PUB_KEY, SECRET_KEY, SUBJECT_DID, UNSIGNED_CREDENTIAL,
     },
     did::EXAMPLE_DID_DOCUMENT_2,
     environment::DEFAULT_VADE_EVAN_SUBSTRATE_IP,
@@ -45,8 +33,7 @@ use vade::Vade;
 use vade_evan_bbs::*;
 use vade_evan_substrate::{
     signing::{LocalSigner, Signer},
-    ResolverConfig,
-    VadeEvanSubstrate,
+    ResolverConfig, VadeEvanSubstrate,
 };
 
 const EVAN_METHOD: &str = "did:evan";
@@ -269,7 +256,7 @@ async fn create_proof_request(vade: &mut Vade) -> Result<BbsProofRequest, Box<dy
     let mut reveal_attributes = HashMap::new();
     reveal_attributes.insert(SCHEMA_DID.clone().to_string(), vec![1]);
     let proof_request_payload = RequestProofPayload {
-        verifier_did: VERIFIER_DID.to_string(),
+        verifier_did: Some(VERIFIER_DID.to_string()),
         schemas: vec![SCHEMA_DID.to_string()],
         reveal_attributes,
     };
