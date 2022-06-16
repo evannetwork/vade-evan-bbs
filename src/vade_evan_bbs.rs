@@ -17,18 +17,9 @@
 use crate::{
     application::{
         datatypes::{
-            BbsCredential,
-            BbsCredentialOffer,
-            BbsCredentialRequest,
-            BbsProofRequest,
-            BbsProofVerification,
-            CredentialProposal,
-            CredentialSchema,
-            CredentialSubject,
-            ProofPresentation,
-            RevocationListCredential,
-            SchemaProperty,
-            UnfinishedBbsCredential,
+            BbsCredential, BbsCredentialOffer, BbsCredentialRequest, BbsProofRequest,
+            BbsProofVerification, CredentialProposal, CredentialSchema, CredentialSubject,
+            ProofPresentation, RevocationListCredential, SchemaProperty, UnfinishedBbsCredential,
             UnsignedBbsCredential,
         },
         issuer::Issuer,
@@ -41,8 +32,7 @@ use crate::{
 use async_trait::async_trait;
 use bbs::{
     keys::{DeterministicPublicKey, SecretKey},
-    SignatureBlinding,
-    SignatureMessage,
+    SignatureBlinding, SignatureMessage,
 };
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, error::Error};
@@ -199,7 +189,7 @@ pub struct RequestCredentialPayload {
 #[serde(rename_all = "camelCase")]
 pub struct RequestProofPayload {
     /// DID of the verifier
-    pub verifier_did: String,
+    pub verifier_did: Option<String>,
     /// List of schema IDs to request
     pub schemas: Vec<String>,
     /// Attributes to reveal per schema ID
