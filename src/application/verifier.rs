@@ -17,7 +17,10 @@
 use crate::{
     application::{
         datatypes::{
-            BbsProofRequest, BbsProofVerification, BbsSubProofRequest, ProofPresentation,
+            BbsProofRequest,
+            BbsProofVerification,
+            BbsSubProofRequest,
+            ProofPresentation,
             BBS_PROOF_TYPE,
         },
         utils::{decode_base64, get_now_as_iso_string},
@@ -26,8 +29,13 @@ use crate::{
     BbsPresentation,
 };
 use bbs::{
-    keys::DeterministicPublicKey, prelude::PublicKey, verifier::Verifier as BbsVerifier, HashElem,
-    ProofChallenge, SignatureMessage, SignatureProof,
+    keys::DeterministicPublicKey,
+    prelude::PublicKey,
+    verifier::Verifier as BbsVerifier,
+    HashElem,
+    ProofChallenge,
+    SignatureMessage,
+    SignatureProof,
 };
 use std::{collections::HashMap, error::Error, panic};
 
@@ -220,9 +228,12 @@ mod tests {
     use utilities::test_data::{
         accounts::local::{SIGNER_1_ADDRESS, SIGNER_1_DID, SIGNER_1_PRIVATE_KEY, VERIFIER_DID},
         bbs_coherent_context_test_data::{
-            NQUADS, PROOF_PRESENTATION, PROOF_PRESENTATION_INVALID_SIGNATURE_AND_WITHOUT_JWS,
+            NQUADS,
+            PROOF_PRESENTATION,
+            PROOF_PRESENTATION_INVALID_SIGNATURE_AND_WITHOUT_JWS,
             PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES,
-            PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES_WITHOUT_VERIFIER, PUB_KEY,
+            PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES_WITHOUT_VERIFIER,
+            PUB_KEY,
             REVOCATION_LIST_CREDENTIAL,
         },
         vc_zkp::{EXAMPLE_CREDENTIAL_SCHEMA, EXAMPLE_CREDENTIAL_SCHEMA_FIVE_PROPERTIES},
