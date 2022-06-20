@@ -137,7 +137,7 @@ export interface RequestCredentialPayload {
 /** API payload to create a BbsProofRequest to be sent by a verifier. */
 export interface RequestProofPayload {
   /** DID of the verifier */
-  verifierDid: string;
+  verifierDid?: string;
   /** List of schema IDs to request */
   schemas: string[];
   /** Attributes to reveal per schema ID */
