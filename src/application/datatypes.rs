@@ -148,6 +148,8 @@ pub struct BbsCredential {
     pub r#type: Vec<String>,
     pub issuer: String,
     pub issuance_date: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub valid_until: Option<String>,
     pub credential_subject: CredentialSubject,
     pub credential_schema: CredentialSchemaReference,
     pub credential_status: CredentialStatus,
@@ -162,6 +164,7 @@ impl BbsCredential {
             r#type: cred.r#type,
             issuer: cred.issuer,
             issuance_date: cred.issuance_date,
+            valid_until: cred.valid_until,
             credential_subject: CredentialSubject {
                 id: cred.credential_subject.id,
                 data: cred.credential_subject.data,
