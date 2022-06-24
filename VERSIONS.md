@@ -10,6 +10,8 @@
 
 ### Fixes
 
+- add validUntil to returned credential when its getting "finished"
+
 ### Deprecations
 
 ## v0.2.0
