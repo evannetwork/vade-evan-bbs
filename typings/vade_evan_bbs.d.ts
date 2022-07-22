@@ -149,7 +149,7 @@ export interface RevokeCredentialPayload {
   /** DID of the issuer */
   issuer: string;
   /** DID of the revocation list credential */
-  revocationList: string;
+  revocationList: RevocationListCredential;
   /** Credential ID to revoke */
   revocationId: string;
   /** DID of the issuer's public key for verifying assertion proofs */
