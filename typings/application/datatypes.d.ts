@@ -34,6 +34,7 @@ export interface BbsProofRequest {
   verifier: string;
   createdAt: string;
   nonce: string;
+  type: string;
   subProofRequests: BbsSubProofRequest[];
 }
 
