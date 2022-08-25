@@ -43,7 +43,7 @@ use bbs::{
     ToVariableLengthBytes,
 };
 use std::{collections::HashMap, convert::From, error::Error};
-use vade_evan_substrate::signing::Signer;
+use vade_signer::Signer;
 
 pub struct Prover {}
 
@@ -320,7 +320,7 @@ mod tests {
         },
         vc_zkp::{EXAMPLE_CREDENTIAL_OFFERING, EXAMPLE_CREDENTIAL_SCHEMA},
     };
-    use vade_evan_substrate::signing::{LocalSigner, Signer};
+    use vade_signer::{LocalSigner, Signer};
 
     fn setup_test() -> Result<
         (

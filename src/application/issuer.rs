@@ -48,7 +48,7 @@ use bbs::{
 };
 use flate2::{read::GzDecoder, write::GzEncoder, Compression};
 use std::{collections::HashMap, convert::TryInto, error::Error, io::prelude::*};
-use vade_evan_substrate::signing::Signer;
+use vade_signer::Signer;
 
 pub struct Issuer {}
 
@@ -452,7 +452,7 @@ mod tests {
         },
         vc_zkp::{EXAMPLE_CREDENTIAL_PROPOSAL, EXAMPLE_CREDENTIAL_SCHEMA},
     };
-    use vade_evan_substrate::signing::{LocalSigner, Signer};
+    use vade_signer::{LocalSigner, Signer};
 
     fn request_credential(
         pub_key: &DeterministicPublicKey,

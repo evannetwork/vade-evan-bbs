@@ -47,7 +47,7 @@ use bbs::{
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, error::Error};
 use vade::{VadePlugin, VadePluginResultValue};
-use vade_evan_substrate::signing::Signer;
+use vade_signer::Signer;
 
 const EVAN_METHOD: &str = "did:evan";
 const PROOF_METHOD_BBS: &str = "bbs";
