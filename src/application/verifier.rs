@@ -238,7 +238,7 @@ mod tests {
         },
         vc_zkp::{EXAMPLE_CREDENTIAL_SCHEMA, EXAMPLE_CREDENTIAL_SCHEMA_FIVE_PROPERTIES},
     };
-    use vade_evan_substrate::signing::{LocalSigner, Signer};
+    use vade_signer::{LocalSigner, Signer};
 
     #[test]
     fn can_create_proof_request_for_one_schema() -> Result<(), Box<dyn Error>> {
