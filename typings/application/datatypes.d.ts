@@ -20,29 +20,30 @@
  * Incorporates the nonce value sent in `BbsCredentialOffer`.
  */
 export interface BbsCredentialRequest {
-  subject: string,
-  schema: string,
-  type: string,
-  blindSignatureContext: string,
-  credentialValues: Record<string, string>,
+  subject: string;
+  schema: string;
+  type: string;
+  blindSignatureContext: string;
+  credentialValues: Record<string, string>;
 }
 
 /**
  * Message sent by a verifier stating which attributes of which schema the prover is supposed to reveal.
  */
 export interface BbsProofRequest {
-  verifier: string,
-  createdAt: string,
-  nonce: string,
-  subProofRequests: BbsSubProofRequest[],
+  verifier: string;
+  createdAt: string;
+  nonce: string;
+  type: string;
+  subProofRequests: BbsSubProofRequest[];
 }
 
 /**
  * Part of a proof request that requests attributes of a specific schema
  */
 export interface BbsSubProofRequest {
-  schema: string,
-  revealedAttributes: number[],
+  schema: string;
+  revealedAttributes: number[];
 }
 
 /**
@@ -50,33 +51,33 @@ export interface BbsSubProofRequest {
  * Needs to be stored publicly available and temper-proof.
  */
 export interface CredentialSchema {
-  id: string,
-  type: string,
-  name: string,
-  author: string,
-  createdAt: string,
-  description: string,
-  properties: Record<string, SchemaProperty>,
-  required: string[],
-  additionalProperties: boolean,
-  proof?: AssertionProof,
+  id: string;
+  type: string;
+  name: string;
+  author: string;
+  createdAt: string;
+  description: string;
+  properties: Record<string, SchemaProperty>;
+  required: string[];
+  additionalProperties: boolean;
+  proof?: AssertionProof;
 }
 
 export interface SchemaProperty {
-  type: string,
-  format?: string,
-  items?: string[],
+  type: string;
+  format?: string;
+  items?: string[];
 }
 
 /**
  * AssertionProof, typically used to ensure authenticity and integrity of a VC document
  */
 export interface AssertionProof {
-  type: string,
-  created: string,
-  proofPurpose: string,
-  verificationMethod: string,
-  jws: string,
+  type: string;
+  created: string;
+  proofPurpose: string;
+  verificationMethod: string;
+  jws: string;
 }
 
 /**
@@ -85,10 +86,10 @@ export interface AssertionProof {
  * to be used for issuance.
  */
 export interface BbsCredentialOffer {
-  issuer: string,
-  subject: string,
-  credentialMessageCount: number,
-  nonce: string,
+  issuer: string;
+  subject: string;
+  credentialMessageCount: number;
+  nonce: string;
 }
 
 /**
@@ -96,10 +97,10 @@ export interface BbsCredentialOffer {
  * Specifies the schema to be used for the credential.
  */
 export interface CredentialProposal {
-  issuer: string,
-  subject: string,
-  type: string,
-  schema: string,
+  issuer: string;
+  subject: string;
+  type: string;
+  schema: string;
 }
 
 /**
@@ -108,90 +109,90 @@ export interface CredentialProposal {
  * including revocation info.
  */
 export interface BbsCredential {
-  '@context': (string | {[key in string]?:{'@type': string}})[],
-  id: string,
-  type: string[],
-  issuer: string,
-  credentialSubject: CredentialSubject,
-  credentialSchema: CredentialSchemaReference,
-  credentialStatus: CredentialStatus,
-  validUntil?: string,
-  issuanceDate: string,
-  proof: BbsCredentialSignature,
+  '@context': (string | { [key in string]?: { '@type': string } })[];
+  id: string;
+  type: string[];
+  issuer: string;
+  credentialSubject: CredentialSubject;
+  credentialSchema: CredentialSchemaReference;
+  credentialStatus: CredentialStatus;
+  validUntil?: string;
+  issuanceDate: string;
+  proof: BbsCredentialSignature;
 }
 
 /*
-* A VC without the proof part (input for vade to sign)
-*/
+ * A VC without the proof part (input for vade to sign)
+ */
 export interface UnsignedCredential {
-  '@context': (string | {[key in string]?:{'@type': string}})[],
-  id: string,
-  type: string[],
-  issuer: string,
-  credentialSubject: CredentialSubject,
-  credentialSchema: CredentialSchemaReference,
-  credentialStatus: CredentialStatus,
-  validUntil?: string,
-  issuanceDate: string,
+  '@context': (string | { [key in string]?: { '@type': string } })[];
+  id: string;
+  type: string[];
+  issuer: string;
+  credentialSubject: CredentialSubject;
+  credentialSchema: CredentialSchemaReference;
+  credentialStatus: CredentialStatus;
+  validUntil?: string;
+  issuanceDate: string;
 }
 
 /**
  * A verifiable credential with a blind signature that still needs to be processed by the holder
  */
 export interface UnfinishedBbsCredential {
-  '@context': (string | {[key in string]?:{'@type': string}})[],
-  id: string,
-  type: string[],
-  issuer: string,
-  credentialSubject: CredentialSubject,
-  credentialSchema: CredentialSchemaReference,
-  credentialStatus: CredentialStatus,
-  validUntil?: string,
-  issuanceDate: string,
-  proof: BbsUnfinishedCredentialSignature,
+  '@context': (string | { [key in string]?: { '@type': string } })[];
+  id: string;
+  type: string[];
+  issuer: string;
+  credentialSubject: CredentialSubject;
+  credentialSchema: CredentialSchemaReference;
+  credentialStatus: CredentialStatus;
+  validUntil?: string;
+  issuanceDate: string;
+  proof: BbsUnfinishedCredentialSignature;
 }
 
 export interface CredentialSubject {
-  id: string,
-  data: Record<string, string>,
+  id?: string;
+  data: Record<string, string>;
 }
 
 export interface CredentialStatus {
-  id: string,
-  type: string,
-  revocationListIndex: string,
-  revocationListCredential: string,
+  id: string;
+  type: string;
+  revocationListIndex: string;
+  revocationListCredential: string;
 }
 
 export interface RevocationListCredentialSubject {
-  id: string,
-  type: string,
-  encodedList: string,
+  id: string;
+  type: string;
+  encodedList: string;
 }
 
 export interface CredentialSchemaReference {
-  id: string,
-  type: string,
+  id: string;
+  type: string;
 }
 
 export interface BbsCredentialSignature {
-  type: string,
-  created: string,
-  proofPurpose: string,
-  verificationMethod: string,
-  credentialMessageCount: number,
-  requiredRevealStatements: number[],
-  signature: string,
+  type: string;
+  created: string;
+  proofPurpose: string;
+  verificationMethod: string;
+  credentialMessageCount: number;
+  requiredRevealStatements: number[];
+  signature: string;
 }
 
 export interface BbsUnfinishedCredentialSignature {
-  type: string,
-  created: string,
-  proofPurpose: string,
-  verificationMethod: string,
-  credentialMessageCount: number,
-  requiredRevealStatements: number[],
-  blindSignature: string,
+  type: string;
+  created: string;
+  proofPurpose: string;
+  verificationMethod: string;
+  credentialMessageCount: number;
+  requiredRevealStatements: number[];
+  blindSignature: string;
 }
 
 /*
@@ -199,67 +200,67 @@ export interface BbsUnfinishedCredentialSignature {
  * a `ProofRequest`.
  */
 export interface ProofPresentation {
-  '@context': (string | {[key in string]?:{'@type': string}})[],
-  id: string,
-  type: string[],
-  verifiableCredential: BbsPresentation[],
-  proof: AssertionProof,
+  '@context': (string | { [key in string]?: { '@type': string } })[];
+  id: string;
+  type: string[];
+  verifiableCredential: BbsPresentation[];
+  proof: AssertionProof;
 }
 
 /*
  * Proof presentation without a proof (just for internal use)
  */
 export interface UnfinishedProofPresentation {
-  '@context': (string | {[key in string]?:{'@type': string}})[],
-  id: string,
-  type: string[],
-  verifiableCredential: BbsPresentation[],
+  '@context': (string | { [key in string]?: { '@type': string } })[];
+  id: string;
+  type: string[];
+  verifiableCredential: BbsPresentation[];
 }
 
 /*
  * A verifiable credential exposing requested properties of a `BbsCredential` by providing a Bbs signature proof
  */
 export interface BbsPresentation {
-  '@context': (string | {[key in string]?:{'@type': string}})[],
-  id: string,
-  type: string[],
-  issuer: string,
-  issuanceDate: string,
-  credentialSubject: CredentialSubject,
-  credentialSchema: CredentialSchemaReference,
-  credentialStatus: CredentialStatus,
-  proof: BbsPresentationProof,
+  '@context': (string | { [key in string]?: { '@type': string } })[];
+  id: string;
+  type: string[];
+  issuer: string;
+  issuanceDate: string;
+  credentialSubject: CredentialSubject;
+  credentialSchema: CredentialSchemaReference;
+  credentialStatus: CredentialStatus;
+  proof: BbsPresentationProof;
 }
 
 /*
  * A proof object of a `BbsPresentation`
  */
 export interface BbsPresentationProof {
-  type: string,
-  created: string,
-  proofPurpose: string,
-  credentialMessageCount: number,
-  verificationMethod: string,
-  nonce: string,
-  proof: string,
+  type: string;
+  created: string;
+  proofPurpose: string;
+  credentialMessageCount: number;
+  verificationMethod: string;
+  nonce: string;
+  proof: string;
 }
 
 export interface BbsProofVerification {
-  proof: string,
-  status: string,
-  reason?: string,
+  proof: string;
+  status: string;
+  reason?: string;
 }
 
 /*
  * `RevocationListCredential` without a proof (for internal use only).
  */
 export interface UnproofedRevocationListCredential {
-  '@context': (string | {[key in string]?:{'@type': string}})[],
-  id: string,
-  type: string[],
-  issuer: string,
-  issued: string,
-  credentialSubject: RevocationListCredentialSubject,
+  '@context': (string | { [key in string]?: { '@type': string } })[];
+  id: string;
+  type: string[];
+  issuer: string;
+  issued: string;
+  credentialSubject: RevocationListCredentialSubject;
 }
 
 /*
@@ -267,11 +268,11 @@ export interface UnproofedRevocationListCredential {
  * <https://w3c-ccg.github.io/vc-status-rl-2020/#revocationlist2020credential>
  */
 export interface RevocationListCredential {
-  '@context': (string | {[key in string]?:{'@type': string}})[],
-  id: string,
-  type: string[],
-  issuer: string,
-  issued: string,
-  credentialSubject: RevocationListCredentialSubject,
-  proof: AssertionProof,
+  '@context': (string | { [key in string]?: { '@type': string } })[];
+  id: string;
+  type: string[];
+  issuer: string;
+  issued: string;
+  credentialSubject: RevocationListCredentialSubject;
+  proof: AssertionProof;
 }
