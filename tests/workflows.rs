@@ -890,3 +890,29 @@ async fn workflow_can_create_and_persist_keys() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
+
+#[tokio::test]
+async fn workflow_can_get_public_key_from_private_key() -> Result<(), Box<dyn Error>> {
+    let mut vade = get_vade();
+
+    let options = r#"{ "type": "bbs" }"#;
+
+    let payload = format!(r#"{{ "privateKey": "{}" }}"#, &SECRET_KEY);
+
+    let result = vade
+        .run_custom_function(
+            EVAN_METHOD,
+            "get_public_key_from_private_key",
+            &options,
+            &payload,
+        )
+        .await?;
+
+    let result_public_key = result[0]
+        .as_ref()
+        .ok_or("missing public key in vade result")?;
+
+    assert_eq!(result_public_key, PUB_KEY);
+
+    Ok(())
+}
