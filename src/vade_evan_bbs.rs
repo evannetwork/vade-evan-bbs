@@ -36,7 +36,7 @@ use crate::{
         utils::{decode_base64, generate_uuid, get_dpk_from_string},
         verifier::Verifier,
     },
-    crypto::crypto_verifier::CryptoVerifier,
+    crypto::{crypto_utils::get_public_key_from_private_key, crypto_verifier::CryptoVerifier},
 };
 use async_trait::async_trait;
 use bbs::{
@@ -286,6 +286,13 @@ pub struct CreateKeysPayload {
     pub key_owner_did: String,
 }
 
+/// API payload to derive public key from base 64 encoded private key.
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetPublicKeyFromPrivateKeyPayload {
+    pub private_key: String,
+}
+
 macro_rules! parse {
     ($data:expr, $type_name:expr) => {{
         serde_json::from_str($data)
@@ -371,6 +378,11 @@ impl VadePlugin for VadeEvanBbs {
                 Ok(VadePluginResultValue::Success(Some(
                     self.create_new_keys(payload).await?,
                 )))
+            }
+            "get_public_key_from_private_key" => {
+                let payload: GetPublicKeyFromPrivateKeyPayload = parse!(&payload, "payload");
+                let pk_base_64 = get_public_key_from_private_key(&payload.private_key)?;
+                Ok(VadePluginResultValue::Success(Some(pk_base_64)))
             }
             _ => Ok(VadePluginResultValue::Ignored),
         }

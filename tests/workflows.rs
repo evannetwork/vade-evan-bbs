@@ -38,12 +38,11 @@ use utilities::test_data::{
         UNSIGNED_CREDENTIAL,
     },
     did::EXAMPLE_DID_DOCUMENT_2,
-    environment::DEFAULT_VADE_EVAN_SUBSTRATE_IP,
     vc_zkp::{SCHEMA_DESCRIPTION, SCHEMA_NAME, SCHEMA_PROPERTIES, SCHEMA_REQUIRED_PROPERTIES},
 };
 use vade::Vade;
 use vade_evan_bbs::*;
-use vade_evan_substrate::{ResolverConfig, VadeEvanSubstrate};
+use vade_sidetree::VadeSidetree;
 use vade_signer::{LocalSigner, Signer};
 
 const EVAN_METHOD: &str = "did:evan";
@@ -51,13 +50,8 @@ const TYPE_OPTIONS: &str = r#"{ "type": "bbs" }"#;
 const SCHEMA_DID: &str =
     "did:evan:zkp:0xd641c26161e769cef4b41760211972b274a8f37f135a34083e4e48b3f1035eda";
 
-fn get_resolver() -> VadeEvanSubstrate {
-    let signer: Box<dyn Signer> = Box::new(LocalSigner::new());
-    VadeEvanSubstrate::new(ResolverConfig {
-        signer,
-        target: env::var("VADE_EVAN_SUBSTRATE_IP")
-            .unwrap_or_else(|_| DEFAULT_VADE_EVAN_SUBSTRATE_IP.to_string()),
-    })
+fn get_resolver() -> VadeSidetree {
+    VadeSidetree::new(env::var("SIDETREE_API_URL").ok())
 }
 
 fn get_vade() -> Vade {
@@ -341,37 +335,6 @@ async fn create_presentation(
     let presentation: ProofPresentation = serde_json::from_str(&result[0].as_ref().unwrap())?;
 
     Ok(presentation)
-}
-
-async fn ensure_whitelist(vade: &mut Vade, signer: &str) -> Result<(), Box<dyn Error>> {
-    let auth_string = format!(
-        r###"{{
-            "privateKey": "{}",
-            "identity": "{}"
-        }}"###,
-        SIGNER_2_PRIVATE_KEY, SIGNER_2_DID,
-    );
-    let mut json_editable: Value = serde_json::from_str(&auth_string)?;
-    json_editable["operation"] = Value::from("ensureWhitelisted");
-    let options = serde_json::to_string(&json_editable)?;
-
-    let result = vade.did_update(signer, &options, &"".to_string()).await;
-
-    match result {
-        Ok(values) => assert!(!values.is_empty()),
-        Err(e) => panic!("could not whitelist identity; {}", &e),
-    };
-
-    let resolver = get_resolver();
-
-    assert_eq!(
-        true,
-        resolver
-            .is_whitelisted(&SIGNER_2_DID, &SIGNER_2_PRIVATE_KEY)
-            .await?
-    );
-
-    Ok(())
 }
 
 fn get_unsigned_vc(
@@ -803,11 +766,7 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
     Ok(())
 }
 
-async fn whitelist_and_create_did_doc_for_signer_2(
-    mut vade: &mut Vade,
-) -> Result<(), Box<dyn Error>> {
-    ensure_whitelist(&mut vade, &SIGNER_2_DID).await?;
-
+async fn whitelist_and_create_did_doc_for_signer_2(vade: &mut Vade) -> Result<(), Box<dyn Error>> {
     // Set example did document to make sure it resolves
     let auth_string = format!(
         r###"{{
@@ -928,6 +887,32 @@ async fn workflow_can_create_and_persist_keys() -> Result<(), Box<dyn Error>> {
     assert!(resolved_key_id.starts_with(&format!("{}#bbs-key-", &SIGNER_2_DID)));
     assert_eq!(resolved_key_id, created_key_id);
     assert_eq!(created_pub_key_raw, resolved_pub_key_raw);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn workflow_can_get_public_key_from_private_key() -> Result<(), Box<dyn Error>> {
+    let mut vade = get_vade();
+
+    let options = r#"{ "type": "bbs" }"#;
+
+    let payload = format!(r#"{{ "privateKey": "{}" }}"#, &SECRET_KEY);
+
+    let result = vade
+        .run_custom_function(
+            EVAN_METHOD,
+            "get_public_key_from_private_key",
+            &options,
+            &payload,
+        )
+        .await?;
+
+    let result_public_key = result[0]
+        .as_ref()
+        .ok_or("missing public key in vade result")?;
+
+    assert_eq!(result_public_key, PUB_KEY);
 
     Ok(())
 }
