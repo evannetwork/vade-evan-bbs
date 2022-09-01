@@ -49,8 +49,8 @@ sha2 = "0.8.1"
 sha3 = "0.8.2"
 uuid = { version = "0.8.1", features = ["serde", "v4", "wasm-bindgen"] }
 vade = "0.1.0"
-vade-sidetree = { git = "https://github.com/evannetwork/vade-sidetree.git", branch = "feature/remove-reqwest-dependency-from-sdk-build", version = "0.0.3", default-features = false }
-vade-signer = { git = "https://github.com/evannetwork/vade-signer.git", branch = "feature/use-rusttls-for-reqwest", version = "0.0.1" }
+vade-sidetree = { git = "https://github.com/evannetwork/vade-sidetree.git", branch = "sdk", version = "0.0.3", default-features = false }
+vade-signer = { git = "https://github.com/evannetwork/vade-signer.git", branch = "develop", version = "0.0.1" }
 
 [dev-dependencies]
 tokio = { version = "1.7.1", features = ["macros", "rt-multi-thread"] }
