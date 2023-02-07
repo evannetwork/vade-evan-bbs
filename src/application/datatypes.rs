@@ -27,7 +27,7 @@ pub const CREDENTIAL_SCHEMA_TYPE: &str = "EvanZKPSchema";
 pub const CREDENTIAL_PROOF_PURPOSE: &str = "assertionMethod";
 pub const DEFAULT_CREDENTIAL_CONTEXTS: [&'static str; 3] = [
     "https://www.w3.org/2018/credentials/v1",
-    "https://schema.org",
+    "https://schema.org/",
     "https://w3id.org/vc-revocation-list-2020/v1",
 ];
 pub const DEFAULT_REVOCATION_CONTEXTS: [&'static str; 2] = [

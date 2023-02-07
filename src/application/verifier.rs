@@ -235,15 +235,14 @@ mod tests {
             PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES_WITHOUT_VERIFIER,
             PUB_KEY,
             REVOCATION_LIST_CREDENTIAL,
+            SCHEMA,
         },
-        vc_zkp::{EXAMPLE_CREDENTIAL_SCHEMA, EXAMPLE_CREDENTIAL_SCHEMA_FIVE_PROPERTIES},
     };
     use vade_signer::{LocalSigner, Signer};
 
     #[test]
     fn can_create_proof_request_for_one_schema() -> Result<(), Box<dyn Error>> {
-        let schema: CredentialSchema =
-            serde_json::from_str(&EXAMPLE_CREDENTIAL_SCHEMA_FIVE_PROPERTIES)?;
+        let schema: CredentialSchema = serde_json::from_str(&SCHEMA)?;
         let schemas: Vec<String> = vec![schema.id.clone()];
         let mut reveal_attributes = HashMap::new();
         reveal_attributes.insert(schema.clone().id, vec![1]);
@@ -272,8 +271,7 @@ mod tests {
 
     #[test]
     fn can_create_proof_request_without_verifier() -> Result<(), Box<dyn Error>> {
-        let schema: CredentialSchema =
-            serde_json::from_str(&EXAMPLE_CREDENTIAL_SCHEMA_FIVE_PROPERTIES)?;
+        let schema: CredentialSchema = serde_json::from_str(&SCHEMA)?;
         let schemas: Vec<String> = vec![schema.id.clone()];
         let mut reveal_attributes = HashMap::new();
         reveal_attributes.insert(schema.clone().id, vec![1]);
@@ -298,7 +296,7 @@ mod tests {
 
     #[test]
     fn can_create_proof_request_for_two_schemas() -> Result<(), Box<dyn Error>> {
-        let schema: CredentialSchema = serde_json::from_str(&EXAMPLE_CREDENTIAL_SCHEMA)?;
+        let schema: CredentialSchema = serde_json::from_str(&SCHEMA)?;
         let mut another_schema: CredentialSchema = schema.clone();
         another_schema.id = "other_did".to_owned();
         let schemas: Vec<String> = vec![schema.id.clone(), another_schema.id.clone()];

@@ -447,10 +447,11 @@ mod tests {
             EXAMPLE_REVOCATION_LIST_DID,
             PUB_KEY,
             REVOCATION_LIST_CREDENTIAL,
+            SCHEMA,
             SECRET_KEY,
             UNSIGNED_CREDENTIAL,
         },
-        vc_zkp::{EXAMPLE_CREDENTIAL_PROPOSAL, EXAMPLE_CREDENTIAL_SCHEMA},
+        vc_zkp::EXAMPLE_CREDENTIAL_PROPOSAL,
     };
     use vade_signer::{LocalSigner, Signer};
 
@@ -458,7 +459,7 @@ mod tests {
         pub_key: &DeterministicPublicKey,
         offer: &BbsCredentialOffer,
     ) -> Result<(BbsCredentialRequest, CredentialSchema, Vec<String>), Box<dyn Error>> {
-        let schema: CredentialSchema = serde_json::from_str(EXAMPLE_CREDENTIAL_SCHEMA)?;
+        let schema: CredentialSchema = serde_json::from_str(SCHEMA)?;
         let secret = BbsProver::new_link_secret();
         let mut credential_values = HashMap::new();
         credential_values.insert("test_property_string".to_owned(), "value".to_owned());

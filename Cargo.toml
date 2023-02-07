@@ -19,15 +19,10 @@ crate-type = ["cdylib", "rlib"]
 [features]
 default = [
     "portable",
-    "vade-sidetree/web-requests",
 ]
 
 portable = [
     "bbs/rayon",
-]
-
-sdk = [
-    "vade-sidetree/sdk",
 ]
 
 wasm = [
@@ -49,7 +44,6 @@ sha2 = "0.8.1"
 sha3 = "0.8.2"
 uuid = { version = "0.8.1", features = ["serde", "v4", "wasm-bindgen"] }
 vade = "0.1.0"
-vade-sidetree = { git = "https://github.com/evannetwork/vade-sidetree.git", branch = "sdk", version = "0.0.3", default-features = false }
 vade-signer = { git = "https://github.com/evannetwork/vade-signer.git", branch = "develop", version = "0.0.1" }
 
 [dev-dependencies]

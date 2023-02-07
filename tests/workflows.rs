@@ -14,9 +14,7 @@
   limitations under the License.
 */
 
-use bs58;
-use serde_json::Value;
-use std::{collections::HashMap, env, error::Error};
+use std::{collections::HashMap, error::Error};
 use utilities::test_data::{
     accounts::local::{
         HOLDER_DID,
@@ -26,76 +24,35 @@ use utilities::test_data::{
         SIGNER_1_ADDRESS,
         SIGNER_1_DID,
         SIGNER_1_PRIVATE_KEY,
-        SIGNER_2_DID,
-        SIGNER_2_PRIVATE_KEY,
         VERIFIER_DID,
     },
     bbs_coherent_context_test_data::{
         MASTER_SECRET,
         PUB_KEY,
+        SCHEMA,
+        SCHEMA_DID,
         SECRET_KEY,
         SUBJECT_DID,
         UNSIGNED_CREDENTIAL,
     },
-    did::EXAMPLE_DID_DOCUMENT_2,
-    vc_zkp::{SCHEMA_DESCRIPTION, SCHEMA_NAME, SCHEMA_PROPERTIES, SCHEMA_REQUIRED_PROPERTIES},
 };
 use vade::Vade;
 use vade_evan_bbs::*;
-use vade_sidetree::VadeSidetree;
 use vade_signer::{LocalSigner, Signer};
 
 const EVAN_METHOD: &str = "did:evan";
 const TYPE_OPTIONS: &str = r#"{ "type": "bbs" }"#;
-const SCHEMA_DID: &str =
-    "did:evan:zkp:0xd641c26161e769cef4b41760211972b274a8f37f135a34083e4e48b3f1035eda";
-
-fn get_resolver() -> VadeSidetree {
-    VadeSidetree::new(env::var("SIDETREE_API_URL").ok())
-}
 
 fn get_vade() -> Vade {
     let mut vade = Vade::new();
-    vade.register_plugin(Box::from(get_vade_evan()));
-    vade.register_plugin(Box::from(get_resolver()));
+    vade.register_plugin(Box::from(get_vade_evan_bbs()));
 
     vade
 }
 
-fn get_vade_evan() -> VadeEvanBbs {
+fn get_vade_evan_bbs() -> VadeEvanBbs {
     let signer: Box<dyn Signer> = Box::new(LocalSigner::new());
     VadeEvanBbs::new(signer)
-}
-
-async fn _create_credential_schema(vade: &mut Vade) -> Result<CredentialSchema, Box<dyn Error>> {
-    let payload = format!(
-        r###"{{
-        "issuer": "{}",
-        "schemaName": "{}",
-        "description": "{}",
-        "properties": {},
-        "requiredProperties": {},
-        "allowAdditionalProperties": false,
-        "issuerPublicKeyDid": "{}",
-        "issuerProvingKey": "{}"
-    }}"###,
-        ISSUER_DID,
-        SCHEMA_NAME,
-        SCHEMA_DESCRIPTION,
-        SCHEMA_PROPERTIES,
-        SCHEMA_REQUIRED_PROPERTIES,
-        ISSUER_PUBLIC_KEY_DID,
-        ISSUER_PRIVATE_KEY
-    );
-    let results = vade
-        .vc_zkp_create_credential_schema(EVAN_METHOD, &get_options(), &payload)
-        .await?;
-
-    // check results
-    assert_eq!(results.len(), 1);
-
-    let result: CredentialSchema = serde_json::from_str(results[0].as_ref().unwrap()).unwrap();
-    Ok(result)
 }
 
 async fn create_revocation_list(
@@ -174,15 +131,13 @@ async fn create_credential_request(
         let string = format!("{}: {}", key, val);
         nquads.insert(nquads.len(), string);
     }
-    let resolve_credential_schema = vade.did_resolve(&SCHEMA_DID).await?[0].clone();
-    let credential_schema: CredentialSchema =
-        serde_json::from_str(&resolve_credential_schema.ok_or("Return value was empty")?)?;
+    let credential_schema: CredentialSchema = serde_json::from_str(&SCHEMA)?;
     let request = RequestCredentialPayload {
         credential_offering: offer,
         master_secret: MASTER_SECRET.to_string(),
         credential_values: credential_values.clone(),
         issuer_pub_key: PUB_KEY.to_string(),
-        credential_schema: credential_schema,
+        credential_schema,
     };
 
     let request_json = serde_json::to_string(&request)?;
@@ -204,7 +159,7 @@ async fn create_unfinished_credential(
     nquads: Vec<String>,
     offer: BbsCredentialOffer,
 ) -> Result<UnfinishedBbsCredential, Box<dyn Error>> {
-    let key_id = format!("{}#key-1", ISSUER_DID);
+    let key_id = format!("{}#bbs-key-1", ISSUER_DID);
     let unsigned_vc = get_unsigned_vc(
         revocation_list_did,
         revocation_list_id,
@@ -546,7 +501,7 @@ async fn workflow_can_create_finished_credential() -> Result<(), Box<dyn Error>>
     )
     .await?;
 
-    let key_id = format!("{}#key-1", ISSUER_DID);
+    let key_id = format!("{}#bbs-key-1", ISSUER_DID);
     let finished_credential = create_finished_credential(
         &mut vade,
         unfinished_credential,
@@ -763,131 +718,6 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
             finished_credential.id
         ))
     );
-    Ok(())
-}
-
-async fn whitelist_and_create_did_doc_for_signer_2(vade: &mut Vade) -> Result<(), Box<dyn Error>> {
-    // Set example did document to make sure it resolves
-    let auth_string = format!(
-        r###"{{
-            "privateKey": "{}",
-            "identity": "{}"
-        }}"###,
-        SIGNER_2_PRIVATE_KEY, SIGNER_2_DID,
-    );
-    let mut json_editable: Value = serde_json::from_str(&auth_string)?;
-    json_editable["operation"] = Value::from("setDidDocument");
-
-    vade.did_update(
-        &SIGNER_2_DID,
-        &serde_json::to_string(&json_editable)?,
-        &EXAMPLE_DID_DOCUMENT_2,
-    )
-    .await?;
-
-    Ok(())
-}
-
-#[ignore]
-#[tokio::test]
-async fn workflow_can_create_and_persist_keys() -> Result<(), Box<dyn Error>> {
-    let mut vade = get_vade();
-
-    whitelist_and_create_did_doc_for_signer_2(&mut vade).await?;
-
-    let options = format!(
-        r#"{{
-            "identity": "{}",
-            "privateKey": "{}",
-            "type": "bbs"
-        }}"#,
-        &SIGNER_2_DID, &SIGNER_2_PRIVATE_KEY
-    );
-
-    let payload = format!(
-        r#"{{
-            "keyOwnerDid": "{}"
-        }}"#,
-        &SIGNER_2_DID
-    );
-
-    let result = vade
-        .run_custom_function(EVAN_METHOD, "create_new_keys", &options, &payload)
-        .await?;
-
-    // Get values from plugin result
-    let created_keys: Value = serde_json::from_str(
-        &result[0]
-            .as_ref()
-            .ok_or("Unexpected empty vector from create_new_keys")?,
-    )?;
-    let created_key_id = created_keys["didUrl"]
-        .as_str()
-        .ok_or("Expected key id field to be a string")?;
-    let created_pub_key_b64 = created_keys["publicKey"]
-        .as_str()
-        .ok_or("Expected publicKey field to be a string")?;
-    let created_pub_key_raw = base64::decode(created_pub_key_b64)?;
-
-    let did_resolve_result = vade.did_resolve(&SIGNER_2_DID).await?[0].clone();
-    let mut did_document: Value =
-        serde_json::from_str(&did_resolve_result.ok_or("Return value was empty")?)?;
-
-    let public_key_values = did_document["assertionMethod"].as_array();
-    let mut public_keys = public_key_values.unwrap_or(&vec![]).clone();
-
-    // See https://w3c-ccg.github.io/ldp-bbs2020/#bls12-381 for explanations why G2 Key (date: 07.04.2021, may be subject to change)
-    let new_key = format!(
-        r###"{{
-            "id": "{}",
-            "type": "Bls12381G2Key2020",
-            "publicKeyBase58": "{}"
-        }}"###,
-        &created_key_id,
-        &bs58::encode(created_pub_key_raw.clone()).into_string()
-    );
-    public_keys.push(serde_json::from_str(&new_key)?);
-    did_document["assertionMethod"] = serde_json::Value::Array(public_keys);
-    let options = format!(
-        r#"{{
-            "identity": "{}",
-            "privateKey": "{}",
-            "operation": "setDidDocument"
-        }}"#,
-        &SIGNER_2_DID, &SIGNER_2_PRIVATE_KEY
-    );
-    vade.did_update(
-        &SIGNER_2_DID,
-        &options,
-        &serde_json::to_string(&did_document)?,
-    )
-    .await?;
-
-    // Resolve the (hopefully) updated did document
-    let resolve_result = vade.did_resolve(&SIGNER_2_DID).await?[0].clone();
-    let updated_doc: Value =
-        serde_json::from_str(&resolve_result.ok_or("Return value was empty")?)?;
-    let assertion_methods = updated_doc["assertionMethod"]
-        .as_array()
-        .ok_or("Expected an array for assertionMethod")?;
-    assert_eq!(1, assertion_methods.len());
-
-    let newly_added: Value = assertion_methods[0].clone();
-    let resolved_key_id = newly_added["id"]
-        .as_str()
-        .ok_or("Expected key id field to be a string")?;
-    let resolved_pub_key_raw = bs58::decode(
-        newly_added["publicKeyBase58"]
-            .as_str()
-            .ok_or("Expected publicKeyBase58 field to be a string")?,
-    )
-    .into_vec()?;
-
-    // Test
-    assert!(resolved_key_id.starts_with(&format!("{}#bbs-key-", &SIGNER_2_DID)));
-    assert_eq!(resolved_key_id, created_key_id);
-    assert_eq!(created_pub_key_raw, resolved_pub_key_raw);
-
     Ok(())
 }
 
