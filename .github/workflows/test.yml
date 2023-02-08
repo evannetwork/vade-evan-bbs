@@ -1,29 +1,27 @@
-on: [push]
-
 name: Tests
 
+on:
+  push:
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
-  test-features-default:
-    name: Test build with default features
+  build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        features:
+          - ""
+          - --no-default-features --features=portable
+          - --no-default-features --features=wasm
     steps:
-      - name: Checkout vade-evan-bbs
-        uses: actions/checkout@v2
-      - name: Run cargo test
-        run: cargo test --release --no-fail-fast
-  test-features-portable:
-    name: Test build with --no-default-features --features=portable
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout vade-evan-bbs
-        uses: actions/checkout@v2
-      - name: Run cargo test
-        run: cargo test --no-default-features --features=portable --no-fail-fast
-  test-features-wasm:
-    name: Test build with --no-default-features --features=wasm
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout vade-evan-bbs
-        uses: actions/checkout@v2
-      - name: Run cargo test
-        run: cargo test --no-default-features --features=wasm --no-fail-fast
+      - uses: actions/checkout@v2
+      - name: Build
+        run: cargo build --release ${{ matrix.features }}
+      - name: Run cargo udeps
+        run: cargo udeps ${{ matrix.features }}
+        continue-on-error: true
+      - name: Run tests
+        run: cargo test --no-fail-fast --verbose ${{ matrix.features }}
