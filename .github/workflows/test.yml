@@ -8,25 +8,7 @@ jobs:
     steps:
       - name: Checkout vade-evan-bbs
         uses: actions/checkout@v2
-        with:
-          repository: evannetwork/vade-evan-bbs
-          path: 'vade-evan-bbs'
-          token: ${{ secrets.ACCESS_TOKEN }}
-      - name: Checkout vade
-        uses: actions/checkout@v2
-        with:
-          repository: evannetwork/vade
-          path: 'vade'
-          token: ${{ secrets.ACCESS_TOKEN }}
-      - name: Checkout vade-evan-substrate
-        uses: actions/checkout@v2
-        with:
-          repository: evannetwork/vade-evan-substrate
-          path: 'vade-evan-substrate'
-          token: ${{ secrets.ACCESS_TOKEN }}
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
-      - name: Run cargo test
-        run: cd vade-evan-bbs && cargo test --release --all-features --no-fail-fast
+      - name: Run cargo test (default, no-wasm)
+        run: cargo test --release --no-fail-fast
+      - name: Run cargo test (wasm)
+        run: cargo test --no-default-features --features=wasm --no-fail-fast
