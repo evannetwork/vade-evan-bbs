@@ -17,16 +17,22 @@ jobs:
     strategy:
       matrix:
         features:
-          - ""
-          - --no-default-features --features=portable
-          - --no-default-features --features=wasm
+          - name: default
+            value: ""
+          - name: portable
+            value: --no-default-features --features=portable
+          - name: wasm
+            value: --no-default-features --features=wasm
+    name: ${{ matrix.features.name }}
     steps:
       - uses: actions/checkout@v2
       - name: Build
-        run: cargo build --release ${{ matrix.features }}
+        run: cargo build --release ${{ matrix.features.value }}
       - name: Run tests
-        run: cargo test --no-fail-fast --verbose ${{ matrix.features }}
+        run: cargo test --no-fail-fast --verbose ${{ matrix.features.value }}
+      - name: Switch to nightly for udeps
+        run: rustup toolchain install nightly
       - name: Install cargo udeps
         run: cargo install cargo-udeps --locked
       - name: Run cargo udeps
-        run: cargo udeps ${{ matrix.features }}
+        run: cargo udeps ${{ matrix.features.value }}
