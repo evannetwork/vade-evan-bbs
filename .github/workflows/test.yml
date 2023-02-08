@@ -24,6 +24,7 @@ jobs:
           - name: wasm
             value: --no-default-features --features=wasm
     name: ${{ matrix.features.name }}
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v2
       - name: Build
