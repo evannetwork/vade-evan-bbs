@@ -315,10 +315,11 @@ mod tests {
             NQUADS,
             PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES,
             PUB_KEY,
+            SCHEMA,
             SIGNATURE_BLINDING,
             UNFINISHED_CREDENTIAL,
         },
-        vc_zkp::{EXAMPLE_CREDENTIAL_OFFERING, EXAMPLE_CREDENTIAL_SCHEMA},
+        vc_zkp::EXAMPLE_CREDENTIAL_OFFERING,
     };
     use vade_signer::{LocalSigner, Signer};
 
@@ -335,7 +336,7 @@ mod tests {
     > {
         let (dpk, sk) = BbsIssuer::new_short_keys(None);
         let offering: BbsCredentialOffer = serde_json::from_str(EXAMPLE_CREDENTIAL_OFFERING)?;
-        let schema: CredentialSchema = serde_json::from_str(EXAMPLE_CREDENTIAL_SCHEMA)?;
+        let schema: CredentialSchema = serde_json::from_str(SCHEMA)?;
         let secret = BbsProver::new_link_secret();
         let mut credential_values = HashMap::new();
         credential_values.insert("test_property_string".to_owned(), "value".to_owned());

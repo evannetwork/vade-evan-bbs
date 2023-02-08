@@ -16,9 +16,10 @@
 
 use crate::application::{
     datatypes::AssertionProof,
-    utils::{decode_base64_config, get_now_as_iso_string},
+    utils::{decode_base64, decode_base64_config, get_now_as_iso_string},
 };
 use base64;
+use bbs::prelude::{DeterministicPublicKey, KeyGenOption, SecretKey};
 use secp256k1::{recover, Message, RecoveryId, Signature};
 use serde::{Deserialize, Serialize};
 use serde_json::{value::RawValue, Value};
@@ -239,4 +240,28 @@ pub fn recover_address_and_data(jwt: &str) -> Result<(String, String), Box<dyn E
     let address = hex::encode(&hash[12..32]);
 
     Ok((address, data_string))
+}
+
+pub fn get_public_key_from_private_key(private_key: &str) -> Result<String, Box<dyn Error>> {
+    let nonce_bytes = decode_base64(private_key, "Secret Key")?.into_boxed_slice();
+    let sk = SecretKey::from(nonce_bytes);
+    let dpk = DeterministicPublicKey::new(Some(KeyGenOption::FromSecretKey(sk))).0;
+    let pk_bytes = dpk.to_bytes_compressed_form();
+    let pk_base_64 = base64::encode(&pk_bytes);
+
+    Ok(pk_base_64)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use utilities::test_data::bbs_coherent_context_test_data::{PUB_KEY, SECRET_KEY};
+
+    #[test]
+    fn can_get_public_key_from_private_key() -> Result<(), Box<dyn Error>> {
+        let pk_base64 = get_public_key_from_private_key(&SECRET_KEY)?;
+        assert_eq!(&pk_base64, &PUB_KEY);
+
+        Ok(())
+    }
 }

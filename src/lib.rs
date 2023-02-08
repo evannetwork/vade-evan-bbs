@@ -14,7 +14,6 @@
   limitations under the License.
 */
 
-extern crate vade_evan_substrate;
 extern crate vade_signer;
 
 pub(crate) mod application;
