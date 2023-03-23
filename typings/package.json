@@ -1,5 +1,9 @@
 {
-  "name": "vade-evan-bbs-typings",
+  "name": "@evan.network/vade-evan-bbs-typings",
+  "publishConfig": {
+    "access": "public"
+  },
+  "author": "Blockchains Inc",
   "version": "0.0.1",
   "description": "typescript types for vade-evan-bbs",
   "types": "./index.d.ts"
