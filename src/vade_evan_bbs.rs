@@ -33,10 +33,18 @@ use crate::{
         },
         issuer::Issuer,
         prover::Prover,
-        utils::{decode_base64, generate_uuid, get_dpk_from_string},
+        utils::{
+            convert_to_nquads,
+            decode_base64,
+            generate_uuid,
+            get_credential_values,
+            get_dpk_from_string,
+            get_nquads_schema_map,
+        },
         verifier::Verifier,
     },
     crypto::{crypto_utils::get_public_key_from_private_key, crypto_verifier::CryptoVerifier},
+    LdProofVcDetailCredential,
 };
 use async_trait::async_trait;
 use bbs::{
@@ -45,7 +53,7 @@ use bbs::{
     SignatureMessage,
 };
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, error::Error};
+use std::{collections::HashMap, convert::TryInto, error::Error};
 use vade::{VadePlugin, VadePluginResultValue};
 use vade_signer::Signer;
 
@@ -111,8 +119,8 @@ pub struct CreateRevocationListPayload {
 pub struct IssueCredentialPayload {
     /// The VC to sign, without any appended proof
     pub unsigned_vc: UnsignedBbsCredential,
-    /// Nquads representation of the VC without any appended proof
-    pub nquads: Vec<String>,
+    // /// Nquads representation of the VC without any appended proof
+    // pub nquads: Vec<String>,
     /// DID url of the public key of the issuer used to later verify the signature
     pub issuer_public_key_id: String,
     /// The public bbs+ key of the issuer used to later verify the signature
@@ -131,13 +139,7 @@ pub struct IssueCredentialPayload {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OfferCredentialPayload {
-    /// DID of the issuer
-    pub issuer: String,
-    /// DID of the subject
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub subject: Option<String>,
-    /// Number of total nquads in the final credential
-    pub nquad_count: usize,
+    pub credential: LdProofVcDetailCredential,
 }
 
 /// API payload for creating a zero-knowledge proof out of a BBS+ signature.
@@ -153,7 +155,7 @@ pub struct PresentProofPayload {
     /// Public key per credential by schema ID
     pub public_key_schema_map: HashMap<String, String>,
     /// The respective nquads by respective credential's schema ID
-    pub nquads_schema_map: HashMap<String, Vec<String>>,
+    // pub nquads_schema_map: HashMap<String, Vec<String>>,
     /// Prover's master secret
     pub master_secret: String,
     /// DID of the prover
@@ -255,7 +257,7 @@ pub struct FinishCredentialPayload {
     /// Holder's master secret
     pub master_secret: String,
     /// Signed values of the credential's signature
-    pub nquads: Vec<String>,
+    // pub nquads: Vec<String>,
     /// Issuer's BBS+ public key
     pub issuer_public_key: String,
     /// Blinding created during credential request creation
@@ -291,6 +293,16 @@ pub struct CreateKeysPayload {
 #[serde(rename_all = "camelCase")]
 pub struct GetPublicKeyFromPrivateKeyPayload {
     pub private_key: String,
+}
+
+/// API payload to derive public key from base 64 encoded private key.
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateCredentialDraftPayload {
+    pub schema: CredentialSchema, // TODO swo: check/align naming (schema / credential_schema)
+    #[serde(default)]
+    pub use_valid_until: bool,
+    pub subject_did: Option<String>,
 }
 
 macro_rules! parse {
@@ -384,6 +396,15 @@ impl VadePlugin for VadeEvanBbs {
                 let pk_base_64 = get_public_key_from_private_key(&payload.private_key)?;
                 Ok(VadePluginResultValue::Success(Some(pk_base_64)))
             }
+            // "create_credential_draft" => {
+            //     let payload: CreateCredentialDraftPayload = parse!(&payload, "payload");
+            //     let mut draft = schema.create_credential_draft(CredentialDraftOptions { issuer_did: ISSUER_DID.to_string(), id: None, issuance_date: None, subject_did: Some(SUBJECT_DID.to_string()), valid_until: None });
+            //     let draft = &payload
+            //         .schema
+            //         .create_credential_draft(payload.use_valid_until, payload.subject_did);
+            //     let draft_stringified = serde_json::to_string(&draft)?;
+            //     Ok(VadePluginResultValue::Success(Some(draft_stringified)))
+            // }
             _ => Ok(VadePluginResultValue::Ignored),
         }
     }
@@ -496,6 +517,9 @@ impl VadePlugin for VadeEvanBbs {
             decode_base64(&payload.issuer_secret_key, "Issuer Secret Key")?.into_boxed_slice(),
         );
 
+        let nquads = convert_to_nquads(&serde_json::to_string(&payload.unsigned_vc)?).await?;
+        let values_only = get_credential_values(&nquads)?;
+
         let unfinished_credential = Issuer::sign_nquads(
             &payload.unsigned_vc,
             &payload.credential_offer,
@@ -504,7 +528,7 @@ impl VadePlugin for VadeEvanBbs {
             &public_key,
             &sk,
             payload.required_indices,
-            payload.nquads,
+            values_only,
         )?;
 
         // ######### Please keep this commented until we have an Rust nquad library #########
@@ -549,11 +573,7 @@ impl VadePlugin for VadeEvanBbs {
         ignore_unrelated!(method, options);
 
         let payload: OfferCredentialPayload = parse!(&payload, "payload");
-        let result: BbsCredentialOffer = Issuer::offer_credential(
-            payload.subject.as_deref(),
-            &payload.issuer,
-            payload.nquad_count,
-        )?;
+        let result: BbsCredentialOffer = Issuer::offer_credential(&payload.credential)?;
         Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
             &result,
         )?)))
@@ -590,12 +610,37 @@ impl VadePlugin for VadeEvanBbs {
                 .insert(schema_did.clone(), get_dpk_from_string(base64_public_key)?);
         }
 
+        // let schemas = &payload.credential_schema_map.keys();
+        // let mut nquads_schema_map: HashMap<String, Vec<String>> = HashMap::new();
+        // for now test with one schema to avoid future madness
+        // let schema_vec: Vec<String> = schemas.clone().cloned().collect();
+        // let schema: String = schema_vec.get(0).unwrap().to_owned();
+        // let credential = &payload.credential_schema_map.get(&schema);
+        // let unfinished_without_proof: UnsignedBbsCredential =
+        //     serde_json::from_str(&serde_json::to_string(&credential)?)?;
+        // let nquads = convert_to_nquads(&serde_json::to_string(&unfinished_without_proof)?).await?;
+        // nquads_schema_map.insert(schema, nquads);
+
+        let unsigned_credentials_without_proof: Vec<UnsignedBbsCredential> = (&payload)
+            .credential_schema_map
+            .values()
+            .into_iter()
+            .map(|c| UnsignedBbsCredential::from_bbs_credential(c))
+            .collect::<Result<Vec<UnsignedBbsCredential>, _>>()?;
+
+        let nquads_schema_map = get_nquads_schema_map(
+            &payload.proof_request,
+            &unsigned_credentials_without_proof,
+            false,
+        )
+        .await?;
+
         let result = Prover::present_proof(
             &payload.proof_request,
             &payload.credential_schema_map,
             &payload.revealed_properties_schema_map,
             &public_key_schema_map,
-            &payload.nquads_schema_map,
+            &nquads_schema_map,
             &master_secret,
             &payload.prover_did,
             &payload.prover_public_key_did,
@@ -778,12 +823,64 @@ impl VadePlugin for VadeEvanBbs {
                 .insert(schema_did.clone(), get_dpk_from_string(base64_public_key)?);
         }
 
+        // let schema_vec: Vec<String> = (&payload)
+        //     .proof_request
+        //     .sub_proof_requests
+        //     .iter()
+        //     .map(|spr| spr.schema.to_owned())
+        //     .collect();
+        // let mut nquads_schema_map: HashMap<String, Vec<String>> = HashMap::new();
+        // // for now test with one schema to avoid future madness
+        // // let schema_vec: Vec<String> = schemas.clone().cloned().collect();
+        // let schema: String = schema_vec.get(0).unwrap().to_owned();
+        // let credential = (&payload)
+        //     .presentation
+        //     .verifiable_credential
+        //     .get(0)
+        //     .unwrap()
+        //     .to_owned();
+        // let mut unfinished_without_proof: UnsignedBbsCredential =
+        //     serde_json::from_str(&serde_json::to_string(&credential)?)?;
+        // // patch values from credential in presentation into draft credential for nquads
+        // for (key, value) in credential.credential_subject.data.iter() {
+        //     unfinished_without_proof
+        //         .credential_subject
+        //         .data
+        //         .insert(key.to_owned(), value.to_owned());
+        // }
+        // let nquads = convert_to_nquads(&serde_json::to_string(&unfinished_without_proof)?).await?;
+        // let mut credential_values_nquads = get_credential_values(&nquads)?;
+        // credential_values_nquads.sort();
+        // let revealed_attributes_stuff: Vec<String> = (&payload)
+        //     .proof_request
+        //     .sub_proof_requests
+        //     .get(0)
+        //     .unwrap()
+        //     .revealed_attributes
+        //     .iter()
+        //     .map(|i| credential_values_nquads.get(*i - 2).unwrap().to_owned())
+        //     .collect();
+        // nquads_schema_map.insert(schema, revealed_attributes_stuff);
+        let unsigned_credentials_without_proof: Vec<UnsignedBbsCredential> = (&payload)
+            .presentation
+            .verifiable_credential
+            .iter()
+            .map(|c| UnsignedBbsCredential::from_proof_presentation(c))
+            .collect::<Result<Vec<UnsignedBbsCredential>, _>>()?;
+
+        let nquads_schema_map = get_nquads_schema_map(
+            &payload.proof_request,
+            &unsigned_credentials_without_proof,
+            true,
+        )
+        .await?;
+
         let mut verfication_result = Verifier::verify_proof(
             &payload.presentation,
             &payload.proof_request,
             &public_key_schema_map,
             &payload.signer_address,
-            &payload.nquads_to_schema_map,
+            &nquads_schema_map,
         )?;
         if verfication_result.status != "rejected" {
             // check revocation status
@@ -834,10 +931,15 @@ impl VadePlugin for VadeEvanBbs {
 
         let public_key: DeterministicPublicKey = get_dpk_from_string(&payload.issuer_public_key)?;
 
+        let unfinished_without_proof: UnsignedBbsCredential =
+            serde_json::from_str(&serde_json::to_string(&payload.credential)?)?;
+        let nquads = convert_to_nquads(&serde_json::to_string(&unfinished_without_proof)?).await?;
+        let values_only = get_credential_values(&nquads)?;
+
         let credential = Prover::finish_credential(
             &payload.credential,
             &master_secret,
-            &payload.nquads,
+            &values_only,
             &public_key,
             &blinding,
         )?;

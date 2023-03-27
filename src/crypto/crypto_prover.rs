@@ -81,7 +81,11 @@ impl CryptoProver {
             != (credential_messages.len() + ADDITIONAL_HIDDEN_MESSAGES_COUNT)
         {
             return Err(Box::from(
-                "Provided number of nquads differ from number used in signature",
+                format!(
+                    "Provided number of nquads differ from number used in signature; signature expected: {}, but would have to sign: {}",
+                    &signature.credential_message_count,
+                    &credential_messages.len() + ADDITIONAL_HIDDEN_MESSAGES_COUNT,
+                ),
             ));
         }
 
@@ -187,14 +191,13 @@ mod tests {
     use super::*;
     use crate::application::{
         datatypes::{BbsCredential, UnfinishedBbsCredential},
-        utils::get_dpk_from_string,
+        utils::{convert_to_credential_nquads, get_dpk_from_string},
     };
     use bbs::{issuer::Issuer as CryptoIssuer, prover::Prover};
     use std::convert::From;
     use utilities::test_data::bbs_coherent_context_test_data::{
         FINISHED_CREDENTIAL,
         MASTER_SECRET,
-        NQUADS,
         PUB_KEY,
         SIGNATURE_BLINDING,
         UNFINISHED_CREDENTIAL,
@@ -219,14 +222,14 @@ mod tests {
         assert!(ctx.is_ok());
     }
 
-    #[test]
-    fn can_finish_credential_signature() -> Result<(), Box<dyn Error>> {
+    #[tokio::test]
+    async fn can_finish_credential_signature() -> Result<(), Box<dyn Error>> {
         let unfinished_credential: UnfinishedBbsCredential =
             serde_json::from_str(&UNFINISHED_CREDENTIAL)?;
         let master_secret: SignatureMessage = SignatureMessage::from(
             decode_base64(&MASTER_SECRET, "Master Secret")?.into_boxed_slice(),
         );
-        let nquads: Vec<String> = NQUADS.iter().map(|q| q.to_string()).collect();
+        let nquads: Vec<String> = convert_to_credential_nquads(&unfinished_credential).await?;
         let public_key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;
         let blinding: SignatureBlinding = SignatureBlinding::from(
             decode_base64(&SIGNATURE_BLINDING, "Signature Blinding")?.into_boxed_slice(),
@@ -243,11 +246,11 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn can_create_proof_of_knowledge() -> Result<(), Box<dyn Error>> {
+    #[tokio::test]
+    async fn can_create_proof_of_knowledge() -> Result<(), Box<dyn Error>> {
         let credential: BbsCredential = serde_json::from_str(&FINISHED_CREDENTIAL)?;
         let public_key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;
-        let nquads: Vec<String> = NQUADS.iter().map(|q| q.to_string()).collect();
+        let nquads: Vec<String> = convert_to_credential_nquads(&credential).await?;
         let sub_proof_request = BbsSubProofRequest {
             revealed_attributes: vec![1],
             schema: credential.credential_schema.id.clone(),
@@ -270,11 +273,11 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn can_generate_proofs() -> Result<(), Box<dyn Error>> {
+    #[tokio::test]
+    async fn can_generate_proofs() -> Result<(), Box<dyn Error>> {
         let credential: BbsCredential = serde_json::from_str(&FINISHED_CREDENTIAL)?;
         let public_key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;
-        let nquads: Vec<String> = NQUADS.iter().map(|q| q.to_string()).collect();
+        let nquads: Vec<String> = convert_to_credential_nquads(&credential).await?;
         let sub_proof_request = BbsSubProofRequest {
             revealed_attributes: vec![1],
             schema: credential.credential_schema.id.clone(),

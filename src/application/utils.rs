@@ -18,8 +18,15 @@ use base64::Config;
 use bbs::{keys::DeterministicPublicKey, ProofNonce, SignatureMessage};
 #[cfg(not(target_arch = "wasm32"))]
 use chrono::Utc;
-use std::{error::Error, panic};
+use regex::Regex;
+use serde::Serialize;
+use ssi_json_ld::{json_to_dataset, urdna2015::normalize, JsonLdOptions, StaticLoader};
+use std::{collections::HashMap, error::Error, panic};
 use uuid::Uuid;
+
+use crate::{BbsProofRequest, ProofPresentation, UnsignedBbsCredential};
+
+const NQUAD_REGEX: &str = r"^_:c14n0 <http://schema.org/([^>]+?)>";
 
 pub fn get_now_as_iso_string() -> String {
     #[cfg(target_arch = "wasm32")]
@@ -86,4 +93,96 @@ pub fn decode_base64_config<T: AsRef<[u8]>>(
     })?;
 
     Ok(decoded)
+}
+
+pub async fn convert_to_nquads(document_string: &str) -> Result<Vec<String>, Box<dyn Error>> {
+    let mut loader = StaticLoader;
+    let options = JsonLdOptions {
+        base: None,           // -b, Base IRI
+        expand_context: None, // -c, IRI for expandContext option
+        ..Default::default()
+    };
+    let dataset = json_to_dataset(
+        &document_string,
+        None, // will be patched into @context, e.g. Some(&r#"["https://schema.org/"]"#.to_string()),
+        false,
+        Some(&options),
+        &mut loader,
+    )
+    .await
+    .map_err(|err| err.to_string())?;
+    let dataset_normalized = normalize(&dataset).unwrap();
+    let normalized = dataset_normalized.to_nquads().unwrap();
+    let non_empty_lines = normalized
+        .split("\n")
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string())
+        .collect();
+
+    Ok(non_empty_lines)
+}
+
+pub async fn convert_to_credential_nquads<T>(credential: &T) -> Result<Vec<String>, Box<dyn Error>>
+where
+    T: Serialize,
+{
+    let unfinished_without_proof: UnsignedBbsCredential =
+        serde_json::from_str(&serde_json::to_string(&credential)?)?;
+    convert_to_nquads(&serde_json::to_string(&unfinished_without_proof)?).await
+}
+
+pub fn get_credential_values(nquads: &Vec<String>) -> Result<Vec<String>, Box<dyn Error>> {
+    let regex = Regex::new(NQUAD_REGEX).map_err(|err| err.to_string())?;
+
+    Ok(nquads
+        .iter()
+        .filter(|n| regex.is_match(&n))
+        .map(|n| n.to_owned())
+        .collect::<Vec<_>>())
+}
+
+pub async fn get_nquads_schema_map(
+    proof_request: &BbsProofRequest,
+    unsigned_credentials: &Vec<UnsignedBbsCredential>,
+    only_revealed: bool,
+) -> Result<HashMap<String, Vec<String>>, Box<dyn Error>> {
+    let schema_vec: Vec<String> = proof_request
+        .sub_proof_requests
+        .iter()
+        .map(|spr| spr.schema.to_owned())
+        .collect();
+    let mut nquads_schema_map: HashMap<String, Vec<String>> = HashMap::new();
+    // for now test with one schema to avoid future madness
+    // let schema_vec: Vec<String> = schemas.clone().cloned().collect();
+    let schema: String = schema_vec.get(0).unwrap().to_owned();
+    let credential = unsigned_credentials.get(0).unwrap().to_owned();
+    let mut unfinished_without_proof: UnsignedBbsCredential =
+        serde_json::from_str(&serde_json::to_string(&credential)?)?;
+    // patch values from credential in presentation into draft credential for nquads
+    for (key, value) in credential.credential_subject.data.iter() {
+        unfinished_without_proof
+            .credential_subject
+            .data
+            .insert(key.to_owned(), value.to_owned());
+    }
+    let nquads = convert_to_nquads(&serde_json::to_string(&unfinished_without_proof)?).await?;
+    let mut credential_values_nquads = get_credential_values(&nquads)?;
+    credential_values_nquads.sort();
+
+    let attributes: Vec<String>;
+    if only_revealed {
+        attributes = proof_request
+            .sub_proof_requests
+            .get(0)
+            .unwrap()
+            .revealed_attributes
+            .iter()
+            .map(|i| credential_values_nquads.get(*i - 1).unwrap().to_owned())
+            .collect();
+    } else {
+        attributes = credential_values_nquads;
+    }
+    nquads_schema_map.insert(schema, attributes);
+
+    Ok(nquads_schema_map)
 }

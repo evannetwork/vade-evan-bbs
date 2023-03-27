@@ -16,8 +16,12 @@
 
 use bbs::{ProofNonce, SignatureProof, ToVariableLengthBytes};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::{collections::HashMap, error::Error};
+use uuid::Uuid;
 
+use super::{issuer::ADDITIONAL_HIDDEN_MESSAGES_COUNT, utils::get_now_as_iso_string};
+
+pub const CORE_MESSAGE_COUNT: usize = 7; // w/o status and values
 pub const CREDENTIAL_REQUEST_TYPE: &str = "EvanBbsCredentialRequest";
 pub const CREDENTIAL_PROPOSAL_TYPE: &str = "EvanCredentialProposal";
 pub const CREDENTIAL_OFFER_TYPE: &str = "EvanBbsCredentialOffering";
@@ -89,6 +93,56 @@ pub struct CredentialSchema {
     pub proof: Option<AssertionProof>,
 }
 
+pub struct CredentialDraftOptions {
+    pub issuer_did: String,
+    pub id: Option<String>,
+    pub issuance_date: Option<String>,
+    pub subject_did: Option<String>,
+    pub valid_until: Option<String>,
+}
+
+impl CredentialSchema {
+    pub fn from_str(schema_document: &str) -> Result<CredentialSchema, Box<dyn Error>> {
+        Ok(serde_json::from_str::<CredentialSchema>(schema_document)?)
+    }
+
+    pub fn create_credential_draft(
+        &self,
+        options: CredentialDraftOptions,
+    ) -> LdProofVcDetailCredential {
+        let credential = LdProofVcDetailCredential {
+            context: vec![
+                "https://www.w3.org/2018/credentials/v1".to_string(),
+                "https://schema.org/".to_string(),
+                "https://w3id.org/vc-revocation-list-2020/v1".to_string(),
+            ],
+            id: options
+                .id
+                .unwrap_or_else(|| format!("uuid:{}", Uuid::new_v4())),
+            r#type: vec!["VerifiableCredential".to_string()],
+            issuer: options.issuer_did,
+            valid_until: options.valid_until,
+            issuance_date: options
+                .issuance_date
+                .unwrap_or_else(|| get_now_as_iso_string()),
+            credential_subject: CredentialSubject {
+                id: options.subject_did,
+                data: self // fill ALL subject data fields with empty string (mandatory and optional ones)
+                    .properties
+                    .clone()
+                    .into_iter()
+                    .map(|(name, _schema_property)| (name, String::new()))
+                    .collect(),
+            },
+            credential_schema: CredentialSchemaReference {
+                id: self.id.to_owned(),
+                r#type: self.r#type.to_owned(),
+            },
+        };
+        credential
+    }
+}
+
 /// Metadata about a property of a credential schema
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -117,11 +171,13 @@ pub struct AssertionProof {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct BbsCredentialOffer {
-    pub issuer: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub subject: Option<String>,
+    // pub issuer: String,
+    // #[serde(skip_serializing_if = "Option::is_none")]
+    // pub subject: Option<String>,
+    // pub nonce: String,
+    // pub credential_message_count: usize,
+    pub ld_proof_vc_detail: LdProofVcDetail,
     pub nonce: String,
-    pub credential_message_count: usize,
 }
 
 /// Message to initiate credential issuance, sent by (potential) prover.
@@ -207,6 +263,16 @@ pub struct UnsignedBbsCredential {
     pub credential_subject: CredentialSubject,
     pub credential_schema: CredentialSchemaReference,
     pub credential_status: CredentialStatus,
+}
+
+impl UnsignedBbsCredential {
+    pub fn from_proof_presentation(value: &BbsPresentation) -> Result<Self, Box<dyn Error>> {
+        Ok(serde_json::from_str(&serde_json::to_string(&value)?)?)
+    }
+
+    pub fn from_bbs_credential(value: &BbsCredential) -> Result<Self, Box<dyn Error>> {
+        Ok(serde_json::from_str(&serde_json::to_string(&value)?)?)
+    }
 }
 
 /// A verifiable credential containing a blind signature that still needs to be processed by the holder/receiver.
@@ -469,5 +535,118 @@ impl RevocationListCredential {
             credential_subject: list.credential_subject,
             proof,
         }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct LdProofVcDetailCredential {
+    #[serde(rename(serialize = "@context", deserialize = "@context"))]
+    pub context: Vec<String>,
+    pub id: String,
+    pub r#type: Vec<String>,
+    pub issuer: String,
+    pub issuance_date: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub valid_until: Option<String>,
+    pub credential_subject: CredentialSubject,
+    pub credential_schema: CredentialSchemaReference,
+}
+
+impl LdProofVcDetailCredential {
+    pub fn to_unsigned_credential(&self, status: CredentialStatus) -> UnsignedBbsCredential {
+        UnsignedBbsCredential {
+            context: self.context.clone(),
+            id: self.id.to_owned(),
+            r#type: self.r#type.clone(),
+            issuer: self.issuer.to_owned(),
+            valid_until: self.valid_until.to_owned(),
+            issuance_date: self.issuance_date.clone(),
+            credential_subject: self.credential_subject.clone(),
+            credential_schema: self.credential_schema.clone(),
+            credential_status: status,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all(serialize = "camelCase", deserialize = "camelCase"))]
+pub enum LdProofVcDetailOptionsType {
+    Ed25519Signature2018,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all(serialize = "camelCase", deserialize = "camelCase"))]
+pub enum LdProofVcDetailOptionsCredentialStatusType {
+    RevocationList2021Status,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+// #[serde(rename_all = "camelCase")]
+pub struct LdProofVcDetailOptionsCredentialStatus {
+    pub r#type: LdProofVcDetailOptionsCredentialStatusType,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+// #[serde(rename_all = "camelCase")]
+pub struct LdProofVcDetailPropose {
+    // all part of the cred
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct LdProofVcDetailOffer {
+    // all part of the did
+    pub credential_status: LdProofVcDetailOptionsCredentialStatus,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+// #[serde(rename_all = "camelCase")]
+pub struct LdProofVcDetailRequest {}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct LdProofVcDetailOptions {
+    pub created: String,
+    pub proof_type: LdProofVcDetailOptionsType,
+
+    #[serde(flatten)]
+    pub ld_proof_vc_detail_offer: Option<LdProofVcDetailOffer>,
+
+    #[serde(flatten)]
+    pub ld_proof_vc_detail_request: Option<LdProofVcDetailRequest>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+// #[serde(rename_all = "camelCase")]
+pub struct LdProofVcDetail {
+    pub credential: LdProofVcDetailCredential,
+    pub options: LdProofVcDetailOptions,
+}
+
+impl LdProofVcDetail {
+    pub fn get_message_count(&self) -> Result<usize, Box<dyn Error>> {
+        // let mut message_count = CORE_MESSAGE_COUNT
+        //     + ADDITIONAL_HIDDEN_MESSAGES_COUNT
+        //     + &self.credential.credential_subject.data.len();
+
+        // if self.credential.valid_until.is_some() {
+        //     message_count += 1;
+        // }
+
+        // // TODO swo: decide whether to return an error here on invalid match or not
+        // message_count += match &self.options.ld_proof_vc_detail_offer {
+        //     Some(LdProofVcDetailOffer {
+        //         credential_status:
+        //             LdProofVcDetailOptionsCredentialStatus {
+        //                 r#type: LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
+        //             },
+        //     }) => 4, // 1 link to sub-section, 3 lines with payload, 0 extra line for id (used in key)
+        //     None => 0,
+        // };
+
+        // Ok(message_count)
+
+        Ok(self.credential.credential_subject.data.len() + ADDITIONAL_HIDDEN_MESSAGES_COUNT)
     }
 }

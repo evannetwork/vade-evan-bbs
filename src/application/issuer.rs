@@ -14,7 +14,7 @@
   limitations under the License.
 */
 
-use super::datatypes::SchemaProperty;
+use super::{datatypes::SchemaProperty, utils::convert_to_nquads};
 use crate::{
     application::{
         datatypes::{
@@ -39,6 +39,13 @@ use crate::{
         utils::{decode_base64, decode_base64_config, generate_uuid, get_now_as_iso_string},
     },
     crypto::{crypto_issuer::CryptoIssuer, crypto_utils::create_assertion_proof},
+    LdProofVcDetail,
+    LdProofVcDetailCredential,
+    LdProofVcDetailOffer,
+    LdProofVcDetailOptions,
+    LdProofVcDetailOptionsCredentialStatus,
+    LdProofVcDetailOptionsCredentialStatusType,
+    LdProofVcDetailOptionsType,
 };
 use bbs::{
     issuer::Issuer as BbsIssuer,
@@ -127,16 +134,31 @@ impl Issuer {
     /// # Returns
     /// * `BbsCredentialOffer` - The message to be sent to the prover.
     pub fn offer_credential(
-        subject: Option<&str>,
-        issuer_did: &str,
-        nquad_count: usize,
+        credential: &LdProofVcDetailCredential,
     ) -> Result<BbsCredentialOffer, Box<dyn Error>> {
         let nonce = base64::encode(BbsIssuer::generate_signing_nonce().to_bytes_compressed_form());
 
+        // Ok(BbsCredentialOffer {
+        //     issuer: issuer_did.to_owned(),
+        //     subject: subject.map(|value| value.to_string()),
+        //     credential_message_count: nquad_count + ADDITIONAL_HIDDEN_MESSAGES_COUNT,
+        //     nonce,
+        // })
         Ok(BbsCredentialOffer {
-            issuer: issuer_did.to_owned(),
-            subject: subject.map(|value| value.to_string()),
-            credential_message_count: nquad_count + ADDITIONAL_HIDDEN_MESSAGES_COUNT,
+            ld_proof_vc_detail: LdProofVcDetail {
+                credential: credential.clone(),
+                options: LdProofVcDetailOptions {
+                    created: "now".to_string(), // TODO
+                    proof_type: LdProofVcDetailOptionsType::Ed25519Signature2018,
+                    ld_proof_vc_detail_offer: Some(LdProofVcDetailOffer {
+                        credential_status: LdProofVcDetailOptionsCredentialStatus {
+                            r#type:
+                                LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
+                        },
+                    }),
+                    ld_proof_vc_detail_request: None,
+                },
+            },
             nonce,
         })
     }
@@ -199,7 +221,7 @@ impl Issuer {
     /// * `required_indices` - Indices of the nquads representing the properties that need to be revealed when creating proofs
     /// * `nquads` - The properties that need to be signed as nquads. Usually should include the whole document, not only the credential_subject part.
     /// * `revocation_list_did` - DID of the associated revocation list
-    /// * `revocation_list_id` - ID of the revoation list to assign to this credential
+    /// * `revocation_list_id` - ID of the revocation list to assign to this credential
     ///
     /// # Returns
     /// * `UnfinishedBbsCredential` - Credential including signature that needs to be post-processed by the subject
@@ -249,6 +271,15 @@ impl Issuer {
         )?
         .into_boxed_slice()
         .try_into()?;
+
+        // let status = CredentialStatus {
+        //     id: format!("{}#{}", revocation_list_did, revocation_list_id),
+        //     r#type: "RevocationList2020Status".to_string(),
+        //     revocation_list_index: revocation_list_id.to_string(),
+        //     revocation_list_credential: revocation_list_did.to_string(),
+        // };
+        // let unsigned = &credential_offer.ld_proof_vc_detail.credential.to_unsigned_credential(status);
+        // let nquads = convert_to_nquads(&serde_json::to_string(&unsigned)?).await?;
 
         let nonce = ProofNonce::from(
             decode_base64(&credential_offer.nonce, "Credential Offer Nonce")?.into_boxed_slice(),
@@ -435,14 +466,14 @@ impl Issuer {
 mod tests {
     extern crate utilities;
     use super::*;
-    use crate::application::{
+    use crate::{application::{
         datatypes::{BbsCredentialOffer, BbsCredentialRequest, CredentialProposal},
-        prover::Prover,
-    };
+        prover::Prover, utils::{convert_to_nquads, get_credential_values},
+    }, CredentialDraftOptions};
     use bbs::{issuer::Issuer as BbsIssuer, prover::Prover as BbsProver};
     use std::collections::HashMap;
     use utilities::test_data::{
-        accounts::local::{HOLDER_DID, ISSUER_DID, ISSUER_PRIVATE_KEY, ISSUER_PUBLIC_KEY_DID},
+        accounts::local::{HOLDER_DID, ISSUER_DID, ISSUER_PRIVATE_KEY, ISSUER_PUBLIC_KEY_DID, SUBJECT_DID},
         bbs_coherent_context_test_data::{
             EXAMPLE_REVOCATION_LIST_DID,
             PUB_KEY,
@@ -455,35 +486,39 @@ mod tests {
     };
     use vade_signer::{LocalSigner, Signer};
 
-    fn request_credential(
+    async fn request_credential(
         pub_key: &DeterministicPublicKey,
-        offer: &BbsCredentialOffer,
-    ) -> Result<(BbsCredentialRequest, CredentialSchema, Vec<String>), Box<dyn Error>> {
+        offer: &mut BbsCredentialOffer,
+        credential_value_count: usize,
+    ) -> Result<(BbsCredentialRequest, CredentialSchema), Box<dyn Error>> {
         let schema: CredentialSchema = serde_json::from_str(SCHEMA)?;
         let secret = BbsProver::new_link_secret();
         let mut credential_values = HashMap::new();
         credential_values.insert("test_property_string".to_owned(), "value".to_owned());
-        for i in 1..(offer.credential_message_count - 1) {
+        for i in 1..(credential_value_count) {
             // Create messages until we have message_count - 1 messages (one is reserved for master secret)
             credential_values.insert(format!("test_property_string{}", i), "value".to_owned());
         }
+        offer.ld_proof_vc_detail.credential.credential_subject.data = credential_values.clone();
 
-        // Nquad-ize. Flatten the json-ld document graph.
-        // This will be done by TnT for now as we currently could not find a suitable rust library
-        let mut nquads = Vec::new();
-        let mut keys: Vec<String> = credential_values.keys().map(|k| k.to_string()).collect();
-        keys.sort();
-        for key in &keys {
-            let val = credential_values.get(key).ok_or("AAA".to_owned())?;
-            let string = format!("{}: {}", key, val);
-            nquads.insert(nquads.len(), string);
-        }
+        // let nquads = convert_to_nquads(&serde_json::to_string(&offer.ld_proof_vc_detail.credential)?).await?;
+
+        // // Nquad-ize. Flatten the json-ld document graph.
+        // // This will be done by TnT for now as we currently could not find a suitable rust library
+        // let mut nquads = Vec::new();
+        // let mut keys: Vec<String> = credential_values.keys().map(|k| k.to_string()).collect();
+        // keys.sort();
+        // for key in &keys {
+        //     let val = credential_values.get(key).ok_or("AAA".to_owned())?;
+        //     let string = format!("{}: {}", key, val);
+        //     nquads.insert(nquads.len(), string);
+        // }
 
         let (credential_request, _) =
             Prover::request_credential(offer, &schema, &secret, credential_values, pub_key)
                 .map_err(|e| format!("{}", e))?;
 
-        return Ok((credential_request, schema, nquads));
+        return Ok((credential_request, schema));
     }
 
     fn is_base_64(input: &str) -> bool {
@@ -547,83 +582,104 @@ mod tests {
     #[test]
     fn can_offer_credential() -> Result<(), Box<dyn Error>> {
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
-        let offer = Issuer::offer_credential(proposal.subject.as_deref(), &ISSUER_DID, 1)?;
+        let schema: CredentialSchema = serde_json::from_str(&SCHEMA)?;
+        let mut draft = schema.create_credential_draft(CredentialDraftOptions { issuer_did: ISSUER_DID.to_string(), id: None, issuance_date: None, subject_did: Some(SUBJECT_DID.to_string()), valid_until: None });
 
-        assert_eq!(&offer.issuer, &ISSUER_DID);
-        assert_eq!(&offer.subject, &proposal.subject);
+        draft.issuer = ISSUER_DID.to_string();
+        draft.credential_subject.data.clear(); // don't pre-fill schema values with empty strings in test
+        // values must be inserted into draft to get a predictable outcome
+        draft.credential_subject.data.insert("test_property_string".to_string(), "foo".to_string());
+        draft.credential_subject.data.insert("test_property_string2".to_string(), "bar".to_string());
+
+        let offer = Issuer::offer_credential(&draft)?;
+
+        assert_eq!(&offer.ld_proof_vc_detail.credential.issuer, &ISSUER_DID);
+        assert_eq!(&offer.ld_proof_vc_detail.credential.credential_subject.id, &proposal.subject);
 
         Ok(())
     }
 
-    #[test]
-    fn can_issue_credential_one_property() -> Result<(), Box<dyn Error>> {
-        let message_count = 1;
+    #[tokio::test]
+    async fn can_issue_credential_one_property() -> Result<(), Box<dyn Error>> {
         let (dpk, sk) = BbsIssuer::new_short_keys(None);
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
-        let offer =
-            Issuer::offer_credential(proposal.subject.as_deref(), &ISSUER_DID, message_count)?;
+        let schema: CredentialSchema = serde_json::from_str(SCHEMA)?;
+        let mut draft = schema.create_credential_draft(CredentialDraftOptions { issuer_did: ISSUER_DID.to_string(), id: None, issuance_date: None, subject_did: Some(HOLDER_DID.to_string()), valid_until: Some(get_now_as_iso_string()) });
+        let mut offer = Issuer::offer_credential(&draft)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
-        let (credential_request, schema, nquads) = request_credential(&dpk, &offer)?;
-        let valid_until = get_now_as_iso_string();
+        let (credential_request, _) = request_credential(&dpk, &mut offer, 1).await?;
 
-        match Issuer::issue_credential(
-            &ISSUER_DID,
-            &HOLDER_DID,
+        let status = CredentialStatus {
+            id: format!("{}#0", EXAMPLE_REVOCATION_LIST_DID),
+            r#type: "RevocationList2020Status".to_string(),
+            revocation_list_index: "0".to_string(),
+            revocation_list_credential: EXAMPLE_REVOCATION_LIST_DID.to_string(),
+        };
+        let unsigned = &offer.ld_proof_vc_detail.credential.to_unsigned_credential(status);
+        let nquads = convert_to_nquads(&serde_json::to_string(&unsigned)?).await?;
+        let values_only = get_credential_values(&nquads)?;
+
+        let result = Issuer::sign_nquads(
+            &unsigned,
             &offer,
             &credential_request,
             &key_id,
             &dpk,
             &sk,
-            schema.clone(),
             [1].to_vec(),
-            nquads,
-            EXAMPLE_REVOCATION_LIST_DID,
-            &"0".to_string(),
-            Some(valid_until.clone()),
-        ) {
+            values_only,
+        );
+        match result {
             Ok(cred) => {
                 assert_credential(
                     credential_request.clone(),
                     cred.clone(),
                     &key_id,
                     &schema.id,
-                    Some(valid_until),
+                    draft.valid_until.clone(),
                 );
             }
             Err(e) => assert!(false, "Received error when issuing credential: {}", e),
-        }
+        };
+
         Ok(())
     }
 
-    #[test]
-    fn can_issue_credential_five_properties() -> Result<(), Box<dyn Error>> {
-        let message_count = 5;
-
+    #[tokio::test]
+    async fn can_issue_credential_five_properties() -> Result<(), Box<dyn Error>> {
         let nonce_bytes = decode_base64(&PUB_KEY, "Public Key")?.into_boxed_slice();
         let dpk = DeterministicPublicKey::from(nonce_bytes);
         let nonce_bytes = decode_base64(&SECRET_KEY, "Secret Key")?.into_boxed_slice();
         let sk = SecretKey::from(nonce_bytes);
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
-        let offer =
-            Issuer::offer_credential(proposal.subject.as_deref(), &ISSUER_DID, message_count)?;
+        let schema: CredentialSchema = serde_json::from_str(SCHEMA)?;
+        let mut draft = schema.create_credential_draft(CredentialDraftOptions { issuer_did: ISSUER_DID.to_string(), id: None, issuance_date: None, subject_did: Some(HOLDER_DID.to_string()), valid_until: None });
+        let mut offer = Issuer::offer_credential(&draft)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
-        let (credential_request, schema, nquads) = request_credential(&dpk, &offer)?;
+        let (credential_request, _) = request_credential(&dpk, &mut offer, 5).await?;
 
-        match Issuer::issue_credential(
-            &ISSUER_DID,
-            &HOLDER_DID,
+        let status = CredentialStatus {
+            id: format!("{}#0", EXAMPLE_REVOCATION_LIST_DID),
+            r#type: "RevocationList2020Status".to_string(),
+            revocation_list_index: "0".to_string(),
+            revocation_list_credential: EXAMPLE_REVOCATION_LIST_DID.to_string(),
+        };
+        let unsigned = &offer.ld_proof_vc_detail.credential.to_unsigned_credential(status);
+        let nquads = convert_to_nquads(&serde_json::to_string(&unsigned)?).await?;
+        let values_only = get_credential_values(&nquads)?;
+
+        let result = Issuer::sign_nquads(
+            &unsigned,
             &offer,
             &credential_request,
             &key_id,
             &dpk,
             &sk,
-            schema.clone(),
             [1].to_vec(),
-            nquads,
-            EXAMPLE_REVOCATION_LIST_DID,
-            &"0".to_string(),
-            None,
-        ) {
+            values_only,
+        );
+
+        match result {
             Ok(cred) => {
                 assert_credential(
                     credential_request.clone(),
@@ -634,50 +690,71 @@ mod tests {
                 );
             }
             Err(e) => assert!(false, "Received error when issuing credential: {}", e),
-        }
+        };
+
         Ok(())
     }
 
-    #[test]
-    fn can_sign_nquads_five_properties() -> Result<(), Box<dyn Error>> {
-        let message_count = 5;
-
+    #[tokio::test]
+    async fn can_sign_nquads_five_properties() -> Result<(), Box<dyn Error>> {
         let nonce_bytes = decode_base64(&PUB_KEY, "Public Key")?.into_boxed_slice();
         let dpk = DeterministicPublicKey::from(nonce_bytes);
         let nonce_bytes = decode_base64(&SECRET_KEY, "Secret Key")?.into_boxed_slice();
         let sk = SecretKey::from(nonce_bytes);
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
-        let offer =
-            Issuer::offer_credential(proposal.subject.as_deref(), &ISSUER_DID, message_count)?;
+        let schema: CredentialSchema = serde_json::from_str(SCHEMA)?;
+        let mut draft = schema.create_credential_draft(CredentialDraftOptions { issuer_did: ISSUER_DID.to_string(), id: None, issuance_date: None, subject_did: Some(SUBJECT_DID.to_string()), valid_until: None });
+        let mut offer = Issuer::offer_credential(&draft)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
-        let (credential_request, _, nquads) = request_credential(&dpk, &offer)?;
-        let unsigned_vc: UnsignedBbsCredential = serde_json::from_str(UNSIGNED_CREDENTIAL)?;
+        let (credential_request, _) = request_credential(&dpk, &mut offer, 5).await?;
+
+        let status = CredentialStatus {
+            id: format!("{}#0", EXAMPLE_REVOCATION_LIST_DID),
+            r#type: "RevocationList2020Status".to_string(),
+            revocation_list_index: "0".to_string(),
+            revocation_list_credential: EXAMPLE_REVOCATION_LIST_DID.to_string(),
+        };
+        let unsigned = &offer.ld_proof_vc_detail.credential.to_unsigned_credential(status);
+        let nquads = convert_to_nquads(&serde_json::to_string(&unsigned)?).await?;
+        let values_only = get_credential_values(&nquads)?;
 
         match Issuer::sign_nquads(
-            &unsigned_vc,
+            &unsigned,
             &offer,
             &credential_request,
             &key_id,
             &dpk,
             &sk,
             [1].to_vec(),
-            nquads,
+            values_only,
         ) {
             Ok(cred) => assert_credential_proof(cred, &key_id, [1].to_vec()),
             Err(e) => assert!(false, "Received error when issuing credential: {}", e),
         }
+
         Ok(())
     }
 
-    #[test]
-    fn cannot_issue_credential_larger_revocation_id() -> Result<(), Box<dyn Error>> {
-        let message_count = 5;
+    #[tokio::test]
+    async fn cannot_issue_credential_larger_revocation_id() -> Result<(), Box<dyn Error>> {
         let (dpk, sk) = BbsIssuer::new_short_keys(None);
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
-        let offer =
-            Issuer::offer_credential(proposal.subject.as_deref(), &ISSUER_DID, message_count)?;
+        let schema: CredentialSchema = serde_json::from_str(SCHEMA)?;
+        // let mut draft = schema.create_credential_draft(false, Some(HOLDER_DID.to_string()));
+        let mut draft = schema.create_credential_draft(CredentialDraftOptions { issuer_did: ISSUER_DID.to_string(), id: None, issuance_date: None, subject_did: Some(SUBJECT_DID.to_string()), valid_until: None });
+        let mut offer = Issuer::offer_credential(&draft)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
-        let (credential_request, schema, nquads) = request_credential(&dpk, &offer)?;
+        let (credential_request, _) = request_credential(&dpk, &mut offer, 5).await?;
+
+        let over_max = &(MAX_REVOCATION_ENTRIES + 1).to_string();
+        let status = CredentialStatus {
+            id: format!("{}#{}", EXAMPLE_REVOCATION_LIST_DID, &over_max),
+            r#type: "RevocationList2020Status".to_string(),
+            revocation_list_index: over_max.to_owned(),
+            revocation_list_credential: EXAMPLE_REVOCATION_LIST_DID.to_string(),
+        };
+        let unsigned = &offer.ld_proof_vc_detail.credential.to_unsigned_credential(status);
+        let nquads = convert_to_nquads(&serde_json::to_string(&unsigned)?).await?;
 
         let result = Issuer::issue_credential(
             &ISSUER_DID,

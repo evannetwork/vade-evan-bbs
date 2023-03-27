@@ -111,7 +111,7 @@ impl Prover {
             &issuer_pub_key,
             &master_secret,
             &nonce,
-            credential_offering.credential_message_count,
+            credential_offering.ld_proof_vc_detail.get_message_count()?,
         )
         .map_err(|e| {
             format!(
@@ -123,9 +123,14 @@ impl Prover {
         Ok((
             BbsCredentialRequest {
                 schema: credential_schema.id.clone(),
-                subject: credential_offering.subject.clone(),
+                subject: credential_offering
+                    .ld_proof_vc_detail
+                    .credential
+                    .credential_subject
+                    .id
+                    .clone(),
                 r#type: CREDENTIAL_REQUEST_TYPE.to_string(),
-                credential_values: credential_values,
+                credential_values,
                 blind_signature_context: base64::encode(
                     blind_signature_context.to_bytes_compressed_form(),
                 ),
@@ -291,9 +296,9 @@ mod tests {
         application::utils::{
             decode_base64,
             get_dpk_from_string,
-            get_signature_message_from_string,
+            get_signature_message_from_string, convert_to_nquads,
         },
-        crypto::crypto_utils::check_assertion_proof,
+        crypto::crypto_utils::check_assertion_proof, CredentialDraftOptions, LdProofVcDetailOptionsCredentialStatus, LdProofVcDetailOffer, LdProofVcDetailOptionsType, LdProofVcDetailOptions, LdProofVcDetail, LdProofVcDetailOptionsCredentialStatusType, LdProofVcDetailCredential, UnsignedBbsCredential,
     };
     use bbs::{
         issuer::Issuer as BbsIssuer,
@@ -307,7 +312,7 @@ mod tests {
             ISSUER_DID,
             SIGNER_1_ADDRESS,
             SIGNER_1_PRIVATE_KEY,
-            VERIFIER_DID,
+            VERIFIER_DID, SUBJECT_DID,
         },
         bbs_coherent_context_test_data::{
             FINISHED_CREDENTIAL,
@@ -335,16 +340,39 @@ mod tests {
         Box<dyn Error>,
     > {
         let (dpk, sk) = BbsIssuer::new_short_keys(None);
-        let offering: BbsCredentialOffer = serde_json::from_str(EXAMPLE_CREDENTIAL_OFFERING)?;
         let schema: CredentialSchema = serde_json::from_str(SCHEMA)?;
+        let mut credential_draft = schema.create_credential_draft(CredentialDraftOptions {
+            issuer_did: ISSUER_DID.to_string(),
+            id: None,
+            issuance_date: None,
+            subject_did: Some(SUBJECT_DID.to_string()),
+            valid_until: None,
+        });
+        credential_draft.credential_subject.data.insert("test_property_string".to_owned(), "value".to_owned());
+        let credential_values = credential_draft.credential_subject.data.clone();
+        let offering: BbsCredentialOffer = BbsCredentialOffer {
+            ld_proof_vc_detail: LdProofVcDetail {
+                credential: credential_draft,
+                options: LdProofVcDetailOptions {
+                    created: get_now_as_iso_string(),
+                    proof_type: LdProofVcDetailOptionsType::Ed25519Signature2018,
+                    ld_proof_vc_detail_offer: Some(LdProofVcDetailOffer {
+                        credential_status: LdProofVcDetailOptionsCredentialStatus {
+                            r#type:
+                                LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
+                        },
+                    }),
+                    ld_proof_vc_detail_request: None,
+                },
+        },
+        nonce: "WzM0LDIxNSwyNDEsODgsMTg2LDExMiwyOSwxNTksNjUsMjE1LDI0MiwxNjQsMTksOCwyMDEsNzgsNTUsMTA4LDE1NCwxMTksMTg0LDIyNCwyMjUsNDAsNDgsMTgwLDY5LDE3OCwxNDgsNSw1OSwxMTFd".to_string(), };
         let secret = BbsProver::new_link_secret();
-        let mut credential_values = HashMap::new();
-        credential_values.insert("test_property_string".to_owned(), "value".to_owned());
+
 
         return Ok((dpk, sk, offering, schema, secret, credential_values));
     }
 
-    fn get_creat_proof_data() -> Result<
+    async fn get_creat_proof_data() -> Result<
         (
             BbsProofRequest,
             HashMap<String, BbsCredential>,
@@ -379,8 +407,12 @@ mod tests {
             .iter()
             .map(|q| q.to_string())
             .collect::<Vec<String>>();
-        let mut nquads_schema_map = HashMap::new();
-        nquads_schema_map.insert(schema_id.clone(), nquads);
+
+        let mut nquads_schema_map: HashMap<String, Vec<String>> = HashMap::new();
+        let unfinished_without_proof: UnsignedBbsCredential =
+            serde_json::from_str(&serde_json::to_string(&credential)?)?;
+        let nquads = convert_to_nquads(&serde_json::to_string(&unfinished_without_proof)?).await?;
+        nquads_schema_map.insert(schema_id.to_owned(), nquads);
 
         let public_key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;
         let mut public_key_schema_map = HashMap::new();
@@ -451,7 +483,10 @@ mod tests {
             Prover::request_credential(&offering, &schema, &secret, credential_values, &dpk)
                 .map_err(|e| format!("{}", e))?;
         assert_eq!(credential_request.schema, schema.id);
-        assert_eq!(credential_request.subject, offering.subject);
+        assert_eq!(
+            credential_request.subject,
+            offering.ld_proof_vc_detail.credential.credential_subject.id
+        );
         assert_eq!(credential_request.r#type, CREDENTIAL_REQUEST_TYPE);
         Ok(())
     }
@@ -464,18 +499,22 @@ mod tests {
             Ok(_) => assert!(false),
             Err(e) => assert_eq!(
                 format!("{}", e),
-                "Cannot create blind signature context. Provided no credential values"
+                "Cannot request credential: Missing required schema property: test_property_string"
             ),
         }
         Ok(())
     }
 
-    #[test]
-    fn can_finish_credential() -> Result<(), Box<dyn Error>> {
+    #[tokio::test]
+    async fn can_finish_credential() -> Result<(), Box<dyn Error>> {
         let unfinished_credential: UnfinishedBbsCredential =
             serde_json::from_str(&UNFINISHED_CREDENTIAL)?;
         let master_secret: SignatureMessage = get_signature_message_from_string(&MASTER_SECRET)?;
-        let nquads: Vec<String> = NQUADS.iter().map(|q| q.to_string()).collect();
+        // let nquads: Vec<String> = NQUADS.iter().map(|q| q.to_string()).collect();
+        let unfinished_without_proof: UnsignedBbsCredential = serde_json::from_str(
+            &serde_json::to_string(&unfinished_credential)?
+        )?;
+        let nquads = convert_to_nquads(&serde_json::to_string(&unfinished_without_proof)?).await?;
         let public_key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;
         let blinding: SignatureBlinding = SignatureBlinding::from(
             decode_base64(&SIGNATURE_BLINDING, "Signature Blinding")?.into_boxed_slice(),
@@ -508,7 +547,7 @@ mod tests {
             revealed_properties_map,
             public_key_schema_map,
             nquads_schema_map,
-        ) = get_creat_proof_data()?;
+        ) = get_creat_proof_data().await?;
 
         let master_secret: SignatureMessage = SignatureMessage::from(
             decode_base64(&MASTER_SECRET, "Master Secret")?.into_boxed_slice(),
