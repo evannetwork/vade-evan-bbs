@@ -347,8 +347,6 @@ async fn workflow_can_create_credential_offer_with_proposal() -> Result<(), Box<
 async fn workflow_can_create_credential_request() -> Result<(), Box<dyn Error>> {
     let mut vade = get_vade();
 
-    let proposal = create_credential_proposal(&mut vade).await?;
-
     // Create credential offering
     let schema = CredentialSchema::from_str(SCHEMA)?;
     let offer_payload = OfferCredentialPayload {
@@ -367,7 +365,7 @@ async fn workflow_can_create_credential_request() -> Result<(), Box<dyn Error>> 
     let mut credential_values = HashMap::new();
     credential_values.insert("test_property_string".to_owned(), "value".to_owned());
 
-    let (credential_request, foo, bar) =
+    let (credential_request, _, _) =
         create_credential_request(&mut vade, credential_values, offer.clone()).await?;
 
     assert_eq!(credential_request.schema, SCHEMA_DID);
@@ -384,8 +382,6 @@ async fn workflow_can_create_credential_request() -> Result<(), Box<dyn Error>> 
 async fn workflow_cannot_create_credential_request_with_missing_required_schema_property(
 ) -> Result<(), Box<dyn Error>> {
     let mut vade = get_vade();
-
-    let proposal = create_credential_proposal(&mut vade).await?;
 
     // Create credential offering
     let schema = CredentialSchema::from_str(SCHEMA)?;
@@ -426,8 +422,6 @@ async fn workflow_cannot_create_credential_request_with_empty_values() -> Result
 {
     let mut vade = get_vade();
 
-    let proposal = create_credential_proposal(&mut vade).await?;
-
     // Create credential offering
     let schema = CredentialSchema::from_str(SCHEMA)?;
     let offer_payload = OfferCredentialPayload {
@@ -464,8 +458,6 @@ async fn workflow_cannot_create_credential_request_with_empty_values() -> Result
 #[tokio::test]
 async fn workflow_can_create_unfinished_credential() -> Result<(), Box<dyn Error>> {
     let mut vade = get_vade();
-
-    let proposal = create_credential_proposal(&mut vade).await?;
 
     // Create credential offering
     let schema = CredentialSchema::from_str(SCHEMA)?;
@@ -504,8 +496,6 @@ async fn workflow_can_create_finished_credential() -> Result<(), Box<dyn Error>>
 
     let revocation_list = create_revocation_list(&mut vade).await?;
 
-    let proposal = create_credential_proposal(&mut vade).await?;
-
     let mut credential_values = HashMap::new();
     credential_values.insert("test_property_string".to_owned(), "value".to_owned());
 
@@ -525,7 +515,7 @@ async fn workflow_can_create_finished_credential() -> Result<(), Box<dyn Error>>
 
     let offer = create_credential_offer(&mut vade, offer_payload).await?;
 
-    let (credential_request, signature_blinding_base64, nquads) =
+    let (credential_request, signature_blinding_base64, _) =
         create_credential_request(&mut vade, credential_values, offer.clone()).await?;
 
     let unfinished_credential = create_unfinished_credential(
@@ -577,8 +567,6 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
 
     let revocation_list = create_revocation_list(&mut vade).await?;
 
-    let proposal = create_credential_proposal(&mut vade).await?;
-
     // Create credential offering
     let schema = CredentialSchema::from_str(SCHEMA)?;
     let mut credential_draft = schema.create_credential_draft(CredentialDraftOptions {
@@ -601,7 +589,7 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
 
     let offer = create_credential_offer(&mut vade, offer_payload).await?;
 
-    let (credential_request, signature_blinding_base64, nquads) =
+    let (credential_request, signature_blinding_base64, _) =
         create_credential_request(&mut vade, credential_values, offer.clone()).await?;
 
     let unfinished_credential = create_unfinished_credential(
@@ -673,11 +661,6 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
 
     let revocation_list = create_revocation_list(&mut vade).await?;
 
-    let proposal = create_credential_proposal(&mut vade).await?;
-
-    // let mut credential_values = HashMap::new();
-    // credential_values.insert("test_property_string".to_owned(), "value".to_owned());
-
     // Create credential offering
     let schema = CredentialSchema::from_str(SCHEMA)?;
     let mut credential_draft = schema.create_credential_draft(CredentialDraftOptions {
@@ -734,16 +717,13 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
     .await?;
 
     let mut nqsm: HashMap<String, Vec<String>> = HashMap::new();
-    // nqsm.insert(
-    //     SCHEMA_DID.to_string(),
-    //     vec!["test_property_string: value".to_string()],
-    // );
-
-    // let mut nquads_schema_map: HashMap<String, Vec<String>> = HashMap::new();
-    // let unfinished_without_proof: UnsignedBbsCredential =
-    //     serde_json::from_str(&serde_json::to_string(&finished_credential)?)?;
-    // let nquads = convert_to_nquads(&serde_json::to_string(&unfinished_without_proof)?).await?;
-    // nquads_schema_map.insert(SCHEMA_DID.to_string(), nquads);
+    nqsm.insert(
+        SCHEMA_DID.to_string(),
+        vec![
+            "test_property_string2: value".to_string(),
+            "test_property_string4: value".to_string(),
+        ],
+    );
 
     // verify proof
     let presentation_id = &presentation.id.to_owned();

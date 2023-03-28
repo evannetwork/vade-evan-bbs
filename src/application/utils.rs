@@ -24,7 +24,7 @@ use ssi_json_ld::{json_to_dataset, urdna2015::normalize, JsonLdOptions, StaticLo
 use std::{collections::HashMap, error::Error, panic};
 use uuid::Uuid;
 
-use crate::{BbsProofRequest, ProofPresentation, UnsignedBbsCredential};
+use crate::{BbsProofRequest, UnsignedBbsCredential};
 
 const NQUAD_REGEX: &str = r"^_:c14n0 <http://schema.org/([^>]+?)>";
 
@@ -122,6 +122,7 @@ pub async fn convert_to_nquads(document_string: &str) -> Result<Vec<String>, Box
     Ok(non_empty_lines)
 }
 
+#[allow(dead_code)]
 pub async fn convert_to_credential_nquads<T>(credential: &T) -> Result<Vec<String>, Box<dyn Error>>
 where
     T: Serialize,

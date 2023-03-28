@@ -298,7 +298,7 @@ mod tests {
             get_dpk_from_string,
             get_signature_message_from_string, convert_to_nquads,
         },
-        crypto::crypto_utils::check_assertion_proof, CredentialDraftOptions, LdProofVcDetailOptionsCredentialStatus, LdProofVcDetailOffer, LdProofVcDetailOptionsType, LdProofVcDetailOptions, LdProofVcDetail, LdProofVcDetailOptionsCredentialStatusType, LdProofVcDetailCredential, UnsignedBbsCredential,
+        crypto::crypto_utils::check_assertion_proof, CredentialDraftOptions, LdProofVcDetailOptionsCredentialStatus, LdProofVcDetailOffer, LdProofVcDetailOptionsType, LdProofVcDetailOptions, LdProofVcDetail, LdProofVcDetailOptionsCredentialStatusType, UnsignedBbsCredential,
     };
     use bbs::{
         issuer::Issuer as BbsIssuer,
@@ -317,14 +317,12 @@ mod tests {
         bbs_coherent_context_test_data::{
             FINISHED_CREDENTIAL,
             MASTER_SECRET,
-            NQUADS,
             PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES,
             PUB_KEY,
             SCHEMA,
             SIGNATURE_BLINDING,
             UNFINISHED_CREDENTIAL,
         },
-        vc_zkp::EXAMPLE_CREDENTIAL_OFFERING,
     };
     use vade_signer::{LocalSigner, Signer};
 
@@ -402,11 +400,6 @@ mod tests {
         };
         let mut revealed_properties_map = HashMap::new();
         revealed_properties_map.insert(schema_id.clone(), revealed);
-
-        let nquads: Vec<String> = NQUADS
-            .iter()
-            .map(|q| q.to_string())
-            .collect::<Vec<String>>();
 
         let mut nquads_schema_map: HashMap<String, Vec<String>> = HashMap::new();
         let unfinished_without_proof: UnsignedBbsCredential =

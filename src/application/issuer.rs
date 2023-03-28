@@ -14,7 +14,7 @@
   limitations under the License.
 */
 
-use super::{datatypes::SchemaProperty, utils::convert_to_nquads};
+use super::datatypes::SchemaProperty;
 use crate::{
     application::{
         datatypes::{
@@ -480,7 +480,6 @@ mod tests {
             REVOCATION_LIST_CREDENTIAL,
             SCHEMA,
             SECRET_KEY,
-            UNSIGNED_CREDENTIAL,
         },
         vc_zkp::EXAMPLE_CREDENTIAL_PROPOSAL,
     };
@@ -602,9 +601,8 @@ mod tests {
     #[tokio::test]
     async fn can_issue_credential_one_property() -> Result<(), Box<dyn Error>> {
         let (dpk, sk) = BbsIssuer::new_short_keys(None);
-        let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
         let schema: CredentialSchema = serde_json::from_str(SCHEMA)?;
-        let mut draft = schema.create_credential_draft(CredentialDraftOptions { issuer_did: ISSUER_DID.to_string(), id: None, issuance_date: None, subject_did: Some(HOLDER_DID.to_string()), valid_until: Some(get_now_as_iso_string()) });
+        let draft = schema.create_credential_draft(CredentialDraftOptions { issuer_did: ISSUER_DID.to_string(), id: None, issuance_date: None, subject_did: Some(HOLDER_DID.to_string()), valid_until: Some(get_now_as_iso_string()) });
         let mut offer = Issuer::offer_credential(&draft)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
         let (credential_request, _) = request_credential(&dpk, &mut offer, 1).await?;
@@ -651,9 +649,8 @@ mod tests {
         let dpk = DeterministicPublicKey::from(nonce_bytes);
         let nonce_bytes = decode_base64(&SECRET_KEY, "Secret Key")?.into_boxed_slice();
         let sk = SecretKey::from(nonce_bytes);
-        let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
         let schema: CredentialSchema = serde_json::from_str(SCHEMA)?;
-        let mut draft = schema.create_credential_draft(CredentialDraftOptions { issuer_did: ISSUER_DID.to_string(), id: None, issuance_date: None, subject_did: Some(HOLDER_DID.to_string()), valid_until: None });
+        let draft = schema.create_credential_draft(CredentialDraftOptions { issuer_did: ISSUER_DID.to_string(), id: None, issuance_date: None, subject_did: Some(HOLDER_DID.to_string()), valid_until: None });
         let mut offer = Issuer::offer_credential(&draft)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
         let (credential_request, _) = request_credential(&dpk, &mut offer, 5).await?;
@@ -701,9 +698,8 @@ mod tests {
         let dpk = DeterministicPublicKey::from(nonce_bytes);
         let nonce_bytes = decode_base64(&SECRET_KEY, "Secret Key")?.into_boxed_slice();
         let sk = SecretKey::from(nonce_bytes);
-        let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
         let schema: CredentialSchema = serde_json::from_str(SCHEMA)?;
-        let mut draft = schema.create_credential_draft(CredentialDraftOptions { issuer_did: ISSUER_DID.to_string(), id: None, issuance_date: None, subject_did: Some(SUBJECT_DID.to_string()), valid_until: None });
+        let draft = schema.create_credential_draft(CredentialDraftOptions { issuer_did: ISSUER_DID.to_string(), id: None, issuance_date: None, subject_did: Some(SUBJECT_DID.to_string()), valid_until: None });
         let mut offer = Issuer::offer_credential(&draft)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
         let (credential_request, _) = request_credential(&dpk, &mut offer, 5).await?;
@@ -738,10 +734,8 @@ mod tests {
     #[tokio::test]
     async fn cannot_issue_credential_larger_revocation_id() -> Result<(), Box<dyn Error>> {
         let (dpk, sk) = BbsIssuer::new_short_keys(None);
-        let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
         let schema: CredentialSchema = serde_json::from_str(SCHEMA)?;
-        // let mut draft = schema.create_credential_draft(false, Some(HOLDER_DID.to_string()));
-        let mut draft = schema.create_credential_draft(CredentialDraftOptions { issuer_did: ISSUER_DID.to_string(), id: None, issuance_date: None, subject_did: Some(SUBJECT_DID.to_string()), valid_until: None });
+        let draft = schema.create_credential_draft(CredentialDraftOptions { issuer_did: ISSUER_DID.to_string(), id: None, issuance_date: None, subject_did: Some(SUBJECT_DID.to_string()), valid_until: None });
         let mut offer = Issuer::offer_credential(&draft)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
         let (credential_request, _) = request_credential(&dpk, &mut offer, 5).await?;

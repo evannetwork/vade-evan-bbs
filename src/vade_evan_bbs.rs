@@ -53,7 +53,7 @@ use bbs::{
     SignatureMessage,
 };
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, convert::TryInto, error::Error};
+use std::{collections::HashMap, error::Error};
 use vade::{VadePlugin, VadePluginResultValue};
 use vade_signer::Signer;
 
@@ -610,17 +610,6 @@ impl VadePlugin for VadeEvanBbs {
                 .insert(schema_did.clone(), get_dpk_from_string(base64_public_key)?);
         }
 
-        // let schemas = &payload.credential_schema_map.keys();
-        // let mut nquads_schema_map: HashMap<String, Vec<String>> = HashMap::new();
-        // for now test with one schema to avoid future madness
-        // let schema_vec: Vec<String> = schemas.clone().cloned().collect();
-        // let schema: String = schema_vec.get(0).unwrap().to_owned();
-        // let credential = &payload.credential_schema_map.get(&schema);
-        // let unfinished_without_proof: UnsignedBbsCredential =
-        //     serde_json::from_str(&serde_json::to_string(&credential)?)?;
-        // let nquads = convert_to_nquads(&serde_json::to_string(&unfinished_without_proof)?).await?;
-        // nquads_schema_map.insert(schema, nquads);
-
         let unsigned_credentials_without_proof: Vec<UnsignedBbsCredential> = (&payload)
             .credential_schema_map
             .values()
@@ -823,44 +812,6 @@ impl VadePlugin for VadeEvanBbs {
                 .insert(schema_did.clone(), get_dpk_from_string(base64_public_key)?);
         }
 
-        // let schema_vec: Vec<String> = (&payload)
-        //     .proof_request
-        //     .sub_proof_requests
-        //     .iter()
-        //     .map(|spr| spr.schema.to_owned())
-        //     .collect();
-        // let mut nquads_schema_map: HashMap<String, Vec<String>> = HashMap::new();
-        // // for now test with one schema to avoid future madness
-        // // let schema_vec: Vec<String> = schemas.clone().cloned().collect();
-        // let schema: String = schema_vec.get(0).unwrap().to_owned();
-        // let credential = (&payload)
-        //     .presentation
-        //     .verifiable_credential
-        //     .get(0)
-        //     .unwrap()
-        //     .to_owned();
-        // let mut unfinished_without_proof: UnsignedBbsCredential =
-        //     serde_json::from_str(&serde_json::to_string(&credential)?)?;
-        // // patch values from credential in presentation into draft credential for nquads
-        // for (key, value) in credential.credential_subject.data.iter() {
-        //     unfinished_without_proof
-        //         .credential_subject
-        //         .data
-        //         .insert(key.to_owned(), value.to_owned());
-        // }
-        // let nquads = convert_to_nquads(&serde_json::to_string(&unfinished_without_proof)?).await?;
-        // let mut credential_values_nquads = get_credential_values(&nquads)?;
-        // credential_values_nquads.sort();
-        // let revealed_attributes_stuff: Vec<String> = (&payload)
-        //     .proof_request
-        //     .sub_proof_requests
-        //     .get(0)
-        //     .unwrap()
-        //     .revealed_attributes
-        //     .iter()
-        //     .map(|i| credential_values_nquads.get(*i - 2).unwrap().to_owned())
-        //     .collect();
-        // nquads_schema_map.insert(schema, revealed_attributes_stuff);
         let unsigned_credentials_without_proof: Vec<UnsignedBbsCredential> = (&payload)
             .presentation
             .verifiable_credential
