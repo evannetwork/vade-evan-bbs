@@ -491,9 +491,7 @@ mod tests {
             // Create messages until we have message_count - 1 messages (one is reserved for master secret)
             credential_values.insert(format!("test_property_string{}", i), "value".to_owned());
         }
-        offer.ld_proof_vc_detail.credential.credential_subject.data = credential_values.clone();
-
-        // let nquads = convert_to_nquads(&serde_json::to_string(&offer.ld_proof_vc_detail.credential)?).await?;
+        offer.ld_proof_vc_detail.credential.credential_subject.data = credential_values;
 
         // // Nquad-ize. Flatten the json-ld document graph.
         // // This will be done by TnT for now as we currently could not find a suitable rust library
@@ -507,7 +505,7 @@ mod tests {
         // }
 
         let (credential_request, _) =
-            Prover::request_credential(offer, &schema, &secret, credential_values, pub_key)
+            Prover::request_credential(&offer.ld_proof_vc_detail, &offer.nonce, &schema, &secret, pub_key)
                 .map_err(|e| format!("{}", e))?;
 
         return Ok((credential_request, schema));

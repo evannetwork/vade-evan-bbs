@@ -44,6 +44,7 @@ use crate::{
         verifier::Verifier,
     },
     crypto::{crypto_utils::get_public_key_from_private_key, crypto_verifier::CryptoVerifier},
+    LdProofVcDetail,
     LdProofVcDetailCredential,
 };
 use async_trait::async_trait;
@@ -184,12 +185,12 @@ pub struct CreateCredentialProposalPayload {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RequestCredentialPayload {
-    /// Credential offering sent by an issuer
-    pub credential_offering: BbsCredentialOffer,
+    // details about credential to be requested
+    pub ld_proof_vc_detail: LdProofVcDetail,
+    // nonce from offer
+    pub nonce: String,
     /// Master secret of the holder/receiver
     pub master_secret: String,
-    /// Cleartext values to be signed in the credential
-    pub credential_values: HashMap<String, String>,
     /// Public key of the issuer
     pub issuer_pub_key: String,
     /// Credential Schema credential
@@ -704,10 +705,10 @@ impl VadePlugin for VadeEvanBbs {
         );
         let (credential_request, signature_blinding): (BbsCredentialRequest, SignatureBlinding) =
             Prover::request_credential(
-                &payload.credential_offering,
+                &payload.ld_proof_vc_detail,
+                &payload.nonce,
                 &payload.credential_schema,
                 &master_secret,
-                payload.credential_values,
                 &public_key,
             )?;
         let result = serde_json::to_string(&(

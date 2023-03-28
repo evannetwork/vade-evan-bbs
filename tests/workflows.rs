@@ -120,10 +120,10 @@ async fn create_credential_offer(
 
 async fn create_credential_request(
     vade: &mut Vade,
-    credential_values: HashMap<String, String>,
     offer: BbsCredentialOffer,
-) -> Result<(BbsCredentialRequest, String, Vec<String>), Box<dyn Error>> {
+) -> Result<(BbsCredentialRequest, String), Box<dyn Error>> {
     let mut nquads = Vec::new();
+    let credential_values = &offer.ld_proof_vc_detail.credential.credential_subject.data;
     let mut keys: Vec<String> = credential_values.keys().map(|k| k.to_string()).collect();
     keys.sort();
     for key in &keys {
@@ -133,9 +133,9 @@ async fn create_credential_request(
     }
     let credential_schema: CredentialSchema = serde_json::from_str(&SCHEMA)?;
     let request = RequestCredentialPayload {
-        credential_offering: offer,
+        ld_proof_vc_detail: offer.ld_proof_vc_detail,
+        nonce: offer.nonce,
         master_secret: MASTER_SECRET.to_string(),
-        credential_values: credential_values.clone(),
         issuer_pub_key: PUB_KEY.to_string(),
         credential_schema,
     };
@@ -148,7 +148,7 @@ async fn create_credential_request(
     let (credential_request, signature_blinding_base64): (BbsCredentialRequest, String) =
         serde_json::from_str(&result[0].as_ref().unwrap())?;
 
-    Ok((credential_request, signature_blinding_base64, nquads))
+    Ok((credential_request, signature_blinding_base64))
 }
 
 async fn create_unfinished_credential(
@@ -361,12 +361,7 @@ async fn workflow_can_create_credential_request() -> Result<(), Box<dyn Error>> 
 
     let offer = create_credential_offer(&mut vade, offer_payload).await?;
 
-    // Create credential request
-    let mut credential_values = HashMap::new();
-    credential_values.insert("test_property_string".to_owned(), "value".to_owned());
-
-    let (credential_request, _, _) =
-        create_credential_request(&mut vade, credential_values, offer.clone()).await?;
+    let (credential_request, _) = create_credential_request(&mut vade, offer.clone()).await?;
 
     assert_eq!(credential_request.schema, SCHEMA_DID);
     assert_eq!(
@@ -395,13 +390,12 @@ async fn workflow_cannot_create_credential_request_with_missing_required_schema_
         }),
     };
 
-    let offer = create_credential_offer(&mut vade, offer_payload).await?;
-
-    // Create credential request
-    let mut credential_values = HashMap::new();
+    let mut offer = create_credential_offer(&mut vade, offer_payload).await?;
+    let credential_values = &mut offer.ld_proof_vc_detail.credential.credential_subject.data;
+    credential_values.clear();
     credential_values.insert("not_required_property".to_owned(), "value".to_owned());
 
-    let err_result = create_credential_request(&mut vade, credential_values, offer)
+    let err_result = create_credential_request(&mut vade, offer)
         .await
         .map_err(|e| format!("{}", e))
         .err();
@@ -434,12 +428,15 @@ async fn workflow_cannot_create_credential_request_with_empty_values() -> Result
         }),
     };
 
-    let offer = create_credential_offer(&mut vade, offer_payload).await?;
+    let mut offer = create_credential_offer(&mut vade, offer_payload).await?;
+    offer
+        .ld_proof_vc_detail
+        .credential
+        .credential_subject
+        .data
+        .clear();
 
-    // Create credential request
-    let credential_values = HashMap::new();
-
-    let err_result = create_credential_request(&mut vade, credential_values, offer)
+    let err_result = create_credential_request(&mut vade, offer)
         .await
         .map_err(|e| format!("{}", e))
         .err();
@@ -473,12 +470,7 @@ async fn workflow_can_create_unfinished_credential() -> Result<(), Box<dyn Error
 
     let offer = create_credential_offer(&mut vade, offer_payload).await?;
 
-    // Create credential request
-    let mut credential_values = HashMap::new();
-    credential_values.insert("test_property_string".to_owned(), "value".to_owned());
-
-    let (credential_request, _, _) =
-        create_credential_request(&mut vade, credential_values, offer.clone()).await?;
+    let (credential_request, _) = create_credential_request(&mut vade, offer.clone()).await?;
 
     assert_eq!(credential_request.schema, SCHEMA_DID);
     assert_eq!(
@@ -507,7 +499,7 @@ async fn workflow_can_create_finished_credential() -> Result<(), Box<dyn Error>>
         subject_did: Some(SUBJECT_DID.to_string()),
         valid_until: None,
     });
-    credential_draft.credential_subject.data = credential_values.clone();
+    credential_draft.credential_subject.data = credential_values;
 
     let offer_payload = OfferCredentialPayload {
         credential: credential_draft,
@@ -515,8 +507,8 @@ async fn workflow_can_create_finished_credential() -> Result<(), Box<dyn Error>>
 
     let offer = create_credential_offer(&mut vade, offer_payload).await?;
 
-    let (credential_request, signature_blinding_base64, _) =
-        create_credential_request(&mut vade, credential_values, offer.clone()).await?;
+    let (credential_request, signature_blinding_base64) =
+        create_credential_request(&mut vade, offer.clone()).await?;
 
     let unfinished_credential = create_unfinished_credential(
         &mut vade,
@@ -582,15 +574,15 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
     credential_values.insert("test_property_string2".to_owned(), "value".to_owned());
     credential_values.insert("test_property_string".to_owned(), "value".to_owned());
     credential_values.insert("test_property_string4".to_owned(), "value".to_owned());
-    credential_draft.credential_subject.data = credential_values.clone();
+    credential_draft.credential_subject.data = credential_values;
     let offer_payload = OfferCredentialPayload {
         credential: credential_draft,
     };
 
     let offer = create_credential_offer(&mut vade, offer_payload).await?;
 
-    let (credential_request, signature_blinding_base64, _) =
-        create_credential_request(&mut vade, credential_values, offer.clone()).await?;
+    let (credential_request, signature_blinding_base64) =
+        create_credential_request(&mut vade, offer.clone()).await?;
 
     let unfinished_credential = create_unfinished_credential(
         &mut vade,
@@ -676,15 +668,15 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
     credential_values.insert("test_property_string2".to_owned(), "value".to_owned());
     credential_values.insert("test_property_string".to_owned(), "value".to_owned());
     credential_values.insert("test_property_string4".to_owned(), "value".to_owned());
-    credential_draft.credential_subject.data = credential_values.clone();
+    credential_draft.credential_subject.data = credential_values;
     let offer_payload = OfferCredentialPayload {
         credential: credential_draft,
     };
 
     let offer = create_credential_offer(&mut vade, offer_payload).await?;
 
-    let (credential_request, signature_blinding_base64, _) =
-        create_credential_request(&mut vade, credential_values, offer.clone()).await?;
+    let (credential_request, signature_blinding_base64) =
+        create_credential_request(&mut vade, offer.clone()).await?;
 
     let unfinished_credential = create_unfinished_credential(
         &mut vade,

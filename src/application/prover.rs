@@ -16,7 +16,6 @@
 
 use super::datatypes::{
     BbsCredential,
-    BbsCredentialOffer,
     BbsCredentialRequest,
     BbsPresentation,
     BbsProofRequest,
@@ -32,7 +31,7 @@ use super::datatypes::{
 };
 use crate::{
     application::utils::{generate_uuid, get_nonce_from_string, get_now_as_iso_string},
-    crypto::{crypto_prover::CryptoProver, crypto_utils::create_assertion_proof},
+    crypto::{crypto_prover::CryptoProver, crypto_utils::create_assertion_proof}, LdProofVcDetail,
 };
 use bbs::{
     keys::DeterministicPublicKey,
@@ -73,31 +72,30 @@ impl Prover {
     /// Request a new credential based on a received credential offering.
     ///
     /// # Arguments
-    /// * `credential_offering` - The received credential offering sent by the potential issuer
+    /// * `ld_proof_vc_detail` - details about credential to be requested
+    /// * `nonce` -  nonce from offer
     /// * `credential_schema` - The requested credential schema
     /// * `master_secret` - The master secret to be incorporated as a blinded value to be signed by the issuer
-    /// * `credential_values` - A mapping of property names to their stringified cleartext values
     /// * `issuer_pub_key` - Public key of the issuer
-    /// * `credential_message_count` - Number of messages to be signed in this credential by the issuer (all required schema properties + the optional ones the prover wants to provide values for)
     ///
     /// # Returns
     /// * `BbsCredentialRequest` - The request to be sent to the issuer
     /// * `SignatureBlinding` - Blinding that is needed for finishing the issued credential
     pub fn request_credential(
-        credential_offering: &BbsCredentialOffer,
+        ld_proof_vc_detail: &LdProofVcDetail,
+        nonce: &str,
         credential_schema: &CredentialSchema,
         master_secret: &SignatureMessage,
-        credential_values: HashMap<String, String>,
         issuer_pub_key: &DeterministicPublicKey,
     ) -> Result<(BbsCredentialRequest, SignatureBlinding), Box<dyn Error>> {
-        if credential_values.len() == 0 {
+        if ld_proof_vc_detail.credential.credential_subject.data.len() == 0 {
             return Err(Box::from(
                 "Cannot create blind signature context. Provided no credential values",
             ));
         }
 
         for required in &credential_schema.required {
-            if credential_values.get(required).is_none() {
+            if ld_proof_vc_detail.credential.credential_subject.data.get(required).is_none() {
                 let error = format!(
                     "Cannot request credential: Missing required schema property: {}",
                     required
@@ -106,12 +104,12 @@ impl Prover {
             }
         }
 
-        let nonce = get_nonce_from_string(&credential_offering.nonce)?;
+        let nonce = get_nonce_from_string(&nonce)?;
         let (blind_signature_context, blinding) = CryptoProver::create_blind_signature_context(
             &issuer_pub_key,
             &master_secret,
             &nonce,
-            credential_offering.ld_proof_vc_detail.get_message_count()?,
+            ld_proof_vc_detail.get_message_count()?,
         )
         .map_err(|e| {
             format!(
@@ -123,14 +121,13 @@ impl Prover {
         Ok((
             BbsCredentialRequest {
                 schema: credential_schema.id.clone(),
-                subject: credential_offering
-                    .ld_proof_vc_detail
+                subject: ld_proof_vc_detail
                     .credential
                     .credential_subject
                     .id
                     .clone(),
                 r#type: CREDENTIAL_REQUEST_TYPE.to_string(),
-                credential_values,
+                credential_values: ld_proof_vc_detail.credential.credential_subject.data.clone(),
                 blind_signature_context: base64::encode(
                     blind_signature_context.to_bytes_compressed_form(),
                 ),
@@ -293,10 +290,13 @@ mod tests {
     extern crate utilities;
     use super::*;
     use crate::{
-        application::utils::{
-            decode_base64,
-            get_dpk_from_string,
-            get_signature_message_from_string, convert_to_nquads,
+        application::{
+            datatypes::BbsCredentialOffer,
+                utils::{
+                decode_base64,
+                get_dpk_from_string,
+                get_signature_message_from_string, convert_to_nquads,
+            },
         },
         crypto::crypto_utils::check_assertion_proof, CredentialDraftOptions, LdProofVcDetailOptionsCredentialStatus, LdProofVcDetailOffer, LdProofVcDetailOptionsType, LdProofVcDetailOptions, LdProofVcDetail, LdProofVcDetailOptionsCredentialStatusType, UnsignedBbsCredential,
     };
@@ -333,7 +333,6 @@ mod tests {
             BbsCredentialOffer,
             CredentialSchema,
             SignatureMessage,
-            HashMap<String, String>,
         ),
         Box<dyn Error>,
     > {
@@ -347,7 +346,6 @@ mod tests {
             valid_until: None,
         });
         credential_draft.credential_subject.data.insert("test_property_string".to_owned(), "value".to_owned());
-        let credential_values = credential_draft.credential_subject.data.clone();
         let offering: BbsCredentialOffer = BbsCredentialOffer {
             ld_proof_vc_detail: LdProofVcDetail {
                 credential: credential_draft,
@@ -367,7 +365,7 @@ mod tests {
         let secret = BbsProver::new_link_secret();
 
 
-        return Ok((dpk, sk, offering, schema, secret, credential_values));
+        return Ok((dpk, sk, offering, schema, secret));
     }
 
     async fn get_creat_proof_data() -> Result<
@@ -471,9 +469,9 @@ mod tests {
 
     #[test]
     fn can_request_credential() -> Result<(), Box<dyn Error>> {
-        let (dpk, _, offering, schema, secret, credential_values) = setup_test()?;
+        let (dpk, _, offering, schema, secret) = setup_test()?;
         let (credential_request, _) =
-            Prover::request_credential(&offering, &schema, &secret, credential_values, &dpk)
+            Prover::request_credential(&offering.ld_proof_vc_detail, &offering.nonce, &schema, &secret, &dpk)
                 .map_err(|e| format!("{}", e))?;
         assert_eq!(credential_request.schema, schema.id);
         assert_eq!(
@@ -486,9 +484,9 @@ mod tests {
 
     #[test]
     fn throws_when_omitting_required_credential_value() -> Result<(), Box<dyn Error>> {
-        let (dpk, _, offering, schema, secret, mut credential_values) = setup_test()?;
-        credential_values.remove("test_property_string");
-        match Prover::request_credential(&offering, &schema, &secret, credential_values, &dpk) {
+        let (dpk, _, mut offering, schema, secret) = setup_test()?;
+        offering.ld_proof_vc_detail.credential.credential_subject.data.remove("test_property_string");
+        match Prover::request_credential(&offering.ld_proof_vc_detail, &offering.nonce, &schema, &secret, &dpk) {
             Ok(_) => assert!(false),
             Err(e) => assert_eq!(
                 format!("{}", e),
