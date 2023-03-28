@@ -329,7 +329,7 @@ async fn workflow_can_create_credential_offer_with_proposal() -> Result<(), Box<
     // Create credential offering
     let schema = CredentialSchema::from_str(SCHEMA)?;
     let offer_payload = OfferCredentialPayload {
-        credential: schema.create_credential_draft(CredentialDraftOptions {
+        credential: schema.to_draft_credential(CredentialDraftOptions {
             issuer_did: ISSUER_DID.to_string(),
             id: None,
             issuance_date: None,
@@ -355,7 +355,7 @@ async fn workflow_can_create_credential_request() -> Result<(), Box<dyn Error>> 
     // Create credential offering
     let schema = CredentialSchema::from_str(SCHEMA)?;
     let offer_payload = OfferCredentialPayload {
-        credential: schema.create_credential_draft(CredentialDraftOptions {
+        credential: schema.to_draft_credential(CredentialDraftOptions {
             issuer_did: ISSUER_DID.to_string(),
             id: None,
             issuance_date: None,
@@ -397,7 +397,7 @@ async fn workflow_cannot_create_credential_request_with_missing_required_schema_
     // Create credential offering
     let schema = CredentialSchema::from_str(SCHEMA)?;
     let offer_payload = OfferCredentialPayload {
-        credential: schema.create_credential_draft(CredentialDraftOptions {
+        credential: schema.to_draft_credential(CredentialDraftOptions {
             issuer_did: ISSUER_DID.to_string(),
             id: None,
             issuance_date: None,
@@ -435,7 +435,7 @@ async fn workflow_cannot_create_credential_request_with_empty_values() -> Result
     // Create credential offering
     let schema = CredentialSchema::from_str(SCHEMA)?;
     let offer_payload = OfferCredentialPayload {
-        credential: schema.create_credential_draft(CredentialDraftOptions {
+        credential: schema.to_draft_credential(CredentialDraftOptions {
             issuer_did: ISSUER_DID.to_string(),
             id: None,
             issuance_date: None,
@@ -475,7 +475,7 @@ async fn workflow_can_create_unfinished_credential() -> Result<(), Box<dyn Error
     // Create credential offering
     let schema = CredentialSchema::from_str(SCHEMA)?;
     let offer_payload = OfferCredentialPayload {
-        credential: schema.create_credential_draft(CredentialDraftOptions {
+        credential: schema.to_draft_credential(CredentialDraftOptions {
             issuer_did: ISSUER_DID.to_string(),
             id: None,
             issuance_date: None,
@@ -519,7 +519,7 @@ async fn workflow_can_create_finished_credential() -> Result<(), Box<dyn Error>>
     credential_values.insert("test_property_string".to_owned(), "value".to_owned());
 
     let schema = CredentialSchema::from_str(SCHEMA)?;
-    let mut credential_draft = schema.create_credential_draft(CredentialDraftOptions {
+    let mut credential_draft = schema.to_draft_credential(CredentialDraftOptions {
         issuer_did: ISSUER_DID.to_string(),
         id: None,
         issuance_date: None,
@@ -598,7 +598,7 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
 
     // Create credential offering
     let schema = CredentialSchema::from_str(SCHEMA)?;
-    let mut credential_draft = schema.create_credential_draft(CredentialDraftOptions {
+    let mut credential_draft = schema.to_draft_credential(CredentialDraftOptions {
         issuer_did: ISSUER_DID.to_string(),
         id: None,
         issuance_date: None,
@@ -692,7 +692,7 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
 
     // Create credential offering
     let schema = CredentialSchema::from_str(SCHEMA)?;
-    let mut credential_draft = schema.create_credential_draft(CredentialDraftOptions {
+    let mut credential_draft = schema.to_draft_credential(CredentialDraftOptions {
         issuer_did: ISSUER_DID.to_string(),
         id: None,
         issuance_date: None,

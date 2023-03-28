@@ -332,7 +332,7 @@ mod tests {
     > {
         let (dpk, sk) = BbsIssuer::new_short_keys(None);
         let schema: CredentialSchema = serde_json::from_str(SCHEMA)?;
-        let mut credential_draft = schema.create_credential_draft(CredentialDraftOptions {
+        let mut credential_draft = schema.to_draft_credential(CredentialDraftOptions {
             issuer_did: ISSUER_DID.to_string(),
             id: None,
             issuance_date: None,

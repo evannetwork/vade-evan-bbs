@@ -103,11 +103,8 @@ impl CredentialSchema {
         Ok(serde_json::from_str::<CredentialSchema>(schema_document)?)
     }
 
-    pub fn create_credential_draft(
-        &self,
-        options: CredentialDraftOptions,
-    ) -> LdProofVcDetailCredential {
-        let credential = LdProofVcDetailCredential {
+    pub fn to_draft_credential(&self, options: CredentialDraftOptions) -> DraftBbsCredential {
+        let credential = DraftBbsCredential {
             context: vec![
                 "https://www.w3.org/2018/credentials/v1".to_string(),
                 "https://schema.org/".to_string(),
@@ -531,7 +528,7 @@ impl RevocationListCredential {
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct LdProofVcDetailCredential {
+pub struct DraftBbsCredential {
     #[serde(rename(serialize = "@context", deserialize = "@context"))]
     pub context: Vec<String>,
     pub id: String,
@@ -544,7 +541,7 @@ pub struct LdProofVcDetailCredential {
     pub credential_schema: CredentialSchemaReference,
 }
 
-impl LdProofVcDetailCredential {
+impl DraftBbsCredential {
     pub fn to_unsigned_credential(&self, status: CredentialStatus) -> UnsignedBbsCredential {
         UnsignedBbsCredential {
             context: self.context.clone(),
@@ -611,7 +608,7 @@ pub struct LdProofVcDetailOptions {
 #[derive(Serialize, Deserialize, Clone)]
 // #[serde(rename_all = "camelCase")]
 pub struct LdProofVcDetail {
-    pub credential: LdProofVcDetailCredential,
+    pub credential: DraftBbsCredential,
     pub options: LdProofVcDetailOptions,
 }
 

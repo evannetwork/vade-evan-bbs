@@ -44,8 +44,8 @@ use crate::{
         verifier::Verifier,
     },
     crypto::{crypto_utils::get_public_key_from_private_key, crypto_verifier::CryptoVerifier},
+    DraftBbsCredential,
     LdProofVcDetail,
-    LdProofVcDetailCredential,
 };
 use async_trait::async_trait;
 use bbs::{
@@ -140,7 +140,7 @@ pub struct IssueCredentialPayload {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OfferCredentialPayload {
-    pub credential: LdProofVcDetailCredential,
+    pub credential: DraftBbsCredential,
 }
 
 /// API payload for creating a zero-knowledge proof out of a BBS+ signature.
