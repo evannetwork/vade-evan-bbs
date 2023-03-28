@@ -58,16 +58,6 @@ pub mod vc_zkp {
         "schema": "did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg"
     }
     "###;
-    pub const EXAMPLE_CREDENTIAL_OFFERING: &str = r###"
-    {
-        "issuer": "did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g",
-        "subject": "did:evan:subject",
-        "type": "EvanBbsCredentialOffering",
-        "schema": "did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg",
-        "credentialMessageCount": 5,
-        "nonce": "WzM0LDIxNSwyNDEsODgsMTg2LDExMiwyOSwxNTksNjUsMjE1LDI0MiwxNjQsMTksOCwyMDEsNzgsNTUsMTA4LDE1NCwxMTksMTg0LDIyNCwyMjUsNDAsNDgsMTgwLDY5LDE3OCwxNDgsNSw1OSwxMTFd"
-    }
-    "###;
 }
 
 #[allow(dead_code)]

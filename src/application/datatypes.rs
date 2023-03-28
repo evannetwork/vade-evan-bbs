@@ -165,17 +165,11 @@ pub struct AssertionProof {
     pub jws: String,
 }
 
-/// Message following a `CredentialProposal`, sent by an issuer.
-/// Specifies the DIDs of both the `CredentialSchema` and `CredentialDefinition`
-/// to be used for issuance.
+/// Message sent by an issuer.
+/// Defines how the credential to be issued will look like.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct BbsCredentialOffer {
-    // pub issuer: String,
-    // #[serde(skip_serializing_if = "Option::is_none")]
-    // pub subject: Option<String>,
-    // pub nonce: String,
-    // pub credential_message_count: usize,
     pub ld_proof_vc_detail: LdProofVcDetail,
     pub nonce: String,
 }

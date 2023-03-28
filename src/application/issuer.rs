@@ -125,11 +125,10 @@ impl Issuer {
         Ok(schema)
     }
 
-    /// Creates a new credential offer, as a response to a `CredentialProposal` sent by a prover.
+    /// Creates a new credential offer.
     ///
     /// # Arguments
-    /// * `subject` - DID of the subject for whom proposal to respond to
-    /// * `issuer_did` - DID of the issuer that is supposed to issue the offer
+    /// * `credential` - draft credential to be offered
     ///
     /// # Returns
     /// * `BbsCredentialOffer` - The message to be sent to the prover.
@@ -138,17 +137,11 @@ impl Issuer {
     ) -> Result<BbsCredentialOffer, Box<dyn Error>> {
         let nonce = base64::encode(BbsIssuer::generate_signing_nonce().to_bytes_compressed_form());
 
-        // Ok(BbsCredentialOffer {
-        //     issuer: issuer_did.to_owned(),
-        //     subject: subject.map(|value| value.to_string()),
-        //     credential_message_count: nquad_count + ADDITIONAL_HIDDEN_MESSAGES_COUNT,
-        //     nonce,
-        // })
         Ok(BbsCredentialOffer {
             ld_proof_vc_detail: LdProofVcDetail {
                 credential: credential.clone(),
                 options: LdProofVcDetailOptions {
-                    created: "now".to_string(), // TODO
+                    created: get_now_as_iso_string(),
                     proof_type: LdProofVcDetailOptionsType::Ed25519Signature2018,
                     ld_proof_vc_detail_offer: Some(LdProofVcDetailOffer {
                         credential_status: LdProofVcDetailOptionsCredentialStatus {
