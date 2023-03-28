@@ -120,14 +120,8 @@ impl Prover {
 
         Ok((
             BbsCredentialRequest {
-                schema: credential_schema.id.clone(),
-                subject: ld_proof_vc_detail
-                    .credential
-                    .credential_subject
-                    .id
-                    .clone(),
                 r#type: CREDENTIAL_REQUEST_TYPE.to_string(),
-                credential_values: ld_proof_vc_detail.credential.credential_subject.data.clone(),
+                ld_proof_vc_detail: ld_proof_vc_detail.clone(),
                 blind_signature_context: base64::encode(
                     blind_signature_context.to_bytes_compressed_form(),
                 ),
@@ -473,9 +467,9 @@ mod tests {
         let (credential_request, _) =
             Prover::request_credential(&offering.ld_proof_vc_detail, &offering.nonce, &schema, &secret, &dpk)
                 .map_err(|e| format!("{}", e))?;
-        assert_eq!(credential_request.schema, schema.id);
+        assert_eq!(credential_request.ld_proof_vc_detail.credential.credential_schema.id, schema.id);
         assert_eq!(
-            credential_request.subject,
+            credential_request.ld_proof_vc_detail.credential.credential_subject.id,
             offering.ld_proof_vc_detail.credential.credential_subject.id
         );
         assert_eq!(credential_request.r#type, CREDENTIAL_REQUEST_TYPE);

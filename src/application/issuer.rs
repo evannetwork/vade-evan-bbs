@@ -250,7 +250,7 @@ impl Issuer {
 
         let credential_subject = CredentialSubject {
             id: Some(subject_did.to_owned()),
-            data: credential_request.credential_values.clone(),
+            data: credential_request.ld_proof_vc_detail.credential.credential_subject.data.clone(),
         };
 
         let schema_reference = CredentialSchemaReference {
@@ -561,8 +561,8 @@ mod tests {
             .credential_subject
             .data
             .keys()
-            .all(|key| credential_request.credential_values.contains_key(key)
-                && credential_request.credential_values.get(key)
+            .all(|key| credential_request.ld_proof_vc_detail.credential.credential_subject.data.contains_key(key)
+                && credential_request.ld_proof_vc_detail.credential.credential_subject.data.get(key)
                     == cred.credential_subject.data.get(key)));
         if valid_until.is_some() {
             assert_eq!(cred.valid_until, valid_until);

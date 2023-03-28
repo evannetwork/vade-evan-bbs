@@ -162,7 +162,12 @@ async fn create_unfinished_credential(
     let unsigned_vc = get_unsigned_vc(
         revocation_list_did,
         revocation_list_id,
-        credential_request.credential_values.clone(),
+        credential_request
+            .ld_proof_vc_detail
+            .credential
+            .credential_subject
+            .data
+            .clone(),
     )?;
     let issue_cred = IssueCredentialPayload {
         unsigned_vc,
@@ -363,9 +368,20 @@ async fn workflow_can_create_credential_request() -> Result<(), Box<dyn Error>> 
 
     let (credential_request, _) = create_credential_request(&mut vade, offer.clone()).await?;
 
-    assert_eq!(credential_request.schema, SCHEMA_DID);
     assert_eq!(
-        credential_request.subject,
+        credential_request
+            .ld_proof_vc_detail
+            .credential
+            .credential_schema
+            .id,
+        SCHEMA_DID
+    );
+    assert_eq!(
+        credential_request
+            .ld_proof_vc_detail
+            .credential
+            .credential_subject
+            .id,
         offer.ld_proof_vc_detail.credential.credential_subject.id
     );
     assert_eq!(credential_request.r#type, CREDENTIAL_REQUEST_TYPE);
@@ -472,9 +488,20 @@ async fn workflow_can_create_unfinished_credential() -> Result<(), Box<dyn Error
 
     let (credential_request, _) = create_credential_request(&mut vade, offer.clone()).await?;
 
-    assert_eq!(credential_request.schema, SCHEMA_DID);
     assert_eq!(
-        credential_request.subject,
+        credential_request
+            .ld_proof_vc_detail
+            .credential
+            .credential_schema
+            .id,
+        SCHEMA_DID
+    );
+    assert_eq!(
+        credential_request
+            .ld_proof_vc_detail
+            .credential
+            .credential_subject
+            .id,
         offer.ld_proof_vc_detail.credential.credential_subject.id
     );
     assert_eq!(credential_request.r#type, CREDENTIAL_REQUEST_TYPE);
@@ -544,8 +571,18 @@ async fn workflow_can_create_finished_credential() -> Result<(), Box<dyn Error>>
         .credential_subject
         .data
         .keys()
-        .all(|key| credential_request.credential_values.contains_key(key)
-            && credential_request.credential_values.get(key)
+        .all(|key| credential_request
+            .ld_proof_vc_detail
+            .credential
+            .credential_subject
+            .data
+            .contains_key(key)
+            && credential_request
+                .ld_proof_vc_detail
+                .credential
+                .credential_subject
+                .data
+                .get(key)
                 == finished_credential.credential_subject.data.get(key)));
 
     assert!(base64::decode(&finished_credential.proof.signature).is_ok());

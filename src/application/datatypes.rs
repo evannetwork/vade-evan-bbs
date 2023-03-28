@@ -47,12 +47,9 @@ pub const BBS_PROOF_TYPE: &str = "BBS";
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct BbsCredentialRequest {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub subject: Option<String>,
-    pub schema: String,
     pub r#type: String,
+    pub ld_proof_vc_detail: LdProofVcDetail,
     pub blind_signature_context: String,
-    pub credential_values: HashMap<String, String>,
 }
 
 /// Message sent by a verifier stating which attributes of which schema the prover is supposed to reveal.
