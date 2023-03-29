@@ -152,7 +152,7 @@ pub struct BbsCredential {
     pub valid_until: Option<String>,
     pub credential_subject: CredentialSubject,
     pub credential_schema: CredentialSchemaReference,
-    pub credential_status: CredentialStatus,
+    pub credential_status: Option<CredentialStatus>,
     pub proof: BbsCredentialSignature,
 }
 
@@ -173,12 +173,7 @@ impl BbsCredential {
                 id: cred.credential_schema.id,
                 r#type: cred.credential_schema.r#type,
             },
-            credential_status: CredentialStatus {
-                id: cred.credential_status.id,
-                r#type: cred.credential_status.r#type,
-                revocation_list_index: cred.credential_status.revocation_list_index,
-                revocation_list_credential: cred.credential_status.revocation_list_credential,
-            },
+            credential_status: cred.credential_status,
             proof: BbsCredentialSignature {
                 created: cred.proof.created,
                 proof_purpose: cred.proof.proof_purpose,
@@ -206,7 +201,7 @@ pub struct UnsignedBbsCredential {
     pub issuance_date: String,
     pub credential_subject: CredentialSubject,
     pub credential_schema: CredentialSchemaReference,
-    pub credential_status: CredentialStatus,
+    pub credential_status: Option<CredentialStatus>,
 }
 
 /// A verifiable credential containing a blind signature that still needs to be processed by the holder/receiver.
@@ -223,7 +218,7 @@ pub struct UnfinishedBbsCredential {
     pub issuance_date: String,
     pub credential_subject: CredentialSubject,
     pub credential_schema: CredentialSchemaReference,
-    pub credential_status: CredentialStatus,
+    pub credential_status: Option<CredentialStatus>,
     pub proof: UnfinishedBbsCredentialSignature,
 }
 
@@ -361,7 +356,7 @@ pub struct BbsPresentation {
     pub issuance_date: String,
     pub credential_subject: CredentialSubject,
     pub credential_schema: CredentialSchemaReference,
-    pub credential_status: CredentialStatus,
+    pub credential_status: Option<CredentialStatus>,
     pub proof: BbsPresentationProof,
 }
 
@@ -384,12 +379,7 @@ impl BbsPresentation {
                 id: cred.credential_schema.id,
                 r#type: cred.credential_schema.r#type,
             },
-            credential_status: CredentialStatus {
-                id: cred.credential_status.id,
-                r#type: cred.credential_status.r#type,
-                revocation_list_index: cred.credential_status.revocation_list_index,
-                revocation_list_credential: cred.credential_status.revocation_list_credential,
-            },
+            credential_status: cred.credential_status,
             proof: BbsPresentationProof {
                 created: cred.proof.created,
                 proof_purpose: cred.proof.proof_purpose,

@@ -298,9 +298,14 @@ fn get_unsigned_vc(
     credential_values: HashMap<String, String>,
 ) -> Result<UnsignedBbsCredential, Box<dyn Error>> {
     let mut unsigned_vc: UnsignedBbsCredential = serde_json::from_str(UNSIGNED_CREDENTIAL)?;
-    unsigned_vc.credential_status.revocation_list_index = revocation_list_id.clone();
-    unsigned_vc.credential_status.revocation_list_credential = revocation_list_did.clone();
-    unsigned_vc.credential_status.id = format!("{}#{}", revocation_list_did, revocation_list_id);
+    let credential_status = Some(CredentialStatus {
+        id: format!("{}#{}", revocation_list_did, revocation_list_id),
+        r#type: "RevocationList2020Status".to_string(),
+        revocation_list_index: revocation_list_id.clone(),
+        revocation_list_credential: revocation_list_did.clone(),
+    });
+    unsigned_vc.credential_status = credential_status;
+
     unsigned_vc.credential_subject.data = credential_values;
 
     return Ok(unsigned_vc);

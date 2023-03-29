@@ -217,20 +217,33 @@ impl Issuer {
         credential_schema: CredentialSchema,
         required_indices: Vec<u32>,
         nquads: Vec<String>,
-        revocation_list_did: &str,
-        revocation_list_id: &str,
+        revocation_list_did: Option<&str>,
+        revocation_list_id: Option<&str>,
         valid_until: Option<String>,
     ) -> Result<UnfinishedBbsCredential, Box<dyn Error>> {
-        let revocation_list_index_number = revocation_list_id
-            .parse::<usize>()
-            .map_err(|e| format!("Error parsing revocation_list_id: {}", e))?;
+        let mut credential_status: Option<CredentialStatus> = None;
+        if revocation_list_id.is_some() {
+            let revocation_list_id =
+                revocation_list_id.ok_or_else(|| "Error parsing revocation_list_id")?;
+            let revocation_list_did =
+                revocation_list_did.ok_or_else(|| "Error parsing revocation_list_did")?;
+            let revocation_list_index_number = revocation_list_id
+                .parse::<usize>()
+                .map_err(|e| format!("Error parsing revocation_list_id: {}", e))?;
 
-        if revocation_list_index_number > MAX_REVOCATION_ENTRIES {
-            let error = format!(
+            if revocation_list_index_number > MAX_REVOCATION_ENTRIES {
+                let error = format!(
                 "Cannot issue credential: revocation_list_id {} is larger than list limit of {}",
                 revocation_list_index_number, MAX_REVOCATION_ENTRIES
             );
-            return Err(Box::from(error));
+                return Err(Box::from(error));
+            }
+            credential_status = Some(CredentialStatus {
+                id: format!("{}#{}", revocation_list_did, revocation_list_id),
+                r#type: "RevocationList2020Status".to_string(),
+                revocation_list_index: revocation_list_id.to_string(),
+                revocation_list_credential: revocation_list_did.to_string(),
+            });
         }
 
         let credential_subject = CredentialSubject {
@@ -285,12 +298,7 @@ impl Issuer {
             valid_until,
             issuance_date: get_now_as_iso_string(),
             credential_schema: schema_reference,
-            credential_status: CredentialStatus {
-                id: format!("{}#{}", revocation_list_did, revocation_list_id),
-                r#type: "RevocationList2020Status".to_string(),
-                revocation_list_index: revocation_list_id.to_string(),
-                revocation_list_credential: revocation_list_did.to_string(),
-            },
+            credential_status,
             proof: vc_signature,
         };
         Ok(credential)
@@ -577,8 +585,8 @@ mod tests {
             schema.clone(),
             [1].to_vec(),
             nquads,
-            EXAMPLE_REVOCATION_LIST_DID,
-            &"0".to_string(),
+            Some(EXAMPLE_REVOCATION_LIST_DID),
+            Some(&"0".to_string()),
             Some(valid_until.clone()),
         ) {
             Ok(cred) => {
@@ -620,8 +628,8 @@ mod tests {
             schema.clone(),
             [1].to_vec(),
             nquads,
-            EXAMPLE_REVOCATION_LIST_DID,
-            &"0".to_string(),
+            Some(EXAMPLE_REVOCATION_LIST_DID),
+            Some(&"0".to_string()),
             None,
         ) {
             Ok(cred) => {
@@ -690,8 +698,8 @@ mod tests {
             schema.clone(),
             [1].to_vec(),
             nquads,
-            EXAMPLE_REVOCATION_LIST_DID,
-            &(MAX_REVOCATION_ENTRIES + 1).to_string(),
+            Some(EXAMPLE_REVOCATION_LIST_DID),
+            Some(&(MAX_REVOCATION_ENTRIES + 1).to_string()),
             None,
         )
         .map_err(|e| format!("{}", e))
