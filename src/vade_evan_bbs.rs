@@ -120,8 +120,6 @@ pub struct CreateRevocationListPayload {
 pub struct IssueCredentialPayload {
     /// The VC to sign, without any appended proof
     pub unsigned_vc: UnsignedBbsCredential,
-    // /// Nquads representation of the VC without any appended proof
-    // pub nquads: Vec<String>,
     /// DID url of the public key of the issuer used to later verify the signature
     pub issuer_public_key_id: String,
     /// The public bbs+ key of the issuer used to later verify the signature

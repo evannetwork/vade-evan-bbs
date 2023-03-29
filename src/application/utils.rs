@@ -111,8 +111,10 @@ pub async fn convert_to_nquads(document_string: &str) -> Result<Vec<String>, Box
     )
     .await
     .map_err(|err| err.to_string())?;
-    let dataset_normalized = normalize(&dataset).unwrap();
-    let normalized = dataset_normalized.to_nquads().unwrap();
+    let dataset_normalized = normalize(&dataset).map_err(|err| err.to_string())?;
+    let normalized = dataset_normalized
+        .to_nquads()
+        .map_err(|err| err.to_string())?;
     let non_empty_lines = normalized
         .split("\n")
         .filter(|s| !s.is_empty())
@@ -185,8 +187,18 @@ pub async fn get_nquads_schema_map(
         if only_revealed {
             attributes = revealed_attributes
                 .iter()
-                .map(|i| credential_values_nquads.get(*i - 1).unwrap().to_owned())
-                .collect();
+                .map(|i| {
+                    credential_values_nquads
+                        .get(*i - 1)
+                        .ok_or_else(|| Box::from(format!(
+                            r#"revealed attribute "{}" of schema "{}" could not be found in provided attribute nquads with length {}"#,
+                            *i - 1,
+                            &requested_schema,
+                            &credential_values_nquads.len(),
+                        )))
+                        .map(|value| value.to_owned())
+                })
+                .collect::<Result<Vec<String>, Box<dyn Error>>>()?;
         } else {
             attributes = credential_values_nquads;
         }
