@@ -24,7 +24,7 @@ use ssi_json_ld::{json_to_dataset, urdna2015::normalize, JsonLdOptions, StaticLo
 use std::{collections::HashMap, error::Error, panic};
 use uuid::Uuid;
 
-use crate::{BbsProofRequest, UnsignedBbsCredential};
+use crate::{BbsProofRequest, BbsSubProofRequest, UnsignedBbsCredential};
 
 const NQUAD_REGEX: &str = r"^_:c14n0 <http://schema.org/([^>]+?)>";
 
@@ -147,43 +147,51 @@ pub async fn get_nquads_schema_map(
     unsigned_credentials: &Vec<UnsignedBbsCredential>,
     only_revealed: bool,
 ) -> Result<HashMap<String, Vec<String>>, Box<dyn Error>> {
-    let schema_vec: Vec<String> = proof_request
-        .sub_proof_requests
-        .iter()
-        .map(|spr| spr.schema.to_owned())
-        .collect();
+    let mut credential_schema_map: HashMap<String, &UnsignedBbsCredential> = HashMap::new();
+    for credential in unsigned_credentials {
+        credential_schema_map.insert(credential.credential_schema.id.to_owned(), credential);
+    }
     let mut nquads_schema_map: HashMap<String, Vec<String>> = HashMap::new();
-    // for now test with one schema to avoid future madness
-    // let schema_vec: Vec<String> = schemas.clone().cloned().collect();
-    let schema: String = schema_vec.get(0).unwrap().to_owned();
-    let credential = unsigned_credentials.get(0).unwrap().to_owned();
-    let mut unfinished_without_proof: UnsignedBbsCredential =
-        serde_json::from_str(&serde_json::to_string(&credential)?)?;
-    // patch values from credential in presentation into draft credential for nquads
-    for (key, value) in credential.credential_subject.data.iter() {
-        unfinished_without_proof
-            .credential_subject
-            .data
-            .insert(key.to_owned(), value.to_owned());
-    }
-    let nquads = convert_to_nquads(&serde_json::to_string(&unfinished_without_proof)?).await?;
-    let mut credential_values_nquads = get_credential_values(&nquads)?;
-    credential_values_nquads.sort();
 
-    let attributes: Vec<String>;
-    if only_revealed {
-        attributes = proof_request
-            .sub_proof_requests
-            .get(0)
-            .unwrap()
-            .revealed_attributes
-            .iter()
-            .map(|i| credential_values_nquads.get(*i - 1).unwrap().to_owned())
-            .collect();
-    } else {
-        attributes = credential_values_nquads;
+    for BbsSubProofRequest {
+        schema: requested_schema,
+        revealed_attributes,
+        ..
+    } in &proof_request.sub_proof_requests
+    {
+        let credential = *credential_schema_map.get(requested_schema).ok_or_else(|| {
+            format!(
+                r#"schema "{}" not provided in credentials"#,
+                &requested_schema
+            )
+        })?;
+
+        let mut unfinished_without_proof: UnsignedBbsCredential =
+            serde_json::from_str(&serde_json::to_string(&credential)?)?;
+
+        // patch values from credential in presentation into draft credential for nquads
+        for (key, value) in credential.credential_subject.data.iter() {
+            unfinished_without_proof
+                .credential_subject
+                .data
+                .insert(key.to_owned(), value.to_owned());
+        }
+
+        let nquads = convert_to_nquads(&serde_json::to_string(&unfinished_without_proof)?).await?;
+        let mut credential_values_nquads = get_credential_values(&nquads)?;
+        credential_values_nquads.sort();
+
+        let attributes: Vec<String>;
+        if only_revealed {
+            attributes = revealed_attributes
+                .iter()
+                .map(|i| credential_values_nquads.get(*i - 1).unwrap().to_owned())
+                .collect();
+        } else {
+            attributes = credential_values_nquads;
+        }
+        nquads_schema_map.insert(requested_schema.to_owned(), attributes);
     }
-    nquads_schema_map.insert(schema, attributes);
 
     Ok(nquads_schema_map)
 }
