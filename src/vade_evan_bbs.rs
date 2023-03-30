@@ -134,10 +134,10 @@ pub struct IssueCredentialPayload {
     pub required_indices: Vec<u32>,
 }
 /// API payload for creating a BbsCredentialOffer to be sent by an issuer.
-/// Contains information about how many messages the final credential will hold.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OfferCredentialPayload {
+    /// credential draft, outlining structure of future credential (without proof and status)
     pub credential: DraftBbsCredential,
 }
 
@@ -153,8 +153,6 @@ pub struct PresentProofPayload {
     pub revealed_properties_schema_map: HashMap<String, CredentialSubject>,
     /// Public key per credential by schema ID
     pub public_key_schema_map: HashMap<String, String>,
-    /// The respective nquads by respective credential's schema ID
-    // pub nquads_schema_map: HashMap<String, Vec<String>>,
     /// Prover's master secret
     pub master_secret: String,
     /// DID of the prover
@@ -255,8 +253,6 @@ pub struct FinishCredentialPayload {
     pub credential: UnfinishedBbsCredential,
     /// Holder's master secret
     pub master_secret: String,
-    /// Signed values of the credential's signature
-    // pub nquads: Vec<String>,
     /// Issuer's BBS+ public key
     pub issuer_public_key: String,
     /// Blinding created during credential request creation
@@ -292,16 +288,6 @@ pub struct CreateKeysPayload {
 #[serde(rename_all = "camelCase")]
 pub struct GetPublicKeyFromPrivateKeyPayload {
     pub private_key: String,
-}
-
-/// API payload to derive public key from base 64 encoded private key.
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CreateCredentialDraftPayload {
-    pub schema: CredentialSchema, // TODO swo: check/align naming (schema / credential_schema)
-    #[serde(default)]
-    pub use_valid_until: bool,
-    pub subject_did: Option<String>,
 }
 
 macro_rules! parse {
@@ -395,15 +381,6 @@ impl VadePlugin for VadeEvanBbs {
                 let pk_base_64 = get_public_key_from_private_key(&payload.private_key)?;
                 Ok(VadePluginResultValue::Success(Some(pk_base_64)))
             }
-            // "create_credential_draft" => {
-            //     let payload: CreateCredentialDraftPayload = parse!(&payload, "payload");
-            //     let mut draft = schema.create_credential_draft(CredentialDraftOptions { issuer_did: ISSUER_DID.to_string(), id: None, issuance_date: None, subject_did: Some(SUBJECT_DID.to_string()), valid_until: None });
-            //     let draft = &payload
-            //         .schema
-            //         .create_credential_draft(payload.use_valid_until, payload.subject_did);
-            //     let draft_stringified = serde_json::to_string(&draft)?;
-            //     Ok(VadePluginResultValue::Success(Some(draft_stringified)))
-            // }
             _ => Ok(VadePluginResultValue::Ignored),
         }
     }

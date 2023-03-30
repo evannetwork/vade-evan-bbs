@@ -570,43 +570,19 @@ pub enum LdProofVcDetailOptionsCredentialStatusType {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-// #[serde(rename_all = "camelCase")]
 pub struct LdProofVcDetailOptionsCredentialStatus {
     pub r#type: LdProofVcDetailOptionsCredentialStatusType,
 }
-
-#[derive(Serialize, Deserialize, Clone)]
-// #[serde(rename_all = "camelCase")]
-pub struct LdProofVcDetailPropose {
-    // all part of the cred
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct LdProofVcDetailOffer {
-    // all part of the did
-    pub credential_status: LdProofVcDetailOptionsCredentialStatus,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-// #[serde(rename_all = "camelCase")]
-pub struct LdProofVcDetailRequest {}
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct LdProofVcDetailOptions {
     pub created: String,
     pub proof_type: LdProofVcDetailOptionsType,
-
-    #[serde(flatten)]
-    pub ld_proof_vc_detail_offer: Option<LdProofVcDetailOffer>,
-
-    #[serde(flatten)]
-    pub ld_proof_vc_detail_request: Option<LdProofVcDetailRequest>,
+    pub credential_status: LdProofVcDetailOptionsCredentialStatus,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-// #[serde(rename_all = "camelCase")]
 pub struct LdProofVcDetail {
     pub credential: DraftBbsCredential,
     pub options: LdProofVcDetailOptions,
@@ -614,6 +590,10 @@ pub struct LdProofVcDetail {
 
 impl LdProofVcDetail {
     pub fn get_message_count(&self) -> Result<usize, Box<dyn Error>> {
+        // commented out code calculates nquad count based on _all_ nquads in credential
+        // current implementation only used subject data values for nquad calculation
+        // either delete or re-use following calculation, depending on if we want to change that
+
         // let mut message_count = CORE_MESSAGE_COUNT
         //     + ADDITIONAL_HIDDEN_MESSAGES_COUNT
         //     + &self.credential.credential_subject.data.len();
@@ -622,7 +602,6 @@ impl LdProofVcDetail {
         //     message_count += 1;
         // }
 
-        // // TODO swo: decide whether to return an error here on invalid match or not
         // message_count += match &self.options.ld_proof_vc_detail_offer {
         //     Some(LdProofVcDetailOffer {
         //         credential_status:

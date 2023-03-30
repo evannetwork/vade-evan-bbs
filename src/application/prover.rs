@@ -31,7 +31,8 @@ use super::datatypes::{
 };
 use crate::{
     application::utils::{generate_uuid, get_nonce_from_string, get_now_as_iso_string},
-    crypto::{crypto_prover::CryptoProver, crypto_utils::create_assertion_proof}, LdProofVcDetail,
+    crypto::{crypto_prover::CryptoProver, crypto_utils::create_assertion_proof},
+    LdProofVcDetail,
 };
 use bbs::{
     keys::DeterministicPublicKey,
@@ -95,7 +96,13 @@ impl Prover {
         }
 
         for required in &credential_schema.required {
-            if ld_proof_vc_detail.credential.credential_subject.data.get(required).is_none() {
+            if ld_proof_vc_detail
+                .credential
+                .credential_subject
+                .data
+                .get(required)
+                .is_none()
+            {
                 let error = format!(
                     "Cannot request credential: Missing required schema property: {}",
                     required
@@ -286,13 +293,21 @@ mod tests {
     use crate::{
         application::{
             datatypes::BbsCredentialOffer,
-                utils::{
+            utils::{
+                convert_to_nquads,
                 decode_base64,
                 get_dpk_from_string,
-                get_signature_message_from_string, convert_to_nquads,
+                get_signature_message_from_string,
             },
         },
-        crypto::crypto_utils::check_assertion_proof, CredentialDraftOptions, LdProofVcDetailOptionsCredentialStatus, LdProofVcDetailOffer, LdProofVcDetailOptionsType, LdProofVcDetailOptions, LdProofVcDetail, LdProofVcDetailOptionsCredentialStatusType, UnsignedBbsCredential,
+        crypto::crypto_utils::check_assertion_proof,
+        CredentialDraftOptions,
+        LdProofVcDetail,
+        LdProofVcDetailOptions,
+        LdProofVcDetailOptionsCredentialStatus,
+        LdProofVcDetailOptionsCredentialStatusType,
+        LdProofVcDetailOptionsType,
+        UnsignedBbsCredential,
     };
     use bbs::{
         issuer::Issuer as BbsIssuer,
@@ -306,7 +321,8 @@ mod tests {
             ISSUER_DID,
             SIGNER_1_ADDRESS,
             SIGNER_1_PRIVATE_KEY,
-            VERIFIER_DID, SUBJECT_DID,
+            SUBJECT_DID,
+            VERIFIER_DID,
         },
         bbs_coherent_context_test_data::{
             FINISHED_CREDENTIAL,
@@ -339,25 +355,24 @@ mod tests {
             subject_did: Some(SUBJECT_DID.to_string()),
             valid_until: None,
         });
-        credential_draft.credential_subject.data.insert("test_property_string".to_owned(), "value".to_owned());
+        credential_draft
+            .credential_subject
+            .data
+            .insert("test_property_string".to_owned(), "value".to_owned());
         let offering: BbsCredentialOffer = BbsCredentialOffer {
             ld_proof_vc_detail: LdProofVcDetail {
                 credential: credential_draft,
                 options: LdProofVcDetailOptions {
                     created: get_now_as_iso_string(),
                     proof_type: LdProofVcDetailOptionsType::Ed25519Signature2018,
-                    ld_proof_vc_detail_offer: Some(LdProofVcDetailOffer {
-                        credential_status: LdProofVcDetailOptionsCredentialStatus {
-                            r#type:
-                                LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
-                        },
-                    }),
-                    ld_proof_vc_detail_request: None,
+                    credential_status: LdProofVcDetailOptionsCredentialStatus {
+                        r#type:
+                            LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
+                    },
                 },
         },
         nonce: "WzM0LDIxNSwyNDEsODgsMTg2LDExMiwyOSwxNTksNjUsMjE1LDI0MiwxNjQsMTksOCwyMDEsNzgsNTUsMTA4LDE1NCwxMTksMTg0LDIyNCwyMjUsNDAsNDgsMTgwLDY5LDE3OCwxNDgsNSw1OSwxMTFd".to_string(), };
         let secret = BbsProver::new_link_secret();
-
 
         return Ok((dpk, sk, offering, schema, secret));
     }
@@ -464,12 +479,28 @@ mod tests {
     #[test]
     fn can_request_credential() -> Result<(), Box<dyn Error>> {
         let (dpk, _, offering, schema, secret) = setup_test()?;
-        let (credential_request, _) =
-            Prover::request_credential(&offering.ld_proof_vc_detail, &offering.nonce, &schema, &secret, &dpk)
-                .map_err(|e| format!("{}", e))?;
-        assert_eq!(credential_request.ld_proof_vc_detail.credential.credential_schema.id, schema.id);
+        let (credential_request, _) = Prover::request_credential(
+            &offering.ld_proof_vc_detail,
+            &offering.nonce,
+            &schema,
+            &secret,
+            &dpk,
+        )
+        .map_err(|e| format!("{}", e))?;
         assert_eq!(
-            credential_request.ld_proof_vc_detail.credential.credential_subject.id,
+            credential_request
+                .ld_proof_vc_detail
+                .credential
+                .credential_schema
+                .id,
+            schema.id
+        );
+        assert_eq!(
+            credential_request
+                .ld_proof_vc_detail
+                .credential
+                .credential_subject
+                .id,
             offering.ld_proof_vc_detail.credential.credential_subject.id
         );
         assert_eq!(credential_request.r#type, CREDENTIAL_REQUEST_TYPE);
@@ -479,8 +510,19 @@ mod tests {
     #[test]
     fn throws_when_omitting_required_credential_value() -> Result<(), Box<dyn Error>> {
         let (dpk, _, mut offering, schema, secret) = setup_test()?;
-        offering.ld_proof_vc_detail.credential.credential_subject.data.remove("test_property_string");
-        match Prover::request_credential(&offering.ld_proof_vc_detail, &offering.nonce, &schema, &secret, &dpk) {
+        offering
+            .ld_proof_vc_detail
+            .credential
+            .credential_subject
+            .data
+            .remove("test_property_string");
+        match Prover::request_credential(
+            &offering.ld_proof_vc_detail,
+            &offering.nonce,
+            &schema,
+            &secret,
+            &dpk,
+        ) {
             Ok(_) => assert!(false),
             Err(e) => assert_eq!(
                 format!("{}", e),
@@ -496,9 +538,8 @@ mod tests {
             serde_json::from_str(&UNFINISHED_CREDENTIAL)?;
         let master_secret: SignatureMessage = get_signature_message_from_string(&MASTER_SECRET)?;
         // let nquads: Vec<String> = NQUADS.iter().map(|q| q.to_string()).collect();
-        let unfinished_without_proof: UnsignedBbsCredential = serde_json::from_str(
-            &serde_json::to_string(&unfinished_credential)?
-        )?;
+        let unfinished_without_proof: UnsignedBbsCredential =
+            serde_json::from_str(&serde_json::to_string(&unfinished_credential)?)?;
         let nquads = convert_to_nquads(&serde_json::to_string(&unfinished_without_proof)?).await?;
         let public_key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;
         let blinding: SignatureBlinding = SignatureBlinding::from(
