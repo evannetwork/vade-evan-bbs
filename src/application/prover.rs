@@ -25,8 +25,6 @@ use super::datatypes::{
     ProofPresentation,
     UnfinishedBbsCredential,
     UnfinishedProofPresentation,
-    CREDENTIAL_PROPOSAL_TYPE,
-    CREDENTIAL_REQUEST_TYPE,
     DEFAULT_CREDENTIAL_CONTEXTS,
 };
 use crate::{
@@ -66,7 +64,6 @@ impl Prover {
             issuer: issuer_did.to_owned(),
             subject: subject_did.map(|value| value.to_string()),
             schema: schema_did.to_owned(),
-            r#type: CREDENTIAL_PROPOSAL_TYPE.to_string(),
         }
     }
 
@@ -134,7 +131,6 @@ impl Prover {
 
         Ok((
             BbsCredentialRequest {
-                r#type: CREDENTIAL_REQUEST_TYPE.to_string(),
                 credential_offer: credential_offer.to_owned(),
                 blind_signature_context: base64::encode(
                     blind_signature_context.to_bytes_compressed_form(),
@@ -480,7 +476,6 @@ mod tests {
         assert_eq!(proposal.subject, Some(HOLDER_DID.to_string()));
         assert_eq!(&proposal.issuer, &ISSUER_DID);
         assert_eq!(&proposal.schema, "schemadid");
-        assert_eq!(&proposal.r#type, CREDENTIAL_PROPOSAL_TYPE);
     }
 
     #[test]
@@ -506,7 +501,6 @@ mod tests {
                 .id,
             offering.ld_proof_vc_detail.credential.credential_subject.id
         );
-        assert_eq!(credential_request.r#type, CREDENTIAL_REQUEST_TYPE);
         Ok(())
     }
 

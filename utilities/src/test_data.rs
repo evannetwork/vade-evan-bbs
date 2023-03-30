@@ -54,7 +54,6 @@ pub mod vc_zkp {
     {
         "issuer": "did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g",
         "subject": "did:evan:subject",
-        "type": "EvanCredentialProposal",
         "schema": "did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg"
     }
     "###;
@@ -62,21 +61,6 @@ pub mod vc_zkp {
 
 #[allow(dead_code)]
 pub mod bbs_coherent_context_test_data {
-    // maybe delete later
-    pub const CREDENTIAL_REQUEST: &str = r###"{
-        "subject": "did:evan:subject",
-        "schema": "did:evan:EiAn35ScK8_GsBE9GwMFC5BwvjZXkxEWIfmi6hAoCzvA0w",
-        "type": "EvanBbsCredentialRequest",
-        "blindSignatureContext": "qAXNB/irKoyqP5xQngZzmfSXzoRCrBjCNX4YlNEwJzghSUqretcaqbmfwvv+3q9SKNWHT8+KE89hN0O3h2xayXfaODIUHxe+cC90Xp27DEeu8PZqUSYlgiaJAl2bGC9Ckg8P5FbnMLQCcDkwhKK31VdbUU3X+4ECyyG4fAs7xusAAAACUOz2LiGg49dV71cNn1NgUKZW5ABf8EuK6WNzNDM2P+k/fs0c26b0DxJBbHfsWZ0Wj+ILKuckRPku7prlCd+oZg==",
-        "credentialValues": {
-            "test_property_string2": "value",
-            "test_property_string": "value",
-            "test_property_string4": "value",
-            "test_property_string3": "value",
-            "test_property_string1": "value"
-        }
-    }"###;
-
     pub const UNFINISHED_CREDENTIAL: &str = r###"{
         "@context": [
             "https://www.w3.org/2018/credentials/v1",

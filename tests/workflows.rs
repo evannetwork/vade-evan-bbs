@@ -299,7 +299,6 @@ async fn workflow_can_create_credential_proposal() -> Result<(), Box<dyn Error>>
     assert_eq!(proposal.subject.as_ref(), Some(&SUBJECT_DID.to_string()));
     assert_eq!(&proposal.issuer, &ISSUER_DID);
     assert_eq!(&proposal.schema, &SCHEMA_DID.clone());
-    assert_eq!(&proposal.r#type, CREDENTIAL_PROPOSAL_TYPE);
 
     Ok(())
 }
@@ -370,7 +369,6 @@ async fn workflow_can_create_credential_request() -> Result<(), Box<dyn Error>> 
             .id,
         offer.ld_proof_vc_detail.credential.credential_subject.id
     );
-    assert_eq!(credential_request.r#type, CREDENTIAL_REQUEST_TYPE);
 
     Ok(())
 }
@@ -492,7 +490,6 @@ async fn workflow_can_create_unfinished_credential() -> Result<(), Box<dyn Error
             .id,
         offer.ld_proof_vc_detail.credential.credential_subject.id
     );
-    assert_eq!(credential_request.r#type, CREDENTIAL_REQUEST_TYPE);
 
     Ok(())
 }

@@ -20,7 +20,6 @@
  * Incorporates the nonce value sent in `BbsCredentialOffer`.
  */
 export interface BbsCredentialRequest {
-  type: string;
   credentialOffer: BbsCredentialOffer;
   blindSignatureContext: string;
 }
@@ -102,7 +101,6 @@ export interface BbsCredentialOffer {
 export interface CredentialProposal {
   issuer: string;
   subject: string;
-  type: string;
   schema: string;
 }
 

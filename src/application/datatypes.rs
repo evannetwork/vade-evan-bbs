@@ -22,9 +22,6 @@ use uuid::Uuid;
 use super::{issuer::ADDITIONAL_HIDDEN_MESSAGES_COUNT, utils::get_now_as_iso_string};
 
 pub const CORE_MESSAGE_COUNT: usize = 7; // w/o status and values
-pub const CREDENTIAL_REQUEST_TYPE: &str = "EvanBbsCredentialRequest";
-pub const CREDENTIAL_PROPOSAL_TYPE: &str = "EvanCredentialProposal";
-pub const CREDENTIAL_OFFER_TYPE: &str = "EvanBbsCredentialOffering";
 pub const CREDENTIAL_SIGNATURE_TYPE: &str = "BbsBlsSignature2020";
 pub const PROOF_SIGNATURE_TYPE: &str = "BbsBlsSignatureProof2020";
 pub const CREDENTIAL_SCHEMA_TYPE: &str = "EvanZKPSchema";
@@ -47,7 +44,6 @@ pub const BBS_PROOF_TYPE: &str = "BBS";
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct BbsCredentialRequest {
-    pub r#type: String,
     pub credential_offer: BbsCredentialOffer,
     pub blind_signature_context: String,
 }
@@ -176,7 +172,6 @@ pub struct CredentialProposal {
     pub issuer: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub subject: Option<String>,
-    pub r#type: String,
     pub schema: String,
 }
 
