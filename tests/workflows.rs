@@ -33,7 +33,6 @@ use utilities::test_data::{
         SCHEMA_DID,
         SECRET_KEY,
         SUBJECT_DID,
-        UNSIGNED_CREDENTIAL,
     },
 };
 use vade::Vade;
@@ -133,8 +132,7 @@ async fn create_credential_request(
     }
     let credential_schema: CredentialSchema = serde_json::from_str(&SCHEMA)?;
     let request = RequestCredentialPayload {
-        ld_proof_vc_detail: offer.ld_proof_vc_detail,
-        nonce: offer.nonce,
+        credential_offer: offer,
         master_secret: MASTER_SECRET.to_string(),
         issuer_pub_key: PUB_KEY.to_string(),
         credential_schema,
@@ -156,26 +154,14 @@ async fn create_unfinished_credential(
     credential_request: BbsCredentialRequest,
     revocation_list_did: String,
     revocation_list_id: String,
-    offer: BbsCredentialOffer,
 ) -> Result<UnfinishedBbsCredential, Box<dyn Error>> {
     let key_id = format!("{}#bbs-key-1", ISSUER_DID);
-    let unsigned_vc = get_unsigned_vc(
-        revocation_list_did,
-        revocation_list_id,
-        credential_request
-            .ld_proof_vc_detail
-            .credential
-            .credential_subject
-            .data
-            .clone(),
-    )?;
     let issue_cred = IssueCredentialPayload {
-        unsigned_vc,
+        credential_request: credential_request.clone(),
+        credential_status: get_credential_status(revocation_list_did, revocation_list_id),
         issuer_public_key_id: key_id.clone(),
         issuer_public_key: PUB_KEY.to_string(),
         issuer_secret_key: SECRET_KEY.to_string(),
-        credential_request: credential_request.clone(),
-        credential_offer: offer,
         required_indices: [1].to_vec(),
     };
     let issue_cred_json = serde_json::to_string(&issue_cred)?;
@@ -292,18 +278,16 @@ async fn create_presentation(
     Ok(presentation)
 }
 
-fn get_unsigned_vc(
+fn get_credential_status(
     revocation_list_did: String,
     revocation_list_id: String,
-    credential_values: HashMap<String, String>,
-) -> Result<UnsignedBbsCredential, Box<dyn Error>> {
-    let mut unsigned_vc: UnsignedBbsCredential = serde_json::from_str(UNSIGNED_CREDENTIAL)?;
-    unsigned_vc.credential_status.revocation_list_index = revocation_list_id.clone();
-    unsigned_vc.credential_status.revocation_list_credential = revocation_list_did.clone();
-    unsigned_vc.credential_status.id = format!("{}#{}", revocation_list_did, revocation_list_id);
-    unsigned_vc.credential_subject.data = credential_values;
-
-    return Ok(unsigned_vc);
+) -> CredentialStatus {
+    CredentialStatus {
+        id: format!("{}#{}", revocation_list_did, revocation_list_id),
+        r#type: "RevocationList2021Status".to_string(),
+        revocation_list_index: revocation_list_id.clone(),
+        revocation_list_credential: revocation_list_did.clone(),
+    }
 }
 
 #[tokio::test]
@@ -329,7 +313,7 @@ async fn workflow_can_create_credential_offer_with_proposal() -> Result<(), Box<
     // Create credential offering
     let schema = CredentialSchema::from_str(SCHEMA)?;
     let offer_payload = OfferCredentialPayload {
-        credential: schema.to_draft_credential(CredentialDraftOptions {
+        draft_credential: schema.to_draft_credential(CredentialDraftOptions {
             issuer_did: ISSUER_DID.to_string(),
             id: None,
             issuance_date: None,
@@ -355,7 +339,7 @@ async fn workflow_can_create_credential_request() -> Result<(), Box<dyn Error>> 
     // Create credential offering
     let schema = CredentialSchema::from_str(SCHEMA)?;
     let offer_payload = OfferCredentialPayload {
-        credential: schema.to_draft_credential(CredentialDraftOptions {
+        draft_credential: schema.to_draft_credential(CredentialDraftOptions {
             issuer_did: ISSUER_DID.to_string(),
             id: None,
             issuance_date: None,
@@ -370,6 +354,7 @@ async fn workflow_can_create_credential_request() -> Result<(), Box<dyn Error>> 
 
     assert_eq!(
         credential_request
+            .credential_offer
             .ld_proof_vc_detail
             .credential
             .credential_schema
@@ -378,6 +363,7 @@ async fn workflow_can_create_credential_request() -> Result<(), Box<dyn Error>> 
     );
     assert_eq!(
         credential_request
+            .credential_offer
             .ld_proof_vc_detail
             .credential
             .credential_subject
@@ -397,7 +383,7 @@ async fn workflow_cannot_create_credential_request_with_missing_required_schema_
     // Create credential offering
     let schema = CredentialSchema::from_str(SCHEMA)?;
     let offer_payload = OfferCredentialPayload {
-        credential: schema.to_draft_credential(CredentialDraftOptions {
+        draft_credential: schema.to_draft_credential(CredentialDraftOptions {
             issuer_did: ISSUER_DID.to_string(),
             id: None,
             issuance_date: None,
@@ -435,7 +421,7 @@ async fn workflow_cannot_create_credential_request_with_empty_values() -> Result
     // Create credential offering
     let schema = CredentialSchema::from_str(SCHEMA)?;
     let offer_payload = OfferCredentialPayload {
-        credential: schema.to_draft_credential(CredentialDraftOptions {
+        draft_credential: schema.to_draft_credential(CredentialDraftOptions {
             issuer_did: ISSUER_DID.to_string(),
             id: None,
             issuance_date: None,
@@ -475,7 +461,7 @@ async fn workflow_can_create_unfinished_credential() -> Result<(), Box<dyn Error
     // Create credential offering
     let schema = CredentialSchema::from_str(SCHEMA)?;
     let offer_payload = OfferCredentialPayload {
-        credential: schema.to_draft_credential(CredentialDraftOptions {
+        draft_credential: schema.to_draft_credential(CredentialDraftOptions {
             issuer_did: ISSUER_DID.to_string(),
             id: None,
             issuance_date: None,
@@ -490,6 +476,7 @@ async fn workflow_can_create_unfinished_credential() -> Result<(), Box<dyn Error
 
     assert_eq!(
         credential_request
+            .credential_offer
             .ld_proof_vc_detail
             .credential
             .credential_schema
@@ -498,6 +485,7 @@ async fn workflow_can_create_unfinished_credential() -> Result<(), Box<dyn Error
     );
     assert_eq!(
         credential_request
+            .credential_offer
             .ld_proof_vc_detail
             .credential
             .credential_subject
@@ -529,7 +517,7 @@ async fn workflow_can_create_finished_credential() -> Result<(), Box<dyn Error>>
     credential_draft.credential_subject.data = credential_values;
 
     let offer_payload = OfferCredentialPayload {
-        credential: credential_draft,
+        draft_credential: credential_draft,
     };
 
     let offer = create_credential_offer(&mut vade, offer_payload).await?;
@@ -542,7 +530,6 @@ async fn workflow_can_create_finished_credential() -> Result<(), Box<dyn Error>>
         credential_request.clone(),
         revocation_list.id,
         "0".to_string(),
-        offer,
     )
     .await?;
 
@@ -572,12 +559,14 @@ async fn workflow_can_create_finished_credential() -> Result<(), Box<dyn Error>>
         .data
         .keys()
         .all(|key| credential_request
+            .credential_offer
             .ld_proof_vc_detail
             .credential
             .credential_subject
             .data
             .contains_key(key)
             && credential_request
+                .credential_offer
                 .ld_proof_vc_detail
                 .credential
                 .credential_subject
@@ -613,7 +602,7 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
     credential_values.insert("test_property_string4".to_owned(), "value".to_owned());
     credential_draft.credential_subject.data = credential_values;
     let offer_payload = OfferCredentialPayload {
-        credential: credential_draft,
+        draft_credential: credential_draft,
     };
 
     let offer = create_credential_offer(&mut vade, offer_payload).await?;
@@ -626,7 +615,6 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
         credential_request,
         revocation_list.id.clone(),
         "0".to_string(),
-        offer,
     )
     .await?;
 
@@ -707,7 +695,7 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
     credential_values.insert("test_property_string4".to_owned(), "value".to_owned());
     credential_draft.credential_subject.data = credential_values;
     let offer_payload = OfferCredentialPayload {
-        credential: credential_draft,
+        draft_credential: credential_draft,
     };
 
     let offer = create_credential_offer(&mut vade, offer_payload).await?;
@@ -720,7 +708,6 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
         credential_request,
         revocation_list.id.clone(),
         "0".to_string(),
-        offer,
     )
     .await?;
 

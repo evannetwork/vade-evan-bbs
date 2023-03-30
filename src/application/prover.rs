@@ -32,7 +32,7 @@ use super::datatypes::{
 use crate::{
     application::utils::{generate_uuid, get_nonce_from_string, get_now_as_iso_string},
     crypto::{crypto_prover::CryptoProver, crypto_utils::create_assertion_proof},
-    LdProofVcDetail,
+    BbsCredentialOffer,
 };
 use bbs::{
     keys::DeterministicPublicKey,
@@ -83,20 +83,27 @@ impl Prover {
     /// * `BbsCredentialRequest` - The request to be sent to the issuer
     /// * `SignatureBlinding` - Blinding that is needed for finishing the issued credential
     pub fn request_credential(
-        ld_proof_vc_detail: &LdProofVcDetail,
-        nonce: &str,
+        credential_offer: &BbsCredentialOffer,
         credential_schema: &CredentialSchema,
         master_secret: &SignatureMessage,
         issuer_pub_key: &DeterministicPublicKey,
     ) -> Result<(BbsCredentialRequest, SignatureBlinding), Box<dyn Error>> {
-        if ld_proof_vc_detail.credential.credential_subject.data.len() == 0 {
+        if credential_offer
+            .ld_proof_vc_detail
+            .credential
+            .credential_subject
+            .data
+            .len()
+            == 0
+        {
             return Err(Box::from(
                 "Cannot create blind signature context. Provided no credential values",
             ));
         }
 
         for required in &credential_schema.required {
-            if ld_proof_vc_detail
+            if credential_offer
+                .ld_proof_vc_detail
                 .credential
                 .credential_subject
                 .data
@@ -111,12 +118,12 @@ impl Prover {
             }
         }
 
-        let nonce = get_nonce_from_string(&nonce)?;
+        let nonce = get_nonce_from_string(&credential_offer.nonce)?;
         let (blind_signature_context, blinding) = CryptoProver::create_blind_signature_context(
             &issuer_pub_key,
             &master_secret,
             &nonce,
-            ld_proof_vc_detail.get_message_count()?,
+            credential_offer.ld_proof_vc_detail.get_message_count()?,
         )
         .map_err(|e| {
             format!(
@@ -128,7 +135,7 @@ impl Prover {
         Ok((
             BbsCredentialRequest {
                 r#type: CREDENTIAL_REQUEST_TYPE.to_string(),
-                ld_proof_vc_detail: ld_proof_vc_detail.clone(),
+                credential_offer: credential_offer.to_owned(),
                 blind_signature_context: base64::encode(
                     blind_signature_context.to_bytes_compressed_form(),
                 ),
@@ -479,16 +486,11 @@ mod tests {
     #[test]
     fn can_request_credential() -> Result<(), Box<dyn Error>> {
         let (dpk, _, offering, schema, secret) = setup_test()?;
-        let (credential_request, _) = Prover::request_credential(
-            &offering.ld_proof_vc_detail,
-            &offering.nonce,
-            &schema,
-            &secret,
-            &dpk,
-        )
-        .map_err(|e| format!("{}", e))?;
+        let (credential_request, _) = Prover::request_credential(&offering, &schema, &secret, &dpk)
+            .map_err(|e| format!("{}", e))?;
         assert_eq!(
             credential_request
+                .credential_offer
                 .ld_proof_vc_detail
                 .credential
                 .credential_schema
@@ -497,6 +499,7 @@ mod tests {
         );
         assert_eq!(
             credential_request
+                .credential_offer
                 .ld_proof_vc_detail
                 .credential
                 .credential_subject
@@ -516,13 +519,7 @@ mod tests {
             .credential_subject
             .data
             .remove("test_property_string");
-        match Prover::request_credential(
-            &offering.ld_proof_vc_detail,
-            &offering.nonce,
-            &schema,
-            &secret,
-            &dpk,
-        ) {
+        match Prover::request_credential(&offering, &schema, &secret, &dpk) {
             Ok(_) => assert!(false),
             Err(e) => assert_eq!(
                 format!("{}", e),
@@ -537,7 +534,6 @@ mod tests {
         let unfinished_credential: UnfinishedBbsCredential =
             serde_json::from_str(&UNFINISHED_CREDENTIAL)?;
         let master_secret: SignatureMessage = get_signature_message_from_string(&MASTER_SECRET)?;
-        // let nquads: Vec<String> = NQUADS.iter().map(|q| q.to_string()).collect();
         let unfinished_without_proof: UnsignedBbsCredential =
             serde_json::from_str(&serde_json::to_string(&unfinished_credential)?)?;
         let nquads = convert_to_nquads(&serde_json::to_string(&unfinished_without_proof)?).await?;

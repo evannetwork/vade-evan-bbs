@@ -44,8 +44,8 @@ use crate::{
         verifier::Verifier,
     },
     crypto::{crypto_utils::get_public_key_from_private_key, crypto_verifier::CryptoVerifier},
+    CredentialStatus,
     DraftBbsCredential,
-    LdProofVcDetail,
 };
 use async_trait::async_trait;
 use bbs::{
@@ -118,18 +118,16 @@ pub struct CreateRevocationListPayload {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IssueCredentialPayload {
-    /// The VC to sign, without any appended proof
-    pub unsigned_vc: UnsignedBbsCredential,
+    /// credential request
+    pub credential_request: BbsCredentialRequest,
+    /// status to be appended to credential in offer
+    pub credential_status: CredentialStatus,
     /// DID url of the public key of the issuer used to later verify the signature
     pub issuer_public_key_id: String,
     /// The public bbs+ key of the issuer used to later verify the signature
     pub issuer_public_key: String,
     /// The secret bbs+ key used to create the signature
     pub issuer_secret_key: String,
-    /// Credential request
-    pub credential_request: BbsCredentialRequest,
-    /// Credential offer linked to the credential request
-    pub credential_offer: BbsCredentialOffer,
     /// Indices of nquads to be marked as requiredRevealStatements in the credential
     pub required_indices: Vec<u32>,
 }
@@ -138,7 +136,7 @@ pub struct IssueCredentialPayload {
 #[serde(rename_all = "camelCase")]
 pub struct OfferCredentialPayload {
     /// credential draft, outlining structure of future credential (without proof and status)
-    pub credential: DraftBbsCredential,
+    pub draft_credential: DraftBbsCredential,
 }
 
 /// API payload for creating a zero-knowledge proof out of a BBS+ signature.
@@ -181,10 +179,8 @@ pub struct CreateCredentialProposalPayload {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RequestCredentialPayload {
-    // details about credential to be requested
-    pub ld_proof_vc_detail: LdProofVcDetail,
-    // nonce from offer
-    pub nonce: String,
+    /// offered credential
+    pub credential_offer: BbsCredentialOffer,
     /// Master secret of the holder/receiver
     pub master_secret: String,
     /// Public key of the issuer
@@ -493,13 +489,19 @@ impl VadePlugin for VadeEvanBbs {
             decode_base64(&payload.issuer_secret_key, "Issuer Secret Key")?.into_boxed_slice(),
         );
 
-        let nquads = convert_to_nquads(&serde_json::to_string(&payload.unsigned_vc)?).await?;
+        let nquads = convert_to_nquads(&serde_json::to_string(
+            &payload
+                .credential_request
+                .credential_offer
+                .ld_proof_vc_detail
+                .credential,
+        )?)
+        .await?;
         let values_only = get_credential_values(&nquads)?;
 
         let unfinished_credential = Issuer::sign_nquads(
-            &payload.unsigned_vc,
-            &payload.credential_offer,
             &payload.credential_request,
+            &payload.credential_status,
             &payload.issuer_public_key_id,
             &public_key,
             &sk,
@@ -549,7 +551,7 @@ impl VadePlugin for VadeEvanBbs {
         ignore_unrelated!(method, options);
 
         let payload: OfferCredentialPayload = parse!(&payload, "payload");
-        let result: BbsCredentialOffer = Issuer::offer_credential(&payload.credential)?;
+        let result: BbsCredentialOffer = Issuer::offer_credential(&payload.draft_credential)?;
         Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
             &result,
         )?)))
@@ -680,8 +682,7 @@ impl VadePlugin for VadeEvanBbs {
         );
         let (credential_request, signature_blinding): (BbsCredentialRequest, SignatureBlinding) =
             Prover::request_credential(
-                &payload.ld_proof_vc_detail,
-                &payload.nonce,
+                &payload.credential_offer,
                 &payload.credential_schema,
                 &master_secret,
                 &public_key,

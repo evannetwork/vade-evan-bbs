@@ -48,7 +48,7 @@ pub const BBS_PROOF_TYPE: &str = "BBS";
 #[serde(rename_all = "camelCase")]
 pub struct BbsCredentialRequest {
     pub r#type: String,
-    pub ld_proof_vc_detail: LdProofVcDetail,
+    pub credential_offer: BbsCredentialOffer,
     pub blind_signature_context: String,
 }
 
@@ -542,7 +542,7 @@ pub struct DraftBbsCredential {
 }
 
 impl DraftBbsCredential {
-    pub fn to_unsigned_credential(&self, status: CredentialStatus) -> UnsignedBbsCredential {
+    pub fn to_unsigned_credential(&self, status: &CredentialStatus) -> UnsignedBbsCredential {
         UnsignedBbsCredential {
             context: self.context.clone(),
             id: self.id.to_owned(),
@@ -552,7 +552,7 @@ impl DraftBbsCredential {
             issuance_date: self.issuance_date.clone(),
             credential_subject: self.credential_subject.clone(),
             credential_schema: self.credential_schema.clone(),
-            credential_status: status,
+            credential_status: status.clone(),
         }
     }
 }

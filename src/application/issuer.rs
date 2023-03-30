@@ -153,9 +153,8 @@ impl Issuer {
     }
 
     pub fn sign_nquads(
-        unsigned_vc: &UnsignedBbsCredential,
-        credential_offer: &BbsCredentialOffer,
         credential_request: &BbsCredentialRequest,
+        credential_status: &CredentialStatus,
         issuer_public_key_id: &str,
         issuer_public_key: &DeterministicPublicKey,
         issuer_secret_key: &SecretKey,
@@ -170,7 +169,11 @@ impl Issuer {
         .try_into()?;
 
         let nonce = ProofNonce::from(
-            decode_base64(&credential_offer.nonce, "Credential Offer Nonce")?.into_boxed_slice(),
+            decode_base64(
+                &credential_request.credential_offer.nonce,
+                "Credential Offer Nonce",
+            )?
+            .into_boxed_slice(),
         );
         let blind_signature = CryptoIssuer::create_signature(
             &blind_signature_context,
@@ -191,9 +194,15 @@ impl Issuer {
             blind_signature: base64::encode(blind_signature.to_bytes_compressed_form()),
         };
 
-        let credential = UnfinishedBbsCredential::new(unsigned_vc.clone(), vc_signature);
+        let unsigned_credential: UnsignedBbsCredential = credential_request
+            .credential_offer
+            .ld_proof_vc_detail
+            .credential
+            .to_unsigned_credential(&credential_status);
 
-        Ok(credential)
+        let unfinished_credential = UnfinishedBbsCredential::new(unsigned_credential, vc_signature);
+
+        Ok(unfinished_credential)
     }
 
     /// Issues a new unfinished credential, that still needs post-processing by the credential subject.
@@ -247,6 +256,7 @@ impl Issuer {
         let credential_subject = CredentialSubject {
             id: Some(subject_did.to_owned()),
             data: credential_request
+                .credential_offer
                 .ld_proof_vc_detail
                 .credential
                 .credential_subject
@@ -515,14 +525,8 @@ mod tests {
         //     nquads.insert(nquads.len(), string);
         // }
 
-        let (credential_request, _) = Prover::request_credential(
-            &offer.ld_proof_vc_detail,
-            &offer.nonce,
-            &schema,
-            &secret,
-            pub_key,
-        )
-        .map_err(|e| format!("{}", e))?;
+        let (credential_request, _) = Prover::request_credential(&offer, &schema, &secret, pub_key)
+            .map_err(|e| format!("{}", e))?;
 
         return Ok((credential_request, schema));
     }
@@ -578,12 +582,14 @@ mod tests {
             .data
             .keys()
             .all(|key| credential_request
+                .credential_offer
                 .ld_proof_vc_detail
                 .credential
                 .credential_subject
                 .data
                 .contains_key(key)
                 && credential_request
+                    .credential_offer
                     .ld_proof_vc_detail
                     .credential
                     .credential_subject
@@ -651,17 +657,15 @@ mod tests {
             revocation_list_index: "0".to_string(),
             revocation_list_credential: EXAMPLE_REVOCATION_LIST_DID.to_string(),
         };
-        let unsigned = &offer
-            .ld_proof_vc_detail
-            .credential
-            .to_unsigned_credential(status);
-        let nquads = convert_to_nquads(&serde_json::to_string(&unsigned)?).await?;
+        let nquads = convert_to_nquads(&serde_json::to_string(
+            &offer.ld_proof_vc_detail.credential,
+        )?)
+        .await?;
         let values_only = get_credential_values(&nquads)?;
 
         let result = Issuer::sign_nquads(
-            &unsigned,
-            &offer,
             &credential_request,
+            &status,
             &key_id,
             &dpk,
             &sk,
@@ -708,17 +712,16 @@ mod tests {
             revocation_list_index: "0".to_string(),
             revocation_list_credential: EXAMPLE_REVOCATION_LIST_DID.to_string(),
         };
-        let unsigned = &offer
-            .ld_proof_vc_detail
-            .credential
-            .to_unsigned_credential(status);
-        let nquads = convert_to_nquads(&serde_json::to_string(&unsigned)?).await?;
+
+        let nquads = convert_to_nquads(&serde_json::to_string(
+            &offer.ld_proof_vc_detail.credential,
+        )?)
+        .await?;
         let values_only = get_credential_values(&nquads)?;
 
         let result = Issuer::sign_nquads(
-            &unsigned,
-            &offer,
             &credential_request,
+            &status,
             &key_id,
             &dpk,
             &sk,
@@ -766,17 +769,16 @@ mod tests {
             revocation_list_index: "0".to_string(),
             revocation_list_credential: EXAMPLE_REVOCATION_LIST_DID.to_string(),
         };
-        let unsigned = &offer
-            .ld_proof_vc_detail
-            .credential
-            .to_unsigned_credential(status);
-        let nquads = convert_to_nquads(&serde_json::to_string(&unsigned)?).await?;
+
+        let nquads = convert_to_nquads(&serde_json::to_string(
+            &offer.ld_proof_vc_detail.credential,
+        )?)
+        .await?;
         let values_only = get_credential_values(&nquads)?;
 
         match Issuer::sign_nquads(
-            &unsigned,
-            &offer,
             &credential_request,
+            &status,
             &key_id,
             &dpk,
             &sk,
@@ -815,7 +817,7 @@ mod tests {
         let unsigned = &offer
             .ld_proof_vc_detail
             .credential
-            .to_unsigned_credential(status);
+            .to_unsigned_credential(&status);
         let nquads = convert_to_nquads(&serde_json::to_string(&unsigned)?).await?;
 
         let result = Issuer::issue_credential(
