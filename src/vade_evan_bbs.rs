@@ -113,8 +113,7 @@ pub struct CreateRevocationListPayload {
 // }
 
 /// API payload for issuing a new credential
-/// Currently needs both an unsigned verifiable credential containing all the data
-/// and the nquad representation of this verifiable credential.
+/// Currently needs both an unsigned verifiable credential containing all the data of this verifiable credential.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IssueCredentialPayload {
