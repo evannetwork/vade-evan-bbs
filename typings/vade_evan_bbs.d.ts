@@ -19,8 +19,12 @@ import {
   BbsCredentialOffer,
   BbsCredentialRequest,
   BbsProofRequest,
+  CredentialDraftOptions,
   CredentialSchema,
+  CredentialStatus,
   CredentialSubject,
+  DraftBbsCredential,
+  LdProofVcDetail,
   ProofPresentation,
   RevocationListCredential,
   SchemaProperty,
@@ -55,11 +59,12 @@ export interface CreateRevocationListPayload {
 }
 
 /** API payload for issuing a new credential
- * Currently needs both an unsigned verifiable credential containing all the data
- * and the nquad representation of this verifiable credential.  */
+ * Currently needs both an unsigned verifiable credential containing all the data of this verifiable credential. */
 export interface IssueCredentialPayload {
-  /** The VC to sign, without any appended proof */
-  unsignedVc: Partial<BbsCredential>;
+  /** credential request */
+  credential_request: BbsCredentialRequest;
+  /** status to be appended to credential in offer */
+  credential_status: CredentialStatus;
   /** Nquads representation of the VC without any appended proof */
   nquads: string[];
   /** DID url of the public key of the issuer used to later verify the signature */
@@ -68,23 +73,14 @@ export interface IssueCredentialPayload {
   issuerPublicKey: string;
   /** The secret bbs+ key used to create the signature */
   issuerSecretKey: string;
-  /** Credential request */
-  credentialRequest: BbsCredentialRequest;
-  /** Credential offer linked to the credential request */
-  credentialOffer: BbsCredentialOffer;
   /** Indices of nquads to be marked as requiredRevealStatements in the credential */
   requiredIndices: number[];
 }
 
-/** API payload for creating a BbsCredentialOffer to be sent by an issuer.
- * Contains information about how many messages the final credential will hold. */
+/** API payload for creating a BbsCredentialOffer to be sent by an issuer. */
 export interface OfferCredentialPayload {
-  /** DID of the issuer */
-  issuer: string;
-  /** Number of total nquads in the final credential */
-  nquadCount: number;
-  /** subject for credential */
-  subject: string;
+  /** credential draft, outlining structure of future credential (without proof and status) */
+  draftCredential: DraftBbsCredential;
 }
 
 /** API payload for creating a zero-knowledge proof out of a BBS+ signature. */
@@ -97,8 +93,6 @@ export interface PresentProofPayload {
   revealedPropertiesSchemaMap: Record<string, CredentialSubject>;
   /** Public key per credential by schema ID */
   publicKeySchemaMap: Record<string, string>;
-  /** The respective nquads by respective credential's schema ID */
-  nquadsSchemaMap: Record<string, string[]>;
   /** Prover's master secret */
   masterSecret: string;
   /** DID of the prover */
@@ -122,12 +116,10 @@ export interface CreateCredentialProposalPayload {
 /** API payload to create a credential request to be sent by a holder as a response
  * to a BbsCredentialOffer. */
 export interface RequestCredentialPayload {
-  /** Credential offering sent by an issuer */
-  credentialOffering: BbsCredentialOffer;
+  /** offered credential */
+  credential_offer: BbsCredentialOffer;
   /** Master secret of the holder/receiver */
   masterSecret: string;
-  /** Cleartext values to be signed in the credential */
-  credentialValues: Record<string, string>;
   /** Public key of the issuer */
   issuerPubKey: string;
   /* Credential Schema credential */
@@ -186,8 +178,6 @@ export interface FinishCredentialPayload {
   credential: UnfinishedBbsCredential;
   /** Holder's master secret */
   masterSecret: string;
-  /** Signed values of the credential's signature */
-  nquads: string[];
   /** Issuer's BBS+ public key */
   issuerPublicKey: string;
   /** Blinding created during credential request creation */
@@ -220,4 +210,9 @@ export interface BbsKeys {
   didUrl: string;
   publicKey: string;
   secretKey: string;
+}
+
+export interface CreateCredentialDraftPayload extends CredentialDraftOptions {
+  schema: CredentialSchema;
+  useValidUntil?: boolean;
 }
