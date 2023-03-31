@@ -100,7 +100,7 @@ impl CredentialSchema {
     }
 
     pub fn to_draft_credential(&self, options: CredentialDraftOptions) -> DraftBbsCredential {
-        let credential = DraftBbsCredential {
+        DraftBbsCredential {
             context: vec![
                 "https://www.w3.org/2018/credentials/v1".to_string(),
                 "https://schema.org/".to_string(),
@@ -128,8 +128,7 @@ impl CredentialSchema {
                 id: self.id.to_owned(),
                 r#type: self.r#type.to_owned(),
             },
-        };
-        credential
+        }
     }
 }
 
