@@ -14,7 +14,7 @@
   limitations under the License.
 */
 
-use super::datatypes::SchemaProperty;
+use super::{datatypes::SchemaProperty, utils::convert_to_nquads};
 use crate::{
     application::{
         datatypes::{
@@ -152,15 +152,21 @@ impl Issuer {
         })
     }
 
-    pub fn sign_nquads(
+    pub async fn sign_nquads(
         credential_request: &BbsCredentialRequest,
         credential_status: &CredentialStatus,
         issuer_public_key_id: &str,
         issuer_public_key: &DeterministicPublicKey,
         issuer_secret_key: &SecretKey,
         required_indices: Vec<u32>,
-        nquads: Vec<String>,
     ) -> Result<UnfinishedBbsCredential, Box<dyn Error>> {
+        let unsigned_credential: UnsignedBbsCredential = credential_request
+            .credential_offer
+            .ld_proof_vc_detail
+            .credential
+            .to_unsigned_credential(&credential_status);
+        let nquads = convert_to_nquads(&serde_json::to_string(&unsigned_credential)?).await?;
+
         let blind_signature_context: BlindSignatureContext = decode_base64(
             &credential_request.blind_signature_context,
             "Blind Signature Context",
@@ -193,12 +199,6 @@ impl Issuer {
             credential_message_count: nquads.len() + ADDITIONAL_HIDDEN_MESSAGES_COUNT,
             blind_signature: base64::encode(blind_signature.to_bytes_compressed_form()),
         };
-
-        let unsigned_credential: UnsignedBbsCredential = credential_request
-            .credential_offer
-            .ld_proof_vc_detail
-            .credential
-            .to_unsigned_credential(&credential_status);
 
         let unfinished_credential = UnfinishedBbsCredential::new(unsigned_credential, vc_signature);
 
@@ -465,7 +465,7 @@ mod tests {
         application::{
             datatypes::{BbsCredentialOffer, BbsCredentialRequest, CredentialProposal},
             prover::Prover,
-            utils::{convert_to_nquads, get_credential_values},
+            utils::convert_to_nquads,
         },
         CredentialDraftOptions,
     };
@@ -637,21 +637,9 @@ mod tests {
             revocation_list_index: "0".to_string(),
             revocation_list_credential: EXAMPLE_REVOCATION_LIST_DID.to_string(),
         };
-        let nquads = convert_to_nquads(&serde_json::to_string(
-            &offer.ld_proof_vc_detail.credential,
-        )?)
-        .await?;
-        let values_only = get_credential_values(&nquads)?;
 
-        let result = Issuer::sign_nquads(
-            &credential_request,
-            &status,
-            &key_id,
-            &dpk,
-            &sk,
-            [1].to_vec(),
-            values_only,
-        );
+        let result =
+            Issuer::sign_nquads(&credential_request, &status, &key_id, &dpk, &sk, vec![1]).await;
         match result {
             Ok(cred) => {
                 assert_credential(
@@ -693,21 +681,8 @@ mod tests {
             revocation_list_credential: EXAMPLE_REVOCATION_LIST_DID.to_string(),
         };
 
-        let nquads = convert_to_nquads(&serde_json::to_string(
-            &offer.ld_proof_vc_detail.credential,
-        )?)
-        .await?;
-        let values_only = get_credential_values(&nquads)?;
-
-        let result = Issuer::sign_nquads(
-            &credential_request,
-            &status,
-            &key_id,
-            &dpk,
-            &sk,
-            [1].to_vec(),
-            values_only,
-        );
+        let result =
+            Issuer::sign_nquads(&credential_request, &status, &key_id, &dpk, &sk, vec![1]).await;
 
         match result {
             Ok(cred) => {
@@ -750,21 +725,7 @@ mod tests {
             revocation_list_credential: EXAMPLE_REVOCATION_LIST_DID.to_string(),
         };
 
-        let nquads = convert_to_nquads(&serde_json::to_string(
-            &offer.ld_proof_vc_detail.credential,
-        )?)
-        .await?;
-        let values_only = get_credential_values(&nquads)?;
-
-        match Issuer::sign_nquads(
-            &credential_request,
-            &status,
-            &key_id,
-            &dpk,
-            &sk,
-            [1].to_vec(),
-            values_only,
-        ) {
+        match Issuer::sign_nquads(&credential_request, &status, &key_id, &dpk, &sk, vec![1]).await {
             Ok(cred) => assert_credential_proof(cred, &key_id, [1].to_vec()),
             Err(e) => assert!(false, "Received error when issuing credential: {}", e),
         }

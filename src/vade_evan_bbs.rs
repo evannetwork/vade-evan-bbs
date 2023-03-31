@@ -37,7 +37,6 @@ use crate::{
             convert_to_nquads,
             decode_base64,
             generate_uuid,
-            get_credential_values,
             get_dpk_from_string,
             get_nquads_schema_map,
         },
@@ -486,16 +485,6 @@ impl VadePlugin for VadeEvanBbs {
             decode_base64(&payload.issuer_secret_key, "Issuer Secret Key")?.into_boxed_slice(),
         );
 
-        let nquads = convert_to_nquads(&serde_json::to_string(
-            &payload
-                .credential_request
-                .credential_offer
-                .ld_proof_vc_detail
-                .credential,
-        )?)
-        .await?;
-        let values_only = get_credential_values(&nquads)?;
-
         let unfinished_credential = Issuer::sign_nquads(
             &payload.credential_request,
             &payload.credential_status,
@@ -503,8 +492,8 @@ impl VadePlugin for VadeEvanBbs {
             &public_key,
             &sk,
             payload.required_indices,
-            values_only,
-        )?;
+        )
+        .await?;
 
         // ######### Please keep this commented until we have an Rust nquad library #########
         // let unfinished_credential = Issuer::issue_credential(
@@ -796,7 +785,7 @@ impl VadePlugin for VadeEvanBbs {
         let nquads_schema_map = get_nquads_schema_map(
             &payload.proof_request,
             &unsigned_credentials_without_proof,
-            false,
+            true,
         )
         .await?;
 
@@ -859,12 +848,11 @@ impl VadePlugin for VadeEvanBbs {
         let unfinished_without_proof: UnsignedBbsCredential =
             serde_json::from_str(&serde_json::to_string(&payload.credential)?)?;
         let nquads = convert_to_nquads(&serde_json::to_string(&unfinished_without_proof)?).await?;
-        let values_only = get_credential_values(&nquads)?;
 
         let credential = Prover::finish_credential(
             &payload.credential,
             &master_secret,
-            &values_only,
+            &nquads,
             &public_key,
             &blinding,
         )?;

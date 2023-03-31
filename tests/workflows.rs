@@ -620,7 +620,7 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
 
     // create proof request
     let mut proof_request = create_proof_request(&mut vade).await?;
-    proof_request.sub_proof_requests[0].revealed_attributes = vec![1, 3];
+    proof_request.sub_proof_requests[0].revealed_attributes = vec![10, 11];
 
     // create proof
     let mut public_key_schema_map = HashMap::new();

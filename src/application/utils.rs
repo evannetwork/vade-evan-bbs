@@ -18,15 +18,12 @@ use base64::Config;
 use bbs::{keys::DeterministicPublicKey, ProofNonce, SignatureMessage};
 #[cfg(not(target_arch = "wasm32"))]
 use chrono::Utc;
-use regex::Regex;
 use serde::Serialize;
 use ssi_json_ld::{json_to_dataset, urdna2015::normalize, JsonLdOptions, StaticLoader};
 use std::{collections::HashMap, error::Error, panic};
 use uuid::Uuid;
 
 use crate::{BbsProofRequest, BbsSubProofRequest, UnsignedBbsCredential};
-
-const NQUAD_REGEX: &str = r"^_:c14n0 <http://schema.org/([^>]+?)>";
 
 pub fn get_now_as_iso_string() -> String {
     #[cfg(target_arch = "wasm32")]
@@ -134,16 +131,6 @@ where
     convert_to_nquads(&serde_json::to_string(&unfinished_without_proof)?).await
 }
 
-pub fn get_credential_values(nquads: &Vec<String>) -> Result<Vec<String>, Box<dyn Error>> {
-    let regex = Regex::new(NQUAD_REGEX).map_err(|err| err.to_string())?;
-
-    Ok(nquads
-        .iter()
-        .filter(|n| regex.is_match(&n))
-        .map(|n| n.to_owned())
-        .collect::<Vec<_>>())
-}
-
 pub async fn get_nquads_schema_map(
     proof_request: &BbsProofRequest,
     unsigned_credentials: &Vec<UnsignedBbsCredential>,
@@ -180,28 +167,25 @@ pub async fn get_nquads_schema_map(
         }
 
         let nquads = convert_to_nquads(&serde_json::to_string(&unfinished_without_proof)?).await?;
-        // let mut credential_values_nquads = get_credential_values(&nquads)?;
-        let mut credential_values_nquads = nquads;
-        credential_values_nquads.sort();
 
         let attributes: Vec<String>;
         if only_revealed {
             attributes = revealed_attributes
                 .iter()
                 .map(|i| {
-                    credential_values_nquads
+                    nquads
                         .get(*i - 1)
                         .ok_or_else(|| Box::from(format!(
                             r#"revealed attribute "{}" of schema "{}" could not be found in provided attribute nquads with length {}"#,
                             *i - 1,
                             &requested_schema,
-                            &credential_values_nquads.len(),
+                            &nquads.len(),
                         )))
                         .map(|value| value.to_owned())
                 })
                 .collect::<Result<Vec<String>, Box<dyn Error>>>()?;
         } else {
-            attributes = credential_values_nquads;
+            attributes = nquads;
         }
         nquads_schema_map.insert(requested_schema.to_owned(), attributes);
     }

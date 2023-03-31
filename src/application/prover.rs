@@ -14,21 +14,24 @@
   limitations under the License.
 */
 
-use super::datatypes::{
-    BbsCredential,
-    BbsCredentialRequest,
-    BbsPresentation,
-    BbsProofRequest,
-    CredentialProposal,
-    CredentialSchema,
-    CredentialSubject,
-    ProofPresentation,
-    UnfinishedBbsCredential,
-    UnfinishedProofPresentation,
-    DEFAULT_CREDENTIAL_CONTEXTS,
+use super::{
+    datatypes::{
+        BbsCredential,
+        BbsCredentialRequest,
+        BbsPresentation,
+        BbsProofRequest,
+        CredentialProposal,
+        CredentialSchema,
+        CredentialSubject,
+        ProofPresentation,
+        UnfinishedBbsCredential,
+        UnfinishedProofPresentation,
+        DEFAULT_CREDENTIAL_CONTEXTS,
+    },
+    utils::get_nonce_from_string,
 };
 use crate::{
-    application::utils::{generate_uuid, get_nonce_from_string, get_now_as_iso_string},
+    application::utils::generate_uuid,
     crypto::{crypto_prover::CryptoProver, crypto_utils::create_assertion_proof},
     BbsCredentialOffer,
 };
@@ -250,9 +253,7 @@ impl Prover {
                     &schema
                 ))?
                 .clone();
-            let issuance_date = get_now_as_iso_string();
-            let proof_cred =
-                BbsPresentation::new(data_to_proof, issuance_date, proof, revealed_subject, nonce);
+            let proof_cred = BbsPresentation::new(data_to_proof, proof, revealed_subject, nonce);
 
             presentation_credentials.insert(presentation_credentials.len(), proof_cred);
         }
@@ -300,6 +301,7 @@ mod tests {
                 convert_to_nquads,
                 decode_base64,
                 get_dpk_from_string,
+                get_now_as_iso_string,
                 get_signature_message_from_string,
             },
         },

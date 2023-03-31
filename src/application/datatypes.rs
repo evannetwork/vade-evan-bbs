@@ -416,7 +416,6 @@ pub struct BbsPresentation {
 impl BbsPresentation {
     pub fn new(
         cred: BbsCredential,
-        issuance_date: String,
         proof: SignatureProof,
         revealed_properties: CredentialSubject,
         nonce: ProofNonce,
@@ -424,7 +423,7 @@ impl BbsPresentation {
         BbsPresentation {
             context: cred.context,
             id: cred.id,
-            issuance_date: issuance_date,
+            issuance_date: cred.issuance_date,
             r#type: cred.r#type,
             issuer: cred.issuer,
             credential_subject: revealed_properties,
@@ -584,30 +583,18 @@ pub struct LdProofVcDetail {
 
 impl LdProofVcDetail {
     pub fn get_message_count(&self) -> Result<usize, Box<dyn Error>> {
-        // commented out code calculates nquad count based on _all_ nquads in credential
-        // current implementation only used subject data values for nquad calculation
-        // either delete or re-use following calculation, depending on if we want to change that
+        let mut message_count = CORE_MESSAGE_COUNT
+            + ADDITIONAL_HIDDEN_MESSAGES_COUNT
+            + &self.credential.credential_subject.data.len();
 
-        // let mut message_count = CORE_MESSAGE_COUNT
-        //     + ADDITIONAL_HIDDEN_MESSAGES_COUNT
-        //     + &self.credential.credential_subject.data.len();
+        if self.credential.valid_until.is_some() {
+            message_count += 1;
+        }
 
-        // if self.credential.valid_until.is_some() {
-        //     message_count += 1;
-        // }
+        message_count += match &self.options.credential_status.r#type {
+            LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status => 4, // 1 link to sub-section, 3 lines with payload, 0 extra line for id (used in key)
+        };
 
-        // message_count += match &self.options.ld_proof_vc_detail_offer {
-        //     Some(LdProofVcDetailOffer {
-        //         credential_status:
-        //             LdProofVcDetailOptionsCredentialStatus {
-        //                 r#type: LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
-        //             },
-        //     }) => 4, // 1 link to sub-section, 3 lines with payload, 0 extra line for id (used in key)
-        //     None => 0,
-        // };
-
-        // Ok(message_count)
-
-        Ok(self.credential.credential_subject.data.len() + ADDITIONAL_HIDDEN_MESSAGES_COUNT)
+        Ok(message_count)
     }
 }
