@@ -797,7 +797,7 @@ impl VadePlugin for VadeEvanBbs {
         let nquads_schema_map = get_nquads_schema_map(
             &payload.proof_request,
             &unsigned_credentials_without_proof,
-            true,
+            false,
         )
         .await?;
 
