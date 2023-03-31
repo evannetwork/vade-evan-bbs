@@ -199,7 +199,6 @@ pub mod bbs_coherent_context_test_data {
 
     pub const MASTER_SECRET: &str = "XSAzKjR1cNdvtew13KqfynP2tUEuJ+VkKLHVnrnB0Ig=";
 
-    // pub const SIGNATURE_BLINDING: &str = "RAu1jffxFGDGppIMmfDE3XSBs3oyHmi5CbPvYjKGiSo=";
     pub const SIGNATURE_BLINDING: &str = "OoM/6d4+qGDuT7QNQ1ei3H47pxI3RcpkvoCU4X1xadM=";
 
     pub const EXAMPLE_REVOCATION_LIST_DID: &str = "did:evan:revocation123";
