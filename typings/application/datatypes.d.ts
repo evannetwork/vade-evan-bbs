@@ -303,8 +303,8 @@ export interface LdProofVcDetailOptionsCredentialStatus {
 
 export interface LdProofVcDetailOptions {
     created: string;
-    proof_type: LdProofVcDetailOptionsType;
-    credential_status: LdProofVcDetailOptionsCredentialStatus;
+    proofType: LdProofVcDetailOptionsType;
+    credentialStatus: LdProofVcDetailOptionsCredentialStatus;
 }
 
 export interface LdProofVcDetail {

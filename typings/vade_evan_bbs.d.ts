@@ -62,9 +62,9 @@ export interface CreateRevocationListPayload {
  * Currently needs both an unsigned verifiable credential containing all the data of this verifiable credential. */
 export interface IssueCredentialPayload {
   /** credential request */
-  credential_request: BbsCredentialRequest;
+  credentialRequest: BbsCredentialRequest;
   /** status to be appended to credential in offer */
-  credential_status: CredentialStatus;
+  credentialStatus: CredentialStatus;
   /** Nquads representation of the VC without any appended proof */
   nquads: string[];
   /** DID url of the public key of the issuer used to later verify the signature */
@@ -117,7 +117,7 @@ export interface CreateCredentialProposalPayload {
  * to a BbsCredentialOffer. */
 export interface RequestCredentialPayload {
   /** offered credential */
-  credential_offer: BbsCredentialOffer;
+  credentialOffer: BbsCredentialOffer;
   /** Master secret of the holder/receiver */
   masterSecret: string;
   /** Public key of the issuer */
