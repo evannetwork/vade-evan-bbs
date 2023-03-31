@@ -65,8 +65,6 @@ export interface IssueCredentialPayload {
   credentialRequest: BbsCredentialRequest;
   /** status to be appended to credential in offer */
   credentialStatus: CredentialStatus;
-  /** Nquads representation of the VC without any appended proof */
-  nquads: string[];
   /** DID url of the public key of the issuer used to later verify the signature */
   issuerPublicKeyId: string;
   /** The public bbs+ key of the issuer used to later verify the signature */
@@ -194,7 +192,6 @@ export interface VerifyProofPayload {
   keysToSchemaMap: Record<string, string>;
   /** Signer address */
   signerAddress: string;
-  nquadsToSchemaMap: Record<string, string[]>;
   /** revocation list credential */
   revocationList: RevocationListCredential;
 }

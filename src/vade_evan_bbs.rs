@@ -266,7 +266,6 @@ pub struct VerifyProofPayload {
     pub keys_to_schema_map: HashMap<String, String>,
     /// Signer address
     pub signer_address: String,
-    pub nquads_to_schema_map: HashMap<String, Vec<String>>,
     /// revocation list credential
     pub revocation_list: RevocationListCredential,
 }

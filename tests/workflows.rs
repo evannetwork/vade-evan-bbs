@@ -637,22 +637,12 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
     )
     .await?;
 
-    let mut nqsm: HashMap<String, Vec<String>> = HashMap::new();
-    nqsm.insert(
-        SCHEMA_DID.to_string(),
-        vec![
-            "test_property_string2: value".to_string(),
-            "test_property_string4: value".to_string(),
-        ],
-    );
-
     // verify proof
     let verify_proof_payload = VerifyProofPayload {
         presentation: presentation.clone(),
         proof_request: proof_request.clone(),
         keys_to_schema_map: public_key_schema_map,
         signer_address: SIGNER_1_ADDRESS.to_string(),
-        nquads_to_schema_map: nqsm,
         revocation_list: revocation_list.clone(),
     };
     let verify_proof_json = serde_json::to_string(&verify_proof_payload)?;
@@ -745,7 +735,6 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
         proof_request,
         keys_to_schema_map: public_key_schema_map,
         signer_address: SIGNER_1_ADDRESS.to_string(),
-        nquads_to_schema_map: nqsm,
         revocation_list: updated_revocation,
     };
     let verify_proof_json = serde_json::to_string(&verify_proof_payload)?;
