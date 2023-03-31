@@ -719,15 +719,6 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
     )
     .await?;
 
-    let mut nqsm: HashMap<String, Vec<String>> = HashMap::new();
-    nqsm.insert(
-        SCHEMA_DID.to_string(),
-        vec![
-            "test_property_string2: value".to_string(),
-            "test_property_string4: value".to_string(),
-        ],
-    );
-
     // verify proof
     let presentation_id = &presentation.id.to_owned();
     let verify_proof_payload = VerifyProofPayload {
