@@ -551,13 +551,11 @@ impl DraftBbsCredential {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-#[serde(rename_all(serialize = "camelCase", deserialize = "camelCase"))]
 pub enum LdProofVcDetailOptionsType {
     Ed25519Signature2018,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-#[serde(rename_all(serialize = "camelCase", deserialize = "camelCase"))]
 pub enum LdProofVcDetailOptionsCredentialStatusType {
     RevocationList2021Status,
 }
