@@ -276,15 +276,6 @@ impl Issuer {
         .into_boxed_slice()
         .try_into()?;
 
-        // let status = CredentialStatus {
-        //     id: format!("{}#{}", revocation_list_did, revocation_list_id),
-        //     r#type: "RevocationList2020Status".to_string(),
-        //     revocation_list_index: revocation_list_id.to_string(),
-        //     revocation_list_credential: revocation_list_did.to_string(),
-        // };
-        // let unsigned = &credential_offer.ld_proof_vc_detail.credential.to_unsigned_credential(status);
-        // let nquads = convert_to_nquads(&serde_json::to_string(&unsigned)?).await?;
-
         let nonce = ProofNonce::from(
             decode_base64(&credential_offer.nonce, "Credential Offer Nonce")?.into_boxed_slice(),
         );
@@ -513,17 +504,6 @@ mod tests {
             credential_values.insert(format!("test_property_string{}", i), "value".to_owned());
         }
         offer.ld_proof_vc_detail.credential.credential_subject.data = credential_values;
-
-        // // Nquad-ize. Flatten the json-ld document graph.
-        // // This will be done by TnT for now as we currently could not find a suitable rust library
-        // let mut nquads = Vec::new();
-        // let mut keys: Vec<String> = credential_values.keys().map(|k| k.to_string()).collect();
-        // keys.sort();
-        // for key in &keys {
-        //     let val = credential_values.get(key).ok_or("AAA".to_owned())?;
-        //     let string = format!("{}: {}", key, val);
-        //     nquads.insert(nquads.len(), string);
-        // }
 
         let (credential_request, _) = Prover::request_credential(&offer, &schema, &secret, pub_key)
             .map_err(|e| format!("{}", e))?;

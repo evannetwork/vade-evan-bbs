@@ -180,7 +180,8 @@ pub async fn get_nquads_schema_map(
         }
 
         let nquads = convert_to_nquads(&serde_json::to_string(&unfinished_without_proof)?).await?;
-        let mut credential_values_nquads = get_credential_values(&nquads)?;
+        // let mut credential_values_nquads = get_credential_values(&nquads)?;
+        let mut credential_values_nquads = nquads;
         credential_values_nquads.sort();
 
         let attributes: Vec<String>;

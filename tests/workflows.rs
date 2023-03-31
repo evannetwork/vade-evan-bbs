@@ -254,15 +254,11 @@ async fn create_presentation(
     };
     revealed_properties_schema_map.insert(SCHEMA_DID.to_string(), revealed);
 
-    // let mut nquads_schema_map = HashMap::new();
-    // nquads_schema_map.insert(SCHEMA_DID.to_string(), nquads);
-
     let present_proof_payload = PresentProofPayload {
         proof_request: proof_request.clone(),
         credential_schema_map,
         public_key_schema_map: public_key_schema_map.clone(),
         revealed_properties_schema_map,
-        // nquads_schema_map,
         master_secret: MASTER_SECRET.to_string(),
         prover_did: VERIFIER_DID.to_string(),
         prover_public_key_did: format!("{}#key-1", VERIFIER_DID),
