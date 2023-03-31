@@ -254,7 +254,7 @@ pub struct FinishCredentialPayload {
     pub blinding: String,
 }
 
-/// API payload for verifying a received proof as a verifer.
+/// API payload for verifying a received proof as a verifier.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VerifyProofPayload {
@@ -262,7 +262,7 @@ pub struct VerifyProofPayload {
     pub presentation: ProofPresentation,
     /// Proof request sent by verifier
     pub proof_request: BbsProofRequest,
-    /// Relevant BBS+ public keys for each credential schema occuring in this proof
+    /// Relevant BBS+ public keys for each credential schema occurring in this proof
     pub keys_to_schema_map: HashMap<String, String>,
     /// Signer address
     pub signer_address: String,
@@ -326,7 +326,7 @@ impl VadeEvanBbs {
 
         let key_id = format!("bbs-key-{}", generate_uuid());
 
-        let serialised_keys = format!(
+        let serialized_keys = format!(
             r###"{{
                 "didUrl": "{}#{}",
                 "publicKey": "{}",
@@ -335,7 +335,7 @@ impl VadeEvanBbs {
             &payload.key_owner_did, key_id, pub_key, secret_key
         );
 
-        Ok(serialised_keys)
+        Ok(serialized_keys)
     }
 }
 
@@ -801,20 +801,20 @@ impl VadePlugin for VadeEvanBbs {
         )
         .await?;
 
-        let mut verfication_result = Verifier::verify_proof(
+        let mut verification_result = Verifier::verify_proof(
             &payload.presentation,
             &payload.proof_request,
             &public_key_schema_map,
             &payload.signer_address,
             &nquads_schema_map,
         )?;
-        if verfication_result.status != "rejected" {
+        if verification_result.status != "rejected" {
             // check revocation status
             for cred in &payload.presentation.verifiable_credential {
                 let revoked =
                     CryptoVerifier::is_revoked(&cred.credential_status, &payload.revocation_list)?;
                 if revoked {
-                    verfication_result = BbsProofVerification {
+                    verification_result = BbsProofVerification {
                         presented_proof: payload.presentation.id.to_string(),
                         status: "rejected".to_string(),
                         reason: Some(format!("Credential id {} is revoked", cred.id)),
@@ -824,7 +824,7 @@ impl VadePlugin for VadeEvanBbs {
         }
 
         Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
-            &verfication_result,
+            &verification_result,
         )?)))
     }
 

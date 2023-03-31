@@ -380,7 +380,7 @@ mod tests {
         return Ok((dpk, sk, offering, schema, secret));
     }
 
-    async fn get_creat_proof_data() -> Result<
+    async fn get_create_proof_data() -> Result<
         (
             BbsProofRequest,
             HashMap<String, BbsCredential>,
@@ -472,10 +472,10 @@ mod tests {
 
     #[test]
     fn can_propose_credential() {
-        let proposal = Prover::propose_credential(&ISSUER_DID, Some(&HOLDER_DID), "schemadid");
+        let proposal = Prover::propose_credential(&ISSUER_DID, Some(&HOLDER_DID), "schema-did");
         assert_eq!(proposal.subject, Some(HOLDER_DID.to_string()));
         assert_eq!(&proposal.issuer, &ISSUER_DID);
-        assert_eq!(&proposal.schema, "schemadid");
+        assert_eq!(&proposal.schema, "schema-did");
     }
 
     #[test]
@@ -563,7 +563,7 @@ mod tests {
             revealed_properties_map,
             public_key_schema_map,
             nquads_schema_map,
-        ) = get_creat_proof_data().await?;
+        ) = get_create_proof_data().await?;
 
         let master_secret: SignatureMessage = SignatureMessage::from(
             decode_base64(&MASTER_SECRET, "Master Secret")?.into_boxed_slice(),

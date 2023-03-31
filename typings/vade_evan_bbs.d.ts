@@ -182,13 +182,13 @@ export interface FinishCredentialPayload {
   blinding: string;
 }
 
-/** API payload for verifying a received proof as a verifer. */
+/** API payload for verifying a received proof as a verifier. */
 export interface VerifyProofPayload {
   /** BBS+ Presentation to verify */
   presentation: ProofPresentation;
   /** Proof request sent by verifier */
   proofRequest: BbsProofRequest;
-  /** Relevant BBS+ public keys for each credential schema occuring in this proof */
+  /** Relevant BBS+ public keys for each credential schema occurring in this proof */
   keysToSchemaMap: Record<string, string>;
   /** Signer address */
   signerAddress: string;
