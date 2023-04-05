@@ -222,7 +222,7 @@ impl Issuer {
         valid_until: Option<String>,
     ) -> Result<UnfinishedBbsCredential, Box<dyn Error>> {
         let mut credential_status: Option<CredentialStatus> = None;
-        if revocation_list_id.is_some() {
+        if revocation_list_id.is_some() || revocation_list_did.is_some() {
             let revocation_list_id =
                 revocation_list_id.ok_or_else(|| "Error parsing revocation_list_id")?;
             let revocation_list_did =
