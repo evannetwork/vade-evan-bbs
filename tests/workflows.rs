@@ -154,8 +154,8 @@ async fn create_credential_request(
 async fn create_unfinished_credential(
     vade: &mut Vade,
     credential_request: BbsCredentialRequest,
-    revocation_list_did: String,
-    revocation_list_id: String,
+    revocation_list_did: Option<String>,
+    revocation_list_id: Option<String>,
     nquads: Vec<String>,
     offer: BbsCredentialOffer,
 ) -> Result<UnfinishedBbsCredential, Box<dyn Error>> {
@@ -293,17 +293,24 @@ async fn create_presentation(
 }
 
 fn get_unsigned_vc(
-    revocation_list_did: String,
-    revocation_list_id: String,
+    revocation_list_did: Option<String>,
+    revocation_list_id: Option<String>,
     credential_values: HashMap<String, String>,
 ) -> Result<UnsignedBbsCredential, Box<dyn Error>> {
     let mut unsigned_vc: UnsignedBbsCredential = serde_json::from_str(UNSIGNED_CREDENTIAL)?;
-    let credential_status = Some(CredentialStatus {
-        id: format!("{}#{}", revocation_list_did, revocation_list_id),
-        r#type: "RevocationList2020Status".to_string(),
-        revocation_list_index: revocation_list_id.clone(),
-        revocation_list_credential: revocation_list_did.clone(),
-    });
+    let mut credential_status: Option<CredentialStatus> = None;
+    if revocation_list_did.is_some() {
+        let revocation_list_did = revocation_list_did
+            .ok_or_else(|| "revocation_list_did required for credential_status")?;
+        let revocation_list_id = revocation_list_id
+            .ok_or_else(|| "revocation_list_did required for credential_status")?;
+        credential_status = Some(CredentialStatus {
+            id: format!("{}#{}", revocation_list_did, revocation_list_id),
+            r#type: "RevocationList2020Status".to_string(),
+            revocation_list_index: revocation_list_id.clone(),
+            revocation_list_credential: revocation_list_did.clone(),
+        });
+    }
     unsigned_vc.credential_status = credential_status;
 
     unsigned_vc.credential_subject.data = credential_values;
@@ -499,8 +506,8 @@ async fn workflow_can_create_finished_credential() -> Result<(), Box<dyn Error>>
     let unfinished_credential = create_unfinished_credential(
         &mut vade,
         credential_request.clone(),
-        revocation_list.id,
-        "0".to_string(),
+        Some(revocation_list.id),
+        Some("0".to_string()),
         nquads.clone(),
         offer,
     )
@@ -545,6 +552,78 @@ async fn workflow_can_create_finished_credential() -> Result<(), Box<dyn Error>>
 }
 
 #[tokio::test]
+async fn workflow_can_create_finished_credential_without_credential_status(
+) -> Result<(), Box<dyn Error>> {
+    let mut vade = get_vade();
+
+    let revocation_list = create_revocation_list(&mut vade).await?;
+
+    let proposal = create_credential_proposal(&mut vade).await?;
+
+    let mut credential_values = HashMap::new();
+    credential_values.insert("test_property_string".to_owned(), "value".to_owned());
+
+    let offer_payload = OfferCredentialPayload {
+        issuer: ISSUER_DID.to_string(),
+        subject: proposal.subject,
+        nquad_count: credential_values.len(),
+    };
+
+    let offer = create_credential_offer(&mut vade, offer_payload).await?;
+
+    let (credential_request, signature_blinding_base64, nquads) =
+        create_credential_request(&mut vade, credential_values, offer.clone()).await?;
+
+    let unfinished_credential = create_unfinished_credential(
+        &mut vade,
+        credential_request.clone(),
+        None,
+        None,
+        nquads.clone(),
+        offer,
+    )
+    .await?;
+
+    let key_id = format!("{}#bbs-key-1", ISSUER_DID);
+    let finished_credential = create_finished_credential(
+        &mut vade,
+        unfinished_credential,
+        signature_blinding_base64,
+        nquads,
+    )
+    .await?;
+
+    assert_eq!(&finished_credential.issuer, ISSUER_DID);
+    assert_eq!(
+        finished_credential.credential_subject.id,
+        Some(SUBJECT_DID.to_string())
+    );
+    assert_eq!(&finished_credential.credential_schema.id, &SCHEMA_DID);
+    assert_eq!(
+        &finished_credential.proof.required_reveal_statements,
+        &[1].to_vec()
+    );
+    assert_eq!(&finished_credential.proof.r#type, CREDENTIAL_SIGNATURE_TYPE);
+    assert_eq!(
+        &finished_credential.proof.proof_purpose,
+        CREDENTIAL_PROOF_PURPOSE
+    );
+    assert_eq!(&finished_credential.proof.verification_method, &key_id);
+    assert!(&finished_credential.credential_status.is_none());
+    assert!(&finished_credential
+        .credential_subject
+        .data
+        .keys()
+        .all(|key| credential_request.credential_values.contains_key(key)
+            && credential_request.credential_values.get(key)
+                == finished_credential.credential_subject.data.get(key)));
+
+    assert!(base64::decode(&finished_credential.proof.signature).is_ok());
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), Box<dyn Error>> {
     let mut vade = get_vade();
 
@@ -574,8 +653,8 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
     let unfinished_credential = create_unfinished_credential(
         &mut vade,
         credential_request,
-        revocation_list.id.clone(),
-        "0".to_string(),
+        Some(revocation_list.id.clone()),
+        Some("0".to_string()),
         nquads.clone(),
         offer,
     )
@@ -656,8 +735,8 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
     let unfinished_credential = create_unfinished_credential(
         &mut vade,
         credential_request,
-        revocation_list.id.clone(),
-        "0".to_string(),
+        Some(revocation_list.id.clone()),
+        Some("0".to_string()),
         nquads.clone(),
         offer,
     )
