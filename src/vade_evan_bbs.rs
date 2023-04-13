@@ -788,14 +788,20 @@ impl VadePlugin for VadeEvanBbs {
         if verfication_result.status != "rejected" {
             // check revocation status
             for cred in &payload.presentation.verifiable_credential {
-                let revoked =
-                    CryptoVerifier::is_revoked(&cred.credential_status, &payload.revocation_list)?;
-                if revoked {
-                    verfication_result = BbsProofVerification {
-                        presented_proof: payload.presentation.id.to_string(),
-                        status: "rejected".to_string(),
-                        reason: Some(format!("Credential id {} is revoked", cred.id)),
-                    };
+                if cred.credential_status.is_some() {
+                    let revoked = CryptoVerifier::is_revoked(
+                        cred.credential_status
+                            .as_ref()
+                            .ok_or_else(|| "Error in Parsing credential_status")?,
+                        &payload.revocation_list,
+                    )?;
+                    if revoked {
+                        verfication_result = BbsProofVerification {
+                            presented_proof: payload.presentation.id.to_string(),
+                            status: "rejected".to_string(),
+                            reason: Some(format!("Credential id {} is revoked", cred.id)),
+                        };
+                    }
                 }
             }
         }
