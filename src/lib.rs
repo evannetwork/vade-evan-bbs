@@ -20,4 +20,4 @@ pub(crate) mod application;
 pub(crate) mod crypto;
 mod vade_evan_bbs;
 
-pub use self::{application::datatypes::*, vade_evan_bbs::*};
+pub use self::{application::datatypes::*, vade_evan_bbs::*, crypto::crypto_utils::recover_address_and_data};
