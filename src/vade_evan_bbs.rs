@@ -276,7 +276,7 @@ pub struct VerifyProofPayload {
     pub signer_address: String,
     pub nquads_to_schema_map: HashMap<String, Vec<String>>,
     /// revocation list credential
-    pub revocation_list: RevocationListCredential,
+    pub revocation_list: Option<RevocationListCredential>,
 }
 
 /// API payload to create new BBS+ keys and persist them on the DID document.
@@ -785,15 +785,18 @@ impl VadePlugin for VadeEvanBbs {
             &payload.signer_address,
             &payload.nquads_to_schema_map,
         )?;
-        if verfication_result.status != "rejected" {
+        if verfication_result.status != "rejected" && payload.revocation_list.is_some() {
             // check revocation status
+            let revocation_list = payload
+                .revocation_list
+                .ok_or_else(|| "Invalid revocation list!")?;
             for cred in &payload.presentation.verifiable_credential {
                 if cred.credential_status.is_some() {
                     let revoked = CryptoVerifier::is_revoked(
                         cred.credential_status
                             .as_ref()
                             .ok_or_else(|| "Error in Parsing credential_status")?,
-                        &payload.revocation_list,
+                        &revocation_list,
                     )?;
                     if revoked {
                         verfication_result = BbsProofVerification {
