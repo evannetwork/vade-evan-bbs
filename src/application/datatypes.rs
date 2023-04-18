@@ -166,7 +166,6 @@ impl BbsCredential {
             issuance_date: cred.issuance_date,
             valid_until: cred.valid_until,
             credential_subject: CredentialSubject {
-                id: cred.credential_subject.id,
                 data: cred.credential_subject.data,
             },
             credential_schema: CredentialSchemaReference {
@@ -246,8 +245,6 @@ impl UnfinishedBbsCredential {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct CredentialSubject {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub id: Option<String>,
     pub data: HashMap<String, String>,
 }
 

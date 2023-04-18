@@ -17,7 +17,6 @@
 use std::{collections::HashMap, error::Error};
 use utilities::test_data::{
     accounts::local::{
-        HOLDER_DID,
         ISSUER_DID,
         ISSUER_PRIVATE_KEY,
         ISSUER_PUBLIC_KEY_DID,
@@ -263,7 +262,6 @@ async fn create_presentation(
     let revealed_data = finished_credential.credential_subject.data.clone();
     let mut revealed_properties_schema_map = HashMap::new();
     let revealed = CredentialSubject {
-        id: Some(HOLDER_DID.to_string()),
         data: revealed_data,
     };
     revealed_properties_schema_map.insert(SCHEMA_DID.to_string(), revealed);
@@ -523,10 +521,7 @@ async fn workflow_can_create_finished_credential() -> Result<(), Box<dyn Error>>
     .await?;
 
     assert_eq!(&finished_credential.issuer, ISSUER_DID);
-    assert_eq!(
-        finished_credential.credential_subject.id,
-        Some(SUBJECT_DID.to_string())
-    );
+
     assert_eq!(&finished_credential.credential_schema.id, &SCHEMA_DID);
     assert_eq!(
         &finished_credential.proof.required_reveal_statements,
@@ -556,7 +551,7 @@ async fn workflow_can_create_finished_credential_without_credential_status(
 ) -> Result<(), Box<dyn Error>> {
     let mut vade = get_vade();
 
-    let revocation_list = create_revocation_list(&mut vade).await?;
+    let _revocation_list = create_revocation_list(&mut vade).await?;
 
     let proposal = create_credential_proposal(&mut vade).await?;
 
@@ -594,10 +589,6 @@ async fn workflow_can_create_finished_credential_without_credential_status(
     .await?;
 
     assert_eq!(&finished_credential.issuer, ISSUER_DID);
-    assert_eq!(
-        finished_credential.credential_subject.id,
-        Some(SUBJECT_DID.to_string())
-    );
     assert_eq!(&finished_credential.credential_schema.id, &SCHEMA_DID);
     assert_eq!(
         &finished_credential.proof.required_reveal_statements,

@@ -208,7 +208,6 @@ impl Issuer {
     #[allow(dead_code)]
     pub fn issue_credential(
         issuer_did: &str,
-        subject_did: &str,
         credential_offer: &BbsCredentialOffer,
         credential_request: &BbsCredentialRequest,
         issuer_public_key_id: &str,
@@ -247,7 +246,6 @@ impl Issuer {
         }
 
         let credential_subject = CredentialSubject {
-            id: Some(subject_did.to_owned()),
             data: credential_request.credential_values.clone(),
         };
 
@@ -450,7 +448,7 @@ mod tests {
     use bbs::{issuer::Issuer as BbsIssuer, prover::Prover as BbsProver};
     use std::collections::HashMap;
     use utilities::test_data::{
-        accounts::local::{HOLDER_DID, ISSUER_DID, ISSUER_PRIVATE_KEY, ISSUER_PUBLIC_KEY_DID},
+        accounts::local::{ISSUER_DID, ISSUER_PRIVATE_KEY, ISSUER_PUBLIC_KEY_DID},
         bbs_coherent_context_test_data::{
             EXAMPLE_REVOCATION_LIST_DID,
             PUB_KEY,
@@ -527,7 +525,6 @@ mod tests {
         valid_until: Option<String>,
     ) {
         assert_eq!(&cred.issuer, ISSUER_DID);
-        assert_eq!(cred.credential_subject.id, Some(HOLDER_DID.to_string()));
         assert_eq!(&cred.credential_schema.id, schema_id);
         // proof
         assert_eq!(&cred.proof.required_reveal_statements, &[1].to_vec());
@@ -576,7 +573,6 @@ mod tests {
 
         match Issuer::issue_credential(
             &ISSUER_DID,
-            &HOLDER_DID,
             &offer,
             &credential_request,
             &key_id,
@@ -619,7 +615,6 @@ mod tests {
 
         match Issuer::issue_credential(
             &ISSUER_DID,
-            &HOLDER_DID,
             &offer,
             &credential_request,
             &key_id,
@@ -671,7 +666,9 @@ mod tests {
             [1].to_vec(),
             nquads,
         ) {
-            Ok(cred) => assert_credential_proof(cred, &key_id, [1].to_vec()),
+            Ok(cred) => {
+                println!("unfinished cred {}", serde_json::to_string(&cred)?);
+                assert_credential_proof(cred, &key_id, [1].to_vec())},
             Err(e) => assert!(false, "Received error when issuing credential: {}", e),
         }
         Ok(())
@@ -689,7 +686,6 @@ mod tests {
 
         let result = Issuer::issue_credential(
             &ISSUER_DID,
-            &HOLDER_DID,
             &offer,
             &credential_request,
             &key_id,

@@ -369,7 +369,6 @@ mod tests {
         revealed_data.remove("test_property_string4");
 
         let revealed = CredentialSubject {
-            id: Some(HOLDER_DID.to_string()),
             data: revealed_data,
         };
         let mut revealed_properties_map = HashMap::new();
@@ -416,7 +415,6 @@ mod tests {
             .get(schema_id)
             .ok_or("Error!")?
             .clone();
-        assert_eq!(proof_cred.credential_subject.id, new_credential_subject.id);
         // Only reveals the provided subject data, not the credential's original subject data
         assert_eq!(
             proof_cred.credential_subject.data,
@@ -490,6 +488,7 @@ mod tests {
         ) {
             Ok(cred) => {
                 // There is now a property 'signature' and it is base64 encoded
+                println!("{}", serde_json::to_string(&cred)?);
                 assert!(decode_base64(&cred.proof.signature, "Proof Signature").is_ok());
             }
             Err(e) => {
