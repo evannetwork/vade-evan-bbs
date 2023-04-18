@@ -666,9 +666,7 @@ mod tests {
             [1].to_vec(),
             nquads,
         ) {
-            Ok(cred) => {
-                println!("unfinished cred {}", serde_json::to_string(&cred)?);
-                assert_credential_proof(cred, &key_id, [1].to_vec())},
+            Ok(cred) => assert_credential_proof(cred, &key_id, [1].to_vec()),
             Err(e) => assert!(false, "Received error when issuing credential: {}", e),
         }
         Ok(())

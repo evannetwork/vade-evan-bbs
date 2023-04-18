@@ -231,6 +231,7 @@ mod tests {
             NQUADS,
             PROOF_PRESENTATION,
             PROOF_PRESENTATION_INVALID_SIGNATURE_AND_WITHOUT_JWS,
+            PROOF_REQUEST,
             PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES,
             PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES_WITHOUT_VERIFIER,
             PUB_KEY,
@@ -551,8 +552,7 @@ mod tests {
         // Our assertion got corrupted mysteriously
         let presentation: ProofPresentation = serde_json::from_str(&PROOF_PRESENTATION)?;
 
-        let proof_request: BbsProofRequest =
-            serde_json::from_str(&PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES)?;
+        let proof_request: BbsProofRequest = serde_json::from_str(&PROOF_REQUEST)?;
         let key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;
 
         let mut keys_to_schema_map = HashMap::new();

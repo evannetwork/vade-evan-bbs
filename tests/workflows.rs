@@ -621,7 +621,6 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
     let revocation_list = create_revocation_list(&mut vade).await?;
 
     let proposal = create_credential_proposal(&mut vade).await?;
-
     let mut credential_values = HashMap::new();
     credential_values.insert("test_property_string".to_owned(), "value".to_owned());
     credential_values.insert("test_property_string1".to_owned(), "value".to_owned());
@@ -640,7 +639,6 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
 
     let (credential_request, signature_blinding_base64, nquads) =
         create_credential_request(&mut vade, credential_values, offer.clone()).await?;
-
     let unfinished_credential = create_unfinished_credential(
         &mut vade,
         credential_request,
@@ -662,7 +660,6 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
     // create proof request
     let mut proof_request = create_proof_request(&mut vade).await?;
     proof_request.sub_proof_requests[0].revealed_attributes = vec![1, 3];
-
     // create proof
     let mut public_key_schema_map = HashMap::new();
     public_key_schema_map.insert(SCHEMA_DID.to_string(), PUB_KEY.to_string());
@@ -674,7 +671,6 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
         nquads,
     )
     .await?;
-
     let mut nqsm: HashMap<String, Vec<String>> = HashMap::new();
     nqsm.insert(
         SCHEMA_DID.to_string(),

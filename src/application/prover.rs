@@ -488,7 +488,6 @@ mod tests {
         ) {
             Ok(cred) => {
                 // There is now a property 'signature' and it is base64 encoded
-                println!("{}", serde_json::to_string(&cred)?);
                 assert!(decode_base64(&cred.proof.signature, "Proof Signature").is_ok());
             }
             Err(e) => {
