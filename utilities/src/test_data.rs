@@ -50,7 +50,6 @@ pub mod vc_zkp {
     pub const EXAMPLE_CREDENTIAL_PROPOSAL: &str = r###"
     {
         "issuer":"did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g",
-        "subject":"did:evan:subject",
         "type":"EvanCredentialProposal",
         "schema":"did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg"
      }
@@ -58,7 +57,6 @@ pub mod vc_zkp {
     pub const EXAMPLE_CREDENTIAL_OFFERING: &str = r###"
     {
         "issuer":"did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g",
-        "subject":"did:evan:subject",
         "nonce":"VprTtI2gGnaPU7Bi9ug5U5k8qpZF3y6loo/8ZpetOEk=",
         "credentialMessageCount":6
     }
@@ -461,7 +459,6 @@ pub mod bbs_coherent_context_test_data {
                 "issuer": "did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g",
                 "issuanceDate": "2023-02-07T16:24:52.000Z",
                 "credentialSubject": {
-                    "id": "did:evan:holder",
                     "data": {
                         "test_property_string4": "value",
                         "test_property_string2": "value",

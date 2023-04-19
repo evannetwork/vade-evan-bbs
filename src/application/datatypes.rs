@@ -131,7 +131,7 @@ pub struct CredentialProposal {
 }
 
 /// A verifiable credential issued by an issuer upon receiving a `CredentialRequest`.
-/// Specifies the signed values, the DID of the prover/subject, the `CredentialSchema`, and the `CredentialSignature`
+/// Specifies the signed values, the `CredentialSchema`, and the `CredentialSignature`
 /// including revocation info.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
