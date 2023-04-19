@@ -133,9 +133,6 @@ pub struct IssueCredentialPayload {
 pub struct OfferCredentialPayload {
     /// DID of the issuer
     pub issuer: String,
-    /// DID of the subject
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub subject: Option<String>,
     /// Number of total nquads in the final credential
     pub nquad_count: usize,
 }
@@ -549,11 +546,8 @@ impl VadePlugin for VadeEvanBbs {
         ignore_unrelated!(method, options);
 
         let payload: OfferCredentialPayload = parse!(&payload, "payload");
-        let result: BbsCredentialOffer = Issuer::offer_credential(
-            payload.subject.as_deref(),
-            &payload.issuer,
-            payload.nquad_count,
-        )?;
+        let result: BbsCredentialOffer =
+            Issuer::offer_credential(&payload.issuer, payload.nquad_count)?;
         Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
             &result,
         )?)))
@@ -628,11 +622,8 @@ impl VadePlugin for VadeEvanBbs {
     ) -> Result<VadePluginResultValue<Option<String>>, Box<dyn Error>> {
         ignore_unrelated!(method, options);
         let payload: CreateCredentialProposalPayload = parse!(&payload, "payload");
-        let result: CredentialProposal = Prover::propose_credential(
-            &payload.issuer,
-            payload.subject.as_deref(),
-            &payload.schema,
-        );
+        let result: CredentialProposal =
+            Prover::propose_credential(&payload.issuer, &payload.schema);
 
         Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
             &result,

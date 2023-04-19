@@ -57,14 +57,9 @@ impl Prover {
     ///
     /// # Returns
     /// * `CredentialProposal` - The message to be sent to an issuer
-    pub fn propose_credential(
-        issuer_did: &str,
-        subject_did: Option<&str>,
-        schema_did: &str,
-    ) -> CredentialProposal {
+    pub fn propose_credential(issuer_did: &str, schema_did: &str) -> CredentialProposal {
         CredentialProposal {
             issuer: issuer_did.to_owned(),
-            subject: subject_did.map(|value| value.to_string()),
             schema: schema_did.to_owned(),
             r#type: CREDENTIAL_PROPOSAL_TYPE.to_string(),
         }
@@ -123,7 +118,6 @@ impl Prover {
         Ok((
             BbsCredentialRequest {
                 schema: credential_schema.id.clone(),
-                subject: credential_offering.subject.clone(),
                 r#type: CREDENTIAL_REQUEST_TYPE.to_string(),
                 credential_values: credential_values,
                 blind_signature_context: base64::encode(
@@ -435,8 +429,7 @@ mod tests {
 
     #[test]
     fn can_propose_credential() {
-        let proposal = Prover::propose_credential(&ISSUER_DID, Some(&HOLDER_DID), "schemadid");
-        assert_eq!(proposal.subject, Some(HOLDER_DID.to_string()));
+        let proposal = Prover::propose_credential(&ISSUER_DID, "schemadid");
         assert_eq!(&proposal.issuer, &ISSUER_DID);
         assert_eq!(&proposal.schema, "schemadid");
         assert_eq!(&proposal.r#type, CREDENTIAL_PROPOSAL_TYPE);
@@ -449,7 +442,6 @@ mod tests {
             Prover::request_credential(&offering, &schema, &secret, credential_values, &dpk)
                 .map_err(|e| format!("{}", e))?;
         assert_eq!(credential_request.schema, schema.id);
-        assert_eq!(credential_request.subject, offering.subject);
         assert_eq!(credential_request.r#type, CREDENTIAL_REQUEST_TYPE);
         Ok(())
     }

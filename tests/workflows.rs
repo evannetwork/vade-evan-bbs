@@ -322,7 +322,6 @@ async fn workflow_can_create_credential_proposal() -> Result<(), Box<dyn Error>>
 
     let proposal = create_credential_proposal(&mut vade).await?;
 
-    assert_eq!(proposal.subject.as_ref(), Some(&SUBJECT_DID.to_string()));
     assert_eq!(&proposal.issuer, &ISSUER_DID);
     assert_eq!(&proposal.schema, &SCHEMA_DID.clone());
     assert_eq!(&proposal.r#type, CREDENTIAL_PROPOSAL_TYPE);
@@ -339,13 +338,11 @@ async fn workflow_can_create_credential_offer_with_proposal() -> Result<(), Box<
     // Create credential offering
     let offer_payload = OfferCredentialPayload {
         issuer: ISSUER_DID.to_string(),
-        subject: proposal.subject.clone(),
         nquad_count: 3, /* Arbitrary, not needed here */
     };
 
     let offering = create_credential_offer(&mut vade, offer_payload).await?;
     assert_eq!(&offering.issuer, &ISSUER_DID);
-    assert_eq!(&offering.subject, &proposal.subject);
 
     Ok(())
 }
@@ -359,7 +356,6 @@ async fn workflow_can_create_credential_request() -> Result<(), Box<dyn Error>> 
     // Create credential offering
     let offer_payload = OfferCredentialPayload {
         issuer: ISSUER_DID.to_string(),
-        subject: proposal.subject,
         nquad_count: 3, /* Arbitrary, not needed here */
     };
 
@@ -373,7 +369,7 @@ async fn workflow_can_create_credential_request() -> Result<(), Box<dyn Error>> 
         create_credential_request(&mut vade, credential_values, offer.clone()).await?;
 
     assert_eq!(credential_request.schema, SCHEMA_DID);
-    assert_eq!(credential_request.subject, offer.subject);
+
     assert_eq!(credential_request.r#type, CREDENTIAL_REQUEST_TYPE);
 
     Ok(())
@@ -389,7 +385,6 @@ async fn workflow_cannot_create_credential_request_with_missing_required_schema_
     // Create credential offering
     let offer_payload = OfferCredentialPayload {
         issuer: ISSUER_DID.to_string(),
-        subject: proposal.subject,
         nquad_count: 3, /* Arbitrary, not needed here */
     };
 
@@ -425,7 +420,6 @@ async fn workflow_cannot_create_credential_request_with_empty_values() -> Result
     // Create credential offering
     let offer_payload = OfferCredentialPayload {
         issuer: ISSUER_DID.to_string(),
-        subject: proposal.subject,
         nquad_count: 3, /* Arbitrary, not needed here */
     };
 
@@ -459,7 +453,6 @@ async fn workflow_can_create_unfinished_credential() -> Result<(), Box<dyn Error
     // Create credential offering
     let offer_payload = OfferCredentialPayload {
         issuer: ISSUER_DID.to_string(),
-        subject: proposal.subject,
         nquad_count: 1,
     };
 
@@ -473,7 +466,7 @@ async fn workflow_can_create_unfinished_credential() -> Result<(), Box<dyn Error
         create_credential_request(&mut vade, credential_values, offer.clone()).await?;
 
     assert_eq!(credential_request.schema, SCHEMA_DID);
-    assert_eq!(credential_request.subject, offer.subject);
+
     assert_eq!(credential_request.r#type, CREDENTIAL_REQUEST_TYPE);
 
     Ok(())
@@ -492,7 +485,6 @@ async fn workflow_can_create_finished_credential() -> Result<(), Box<dyn Error>>
 
     let offer_payload = OfferCredentialPayload {
         issuer: ISSUER_DID.to_string(),
-        subject: proposal.subject,
         nquad_count: credential_values.len(),
     };
 
@@ -560,7 +552,6 @@ async fn workflow_can_create_finished_credential_without_credential_status(
 
     let offer_payload = OfferCredentialPayload {
         issuer: ISSUER_DID.to_string(),
-        subject: proposal.subject,
         nquad_count: credential_values.len(),
     };
 
@@ -631,7 +622,6 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
     // Create credential offering
     let offer_payload = OfferCredentialPayload {
         issuer: ISSUER_DID.to_string(),
-        subject: proposal.subject,
         nquad_count: credential_values.len(),
     };
 
@@ -710,7 +700,6 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
     // Create credential offering
     let offer_payload = OfferCredentialPayload {
         issuer: ISSUER_DID.to_string(),
-        subject: proposal.subject,
         nquad_count: credential_values.len(),
     };
 
