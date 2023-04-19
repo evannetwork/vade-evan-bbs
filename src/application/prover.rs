@@ -296,12 +296,7 @@ mod tests {
         SignatureBlinding,
     };
     use utilities::test_data::{
-        accounts::local::{
-            ISSUER_DID,
-            SIGNER_1_ADDRESS,
-            SIGNER_1_PRIVATE_KEY,
-            VERIFIER_DID,
-        },
+        accounts::local::{ISSUER_DID, SIGNER_1_ADDRESS, SIGNER_1_PRIVATE_KEY, VERIFIER_DID},
         bbs_coherent_context_test_data::{
             FINISHED_CREDENTIAL,
             MASTER_SECRET,
