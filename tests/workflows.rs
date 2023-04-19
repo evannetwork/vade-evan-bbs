@@ -333,8 +333,6 @@ async fn workflow_can_create_credential_proposal() -> Result<(), Box<dyn Error>>
 async fn workflow_can_create_credential_offer_with_proposal() -> Result<(), Box<dyn Error>> {
     let mut vade = get_vade();
 
-    let proposal = create_credential_proposal(&mut vade).await?;
-
     // Create credential offering
     let offer_payload = OfferCredentialPayload {
         issuer: ISSUER_DID.to_string(),
@@ -350,8 +348,6 @@ async fn workflow_can_create_credential_offer_with_proposal() -> Result<(), Box<
 #[tokio::test]
 async fn workflow_can_create_credential_request() -> Result<(), Box<dyn Error>> {
     let mut vade = get_vade();
-
-    let proposal = create_credential_proposal(&mut vade).await?;
 
     // Create credential offering
     let offer_payload = OfferCredentialPayload {
@@ -379,8 +375,6 @@ async fn workflow_can_create_credential_request() -> Result<(), Box<dyn Error>> 
 async fn workflow_cannot_create_credential_request_with_missing_required_schema_property(
 ) -> Result<(), Box<dyn Error>> {
     let mut vade = get_vade();
-
-    let proposal = create_credential_proposal(&mut vade).await?;
 
     // Create credential offering
     let offer_payload = OfferCredentialPayload {
@@ -415,8 +409,6 @@ async fn workflow_cannot_create_credential_request_with_empty_values() -> Result
 {
     let mut vade = get_vade();
 
-    let proposal = create_credential_proposal(&mut vade).await?;
-
     // Create credential offering
     let offer_payload = OfferCredentialPayload {
         issuer: ISSUER_DID.to_string(),
@@ -448,8 +440,6 @@ async fn workflow_cannot_create_credential_request_with_empty_values() -> Result
 async fn workflow_can_create_unfinished_credential() -> Result<(), Box<dyn Error>> {
     let mut vade = get_vade();
 
-    let proposal = create_credential_proposal(&mut vade).await?;
-
     // Create credential offering
     let offer_payload = OfferCredentialPayload {
         issuer: ISSUER_DID.to_string(),
@@ -477,8 +467,6 @@ async fn workflow_can_create_finished_credential() -> Result<(), Box<dyn Error>>
     let mut vade = get_vade();
 
     let revocation_list = create_revocation_list(&mut vade).await?;
-
-    let proposal = create_credential_proposal(&mut vade).await?;
 
     let mut credential_values = HashMap::new();
     credential_values.insert("test_property_string".to_owned(), "value".to_owned());
@@ -545,8 +533,6 @@ async fn workflow_can_create_finished_credential_without_credential_status(
 
     let _revocation_list = create_revocation_list(&mut vade).await?;
 
-    let proposal = create_credential_proposal(&mut vade).await?;
-
     let mut credential_values = HashMap::new();
     credential_values.insert("test_property_string".to_owned(), "value".to_owned());
 
@@ -611,7 +597,6 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
 
     let revocation_list = create_revocation_list(&mut vade).await?;
 
-    let proposal = create_credential_proposal(&mut vade).await?;
     let mut credential_values = HashMap::new();
     credential_values.insert("test_property_string".to_owned(), "value".to_owned());
     credential_values.insert("test_property_string1".to_owned(), "value".to_owned());
@@ -691,8 +676,6 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
     let mut vade = get_vade();
 
     let revocation_list = create_revocation_list(&mut vade).await?;
-
-    let proposal = create_credential_proposal(&mut vade).await?;
 
     let mut credential_values = HashMap::new();
     credential_values.insert("test_property_string".to_owned(), "value".to_owned());

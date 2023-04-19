@@ -297,7 +297,6 @@ mod tests {
     };
     use utilities::test_data::{
         accounts::local::{
-            HOLDER_DID,
             ISSUER_DID,
             SIGNER_1_ADDRESS,
             SIGNER_1_PRIVATE_KEY,
