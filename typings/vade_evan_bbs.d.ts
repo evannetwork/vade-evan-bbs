@@ -206,7 +206,7 @@ export interface VerifyProofPayload {
   signerAddress: string;
   nquadsToSchemaMap: Record<string, string[]>;
   /** revocation list credential */
-  revocationList: RevocationListCredential;
+  revocationList?: RevocationListCredential;
 }
 
 /** API payload to create new BBS+ keys and persist them on the DID document. */
