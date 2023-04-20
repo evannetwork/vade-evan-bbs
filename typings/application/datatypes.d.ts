@@ -20,7 +20,6 @@
  * Incorporates the nonce value sent in `BbsCredentialOffer`.
  */
 export interface BbsCredentialRequest {
-  subject: string;
   schema: string;
   type: string;
   blindSignatureContext: string;
@@ -87,7 +86,6 @@ export interface AssertionProof {
  */
 export interface BbsCredentialOffer {
   issuer: string;
-  subject: string;
   credentialMessageCount: number;
   nonce: string;
 }
@@ -98,14 +96,13 @@ export interface BbsCredentialOffer {
  */
 export interface CredentialProposal {
   issuer: string;
-  subject: string;
   type: string;
   schema: string;
 }
 
 /**
  * A verifiable credential issued by an issuer upon receiving a `CredentialRequest`.
- * Specifies the signed values, the DID of the prover/subject, the `CredentialSchema`, and the `CredentialSignature`
+ * Specifies the signed values, the `CredentialSchema`, and the `CredentialSignature`
  * including revocation info.
  */
 export interface BbsCredential {
@@ -153,7 +150,6 @@ export interface UnfinishedBbsCredential {
 }
 
 export interface CredentialSubject {
-  id?: string;
   data: Record<string, string>;
 }
 

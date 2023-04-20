@@ -167,9 +167,6 @@ pub struct PresentProofPayload {
 pub struct CreateCredentialProposalPayload {
     /// DID of the issuer
     pub issuer: String,
-    /// DID of the subject
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub subject: Option<String>,
     /// DID of a credential schema to propose
     pub schema: String,
 }

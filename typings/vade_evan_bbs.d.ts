@@ -83,8 +83,6 @@ export interface OfferCredentialPayload {
   issuer: string;
   /** Number of total nquads in the final credential */
   nquadCount: number;
-  /** subject for credential */
-  subject: string;
 }
 
 /** API payload for creating a zero-knowledge proof out of a BBS+ signature. */
@@ -113,8 +111,6 @@ export interface PresentProofPayload {
 export interface CreateCredentialProposalPayload {
   /** DID of the issuer */
   issuer: string;
-  /** DID of the subject */
-  subject: string;
   /** DID of a credential schema to propose */
   schema: string;
 }

@@ -31,7 +31,6 @@ use utilities::test_data::{
         SCHEMA,
         SCHEMA_DID,
         SECRET_KEY,
-        SUBJECT_DID,
         UNSIGNED_CREDENTIAL,
     },
 };
@@ -91,7 +90,6 @@ fn get_options() -> String {
 async fn create_credential_proposal(vade: &mut Vade) -> Result<CredentialProposal, Box<dyn Error>> {
     let proposal_payload = CreateCredentialProposalPayload {
         issuer: ISSUER_DID.to_string(),
-        subject: Some(SUBJECT_DID.to_string()),
         schema: SCHEMA_DID.to_string(),
     };
     let proposal_payload_json = serde_json::to_string(&proposal_payload)?;
