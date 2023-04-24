@@ -700,7 +700,7 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
         keys_to_schema_map: public_key_schema_map,
         signer_address: SIGNER_1_ADDRESS.to_string(),
         nquads_to_schema_map: nqsm,
-        revocation_list: revocation_list.clone(),
+        revocation_list: Some(revocation_list.clone()),
     };
     let verify_proof_json = serde_json::to_string(&verify_proof_payload)?;
     vade.vc_zkp_verify_proof(EVAN_METHOD, TYPE_OPTIONS, &verify_proof_json)
@@ -781,7 +781,7 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
         keys_to_schema_map: public_key_schema_map,
         signer_address: SIGNER_1_ADDRESS.to_string(),
         nquads_to_schema_map: nqsm,
-        revocation_list: updated_revocation,
+        revocation_list: Some(updated_revocation),
     };
     let verify_proof_json = serde_json::to_string(&verify_proof_payload)?;
     let results = vade

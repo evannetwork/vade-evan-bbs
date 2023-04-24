@@ -115,7 +115,7 @@ export interface BbsCredential {
   issuer: string;
   credentialSubject: CredentialSubject;
   credentialSchema: CredentialSchemaReference;
-  credentialStatus: CredentialStatus;
+  credentialStatus?: CredentialStatus;
   validUntil?: string;
   issuanceDate: string;
   proof: BbsCredentialSignature;
@@ -131,7 +131,7 @@ export interface UnsignedCredential {
   issuer: string;
   credentialSubject: CredentialSubject;
   credentialSchema: CredentialSchemaReference;
-  credentialStatus: CredentialStatus;
+  credentialStatus?: CredentialStatus;
   validUntil?: string;
   issuanceDate: string;
 }
@@ -146,7 +146,7 @@ export interface UnfinishedBbsCredential {
   issuer: string;
   credentialSubject: CredentialSubject;
   credentialSchema: CredentialSchemaReference;
-  credentialStatus: CredentialStatus;
+  credentialStatus?: CredentialStatus;
   validUntil?: string;
   issuanceDate: string;
   proof: BbsUnfinishedCredentialSignature;
@@ -228,7 +228,7 @@ export interface BbsPresentation {
   issuanceDate: string;
   credentialSubject: CredentialSubject;
   credentialSchema: CredentialSchemaReference;
-  credentialStatus: CredentialStatus;
+  credentialStatus?: CredentialStatus;
   proof: BbsPresentationProof;
 }
 
