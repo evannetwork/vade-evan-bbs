@@ -22,6 +22,9 @@ pub mod accounts {
 
         pub const HOLDER_DID: &str = "did:evan:holder";
 
+        // if different from HOLDER_DID
+        pub const SUBJECT_DID: &str = "did:evan:subject";
+
         pub const VERIFIER_DID: &str = "did:evan:verifier";
 
         #[allow(dead_code)]
@@ -51,18 +54,7 @@ pub mod vc_zkp {
     {
         "issuer": "did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g",
         "subject": "did:evan:subject",
-        "type": "EvanCredentialProposal",
         "schema": "did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg"
-    }
-    "###;
-    pub const EXAMPLE_CREDENTIAL_OFFERING: &str = r###"
-    {
-        "issuer": "did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g",
-        "subject": "did:evan:subject",
-        "type": "EvanBbsCredentialOffering",
-        "schema": "did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg",
-        "credentialMessageCount": 5,
-        "nonce": "WzM0LDIxNSwyNDEsODgsMTg2LDExMiwyOSwxNTksNjUsMjE1LDI0MiwxNjQsMTksOCwyMDEsNzgsNTUsMTA4LDE1NCwxMTksMTg0LDIyNCwyMjUsNDAsNDgsMTgwLDY5LDE3OCwxNDgsNSw1OSwxMTFd"
     }
     "###;
 }
@@ -72,10 +64,10 @@ pub mod bbs_coherent_context_test_data {
     pub const UNFINISHED_CREDENTIAL: &str = r###"{
         "@context": [
             "https://www.w3.org/2018/credentials/v1",
-            "https:://schema.org/",
+            "https://schema.org/",
             "https://w3id.org/vc-revocation-list-2020/v1"
         ],
-        "id": "94450c72-5dc4-4e46-8df0-106819064656",
+        "id": "uuid:94450c72-5dc4-4e46-8df0-106819064656",
         "type": [
             "VerifiableCredential"
         ],
@@ -84,15 +76,15 @@ pub mod bbs_coherent_context_test_data {
         "credentialSubject": {
             "id": "did:evan:subject",
             "data": {
-                "test_property_string": "value",
+                "test_property_string1": "value",
                 "test_property_string4": "value",
                 "test_property_string3": "value",
-                "test_property_string1": "value",
-                "test_property_string2": "value"
+                "test_property_string2": "value",
+                "test_property_string": "value"
             }
         },
         "credentialSchema": {
-            "id": "did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg",
+            "id": "did:evan:EiAn35ScK8_GsBE9GwMFC5BwvjZXkxEWIfmi6hAoCzvA0w",
             "type": "EvanZKPSchema"
         },
         "credentialStatus": {
@@ -103,24 +95,24 @@ pub mod bbs_coherent_context_test_data {
         },
         "proof": {
             "type": "BbsBlsSignature2020",
-            "created": "2023-02-07T16:24:52.000Z",
+            "created": "2023-03-22T15:42:23.000Z",
             "proofPurpose": "assertionMethod",
             "verificationMethod": "did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g#bbs-key-1",
-            "credentialMessageCount": 6,
+            "credentialMessageCount": 17,
             "requiredRevealStatements": [
                 1
             ],
-            "blindSignature": "uQHbAATic4LcMynF8ZhnqSfFzywplOkII/g7oEeZyMYbcgluZlwymxEL+3BGdq5XTCG1jxV57MaXjTHJa9b51ptA1+wWwVovk7AtuVA5DrFhffcYU5sN7huWvD4Nm7ceY5zK1ZFv+X5QYYiZr2C1TQ=="
+            "blindSignature": "jDurIXkOk4jJkIeEhmwQpxKdr6/KA6ZN0/o5AR4N2apXbUDnyucvkiMoi6rbei9JWnpcGd9hdwG/WKgVReW4puUxSJ0tmmY4dW1zw/z2om8gGQTfmlVEkVTAn7tddmndzNs7JXKuflYKZZi+WFimWw=="
         }
     }"###;
 
     pub const FINISHED_CREDENTIAL: &str = r###"{
         "@context": [
             "https://www.w3.org/2018/credentials/v1",
-            "https:://schema.org/",
+            "https://schema.org/",
             "https://w3id.org/vc-revocation-list-2020/v1"
         ],
-        "id": "94450c72-5dc4-4e46-8df0-106819064656",
+        "id": "uuid:94450c72-5dc4-4e46-8df0-106819064656",
         "type": [
             "VerifiableCredential"
         ],
@@ -129,15 +121,15 @@ pub mod bbs_coherent_context_test_data {
         "credentialSubject": {
             "id": "did:evan:subject",
             "data": {
+                "test_property_string4": "value",
+                "test_property_string2": "value",
                 "test_property_string3": "value",
                 "test_property_string1": "value",
-                "test_property_string2": "value",
-                "test_property_string": "value",
-                "test_property_string4": "value"
+                "test_property_string": "value"
             }
         },
         "credentialSchema": {
-            "id": "did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg",
+            "id": "did:evan:EiAn35ScK8_GsBE9GwMFC5BwvjZXkxEWIfmi6hAoCzvA0w",
             "type": "EvanZKPSchema"
         },
         "credentialStatus": {
@@ -148,24 +140,24 @@ pub mod bbs_coherent_context_test_data {
         },
         "proof": {
             "type": "BbsBlsSignature2020",
-            "created": "2023-02-07T16:24:52.000Z",
+            "created": "2023-03-22T15:42:23.000Z",
             "proofPurpose": "assertionMethod",
             "verificationMethod": "did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g#bbs-key-1",
-            "credentialMessageCount": 6,
+            "credentialMessageCount": 17,
             "requiredRevealStatements": [
                 1
             ],
-            "signature": "uQHbAATic4LcMynF8ZhnqSfFzywplOkII/g7oEeZyMYbcgluZlwymxEL+3BGdq5XTCG1jxV57MaXjTHJa9b51ptA1+wWwVovk7AtuVA5DrExnAVTIe6lBq8DdkKd6qP2hGDaTMOQBjhaFXf84ec+dg=="
+            "signature": "jDurIXkOk4jJkIeEhmwQpxKdr6/KA6ZN0/o5AR4N2apXbUDnyucvkiMoi6rbei9JWnpcGd9hdwG/WKgVReW4puUxSJ0tmmY4dW1zw/z2om9anETJeJPs8kMQU8igzgy6SxbiN6n0SLrI5i2f1coQLg=="
         }
     }"###;
 
     pub const UNSIGNED_CREDENTIAL: &str = r###"{
         "@context": [
             "https://www.w3.org/2018/credentials/v1",
-            "https:://schema.org/",
+            "https://schema.org/",
             "https://w3id.org/vc-revocation-list-2020/v1"
         ],
-        "id": "94450c72-5dc4-4e46-8df0-106819064656",
+        "id": "uuid:94450c72-5dc4-4e46-8df0-106819064656",
         "type": [
             "VerifiableCredential"
         ],
@@ -182,7 +174,7 @@ pub mod bbs_coherent_context_test_data {
             }
         },
         "credentialSchema": {
-            "id": "did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg",
+            "id": "did:evan:EiAn35ScK8_GsBE9GwMFC5BwvjZXkxEWIfmi6hAoCzvA0w",
             "type": "EvanZKPSchema"
         },
         "credentialStatus": {
@@ -207,7 +199,7 @@ pub mod bbs_coherent_context_test_data {
 
     pub const MASTER_SECRET: &str = "XSAzKjR1cNdvtew13KqfynP2tUEuJ+VkKLHVnrnB0Ig=";
 
-    pub const SIGNATURE_BLINDING: &str = "RAu1jffxFGDGppIMmfDE3XSBs3oyHmi5CbPvYjKGiSo=";
+    pub const SIGNATURE_BLINDING: &str = "OoM/6d4+qGDuT7QNQ1ei3H47pxI3RcpkvoCU4X1xadM=";
 
     pub const EXAMPLE_REVOCATION_LIST_DID: &str = "did:evan:revocation123";
 
@@ -264,102 +256,69 @@ pub mod bbs_coherent_context_test_data {
     }"###;
 
     pub const SUBJECT_DID: &str = "did:evan:subject";
-    pub const SCHEMA_DID: &str = "did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg";
+    pub const SCHEMA_DID: &str = "did:evan:EiAn35ScK8_GsBE9GwMFC5BwvjZXkxEWIfmi6hAoCzvA0w";
     pub const SCHEMA: &str = r###"{
-        "@context": [
-            "https://www.w3.org/ns/did/v1",
-            "https://w3id.org/security/suites/jws-2020/v1",
-            {
-                "@vocab": "https://www.w3.org/ns/did#"
-            }
-        ],
-        "id": "did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg",
+        "id": "did:evan:EiAn35ScK8_GsBE9GwMFC5BwvjZXkxEWIfmi6hAoCzvA0w",
+        "name": "'sample.test.schema.unique85986",
         "type": "EvanVCSchema",
-        "name": "sample.test.schema.unique385895114662",
-        "author": "did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g",
-        "createdAt": "2023-02-07T08:17:05.000Z",
-        "description": "Test sample schema",
-        "properties": {
-            "test_property_string3": {
-                "type": "string"
-            },
-            "test_property_string2": {
-                "type": "string"
-            },
-            "test_property_string": {
-                "type": "string"
-            },
-            "test_property_string4": {
-                "type": "string"
-            },
-            "test_property_string1": {
-                "type": "string"
-            }
-        },
-        "required": [
-            "test_property_string"
-        ],
-        "additionalProperties": false,
         "proof": {
-            "type": "EcdsaPublicKeySecp256k1",
-            "created": "2023-02-07T08:17:05.000Z",
-            "proofPurpose": "assertionMethod",
-            "verificationMethod": "did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g#key1",
-            "jws": "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NkstUiJ9.eyJpYXQiOiIyMDIzLTAyLTA3VDA4OjE3OjA1LjAwMFoiLCJkb2MiOnsiaWQiOiJkaWQ6ZXZhbjpFaUJtaUhDSExNYkdWbjlobGxSTTVxUU9zc2h2RVRUb0VBTEJBdEZxUDNQVUlnIiwidHlwZSI6IkV2YW5WQ1NjaGVtYSIsIm5hbWUiOiJzYW1wbGUudGVzdC5zY2hlbWEudW5pcXVlMzg1ODk1MTE0NjYyIiwiYXV0aG9yIjoiZGlkOmV2YW46RWlEbVJrS3NPYWV5OHRQemM2UnlRcllrTU5qcHFYWFZUajlnZ3kwRWJpWFM0ZyIsImNyZWF0ZWRBdCI6IjIwMjMtMDItMDdUMDg6MTc6MDUuMDAwWiIsImRlc2NyaXB0aW9uIjoiVGVzdCBzYW1wbGUgc2NoZW1hIiwicHJvcGVydGllcyI6eyJ0ZXN0X3Byb3BlcnR5X3N0cmluZzMiOnsidHlwZSI6InN0cmluZyJ9LCJ0ZXN0X3Byb3BlcnR5X3N0cmluZzIiOnsidHlwZSI6InN0cmluZyJ9LCJ0ZXN0X3Byb3BlcnR5X3N0cmluZyI6eyJ0eXBlIjoic3RyaW5nIn0sInRlc3RfcHJvcGVydHlfc3RyaW5nNCI6eyJ0eXBlIjoic3RyaW5nIn0sInRlc3RfcHJvcGVydHlfc3RyaW5nMSI6eyJ0eXBlIjoic3RyaW5nIn19LCJyZXF1aXJlZCI6WyJ0ZXN0X3Byb3BlcnR5X3N0cmluZyJdLCJhZGRpdGlvbmFsUHJvcGVydGllcyI6ZmFsc2V9LCJpc3MiOiJkaWQ6ZXZhbjpFaURtUmtLc09hZXk4dFB6YzZSeVFyWWtNTmpwcVhYVlRqOWdneTBFYmlYUzRnIn0.2D-cW8eoB-kEBWvlIpiV7POre4tbgi_knPbhq8BQZ409nuRNZUMpva9gJVpaR3bZqTAtJ63Tx-8HCs4emSlirxs"
+          "jws": "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NkstUiJ9.eyJpYXQiOiIyMDIzLTAzLTIxVDEzOjU0OjAxLjAwMFoiLCJkb2MiOnsiaWQiOiJkaWQ6ZXZhbjpFaUFuMzVTY0s4X0dzQkU5R3dNRkM1Qnd2alpYa3hFV0lmbWk2aEFvQ3p2QTB3IiwidHlwZSI6IkV2YW5WQ1NjaGVtYSIsIm5hbWUiOiInc2FtcGxlLnRlc3Quc2NoZW1hLnVuaXF1ZTg1OTg2IiwiYXV0aG9yIjoiZGlkOmV2YW46RWlDdThiUkhoMmxTM0lMaHc3OWNiVFowc1pkS2tvN3hfTU82d0dHRlJYcUc1ZyIsImNyZWF0ZWRBdCI6IjIwMjMtMDMtMjFUMTM6NTQ6MDEuMDAwWiIsImRlc2NyaXB0aW9uIjoiZGVzYyIsInByb3BlcnRpZXMiOnsidGVzdF9wcm9wZXJ0eV9zdHJpbmcxIjp7InR5cGUiOiJzdHJpbmcifSwidGVzdF9wcm9wZXJ0eV9zdHJpbmc0Ijp7InR5cGUiOiJzdHJpbmcifSwidGVzdF9wcm9wZXJ0eV9zdHJpbmciOnsidHlwZSI6InN0cmluZyJ9LCJ0ZXN0X3Byb3BlcnR5X3N0cmluZzMiOnsidHlwZSI6InN0cmluZyJ9LCJ0ZXN0X3Byb3BlcnR5X3N0cmluZzIiOnsidHlwZSI6InN0cmluZyJ9fSwicmVxdWlyZWQiOlsidGVzdF9wcm9wZXJ0eV9zdHJpbmciXSwiYWRkaXRpb25hbFByb3BlcnRpZXMiOmZhbHNlfSwiaXNzIjoiZGlkOmV2YW46RWlDdThiUkhoMmxTM0lMaHc3OWNiVFowc1pkS2tvN3hfTU82d0dHRlJYcUc1ZyJ9.cl_1Eya0KiXIfpb2AsEv-YJsJB76GJm44lIBoERKCHZ09ASVx6eFamUWObKz3rYAXFXDYL7MirSYaoIstdDYnBw",
+          "type": "EcdsaPublicKeySecp256k1",
+          "created": "2023-03-21T13:54:01.000Z",
+          "proofPurpose": "assertionMethod",
+          "verificationMethod": "did:evan:EiCu8bRHh2lS3ILhw79cbTZ0sZdKko7x_MO6wGGFRXqG5g#key1"
         },
-        "verificationMethod": [
-            {
-                "id": "#signingKey",
-                "controller": "did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg",
-                "type": "Secp256k1VerificationKey2018",
-                "publicKeyJwk": {
-                    "kty": "EC",
-                    "x": "3QSU-mD5tDdnoEua0fmMko5EFDTEmcmp7CX04KQmLQ0",
-                    "y": "AzuPhzPh4YI28mVbioVFgc3Bk1Cw0cHOIjkKfdkVpjI",
-                    "crv": "secp256k1"
-                }
-            }
+        "author": "did:evan:EiCu8bRHh2lS3ILhw79cbTZ0sZdKko7x_MO6wGGFRXqG5g",
+        "required": [
+          "test_property_string"
         ],
-        "authentication": [
-            "#signingKey"
-        ],
-        "assertionMethod": [
-            "#signingKey"
-        ],
-        "capabilityInvocation": [
-            "#signingKey"
-        ],
-        "capabilityDelegation": [
-            "#signingKey"
-        ],
-        "keyAgreement": [
-            "#signingKey"
-        ]
-    }"###;
+        "createdAt": "2023-03-21T13:54:01.000Z",
+        "properties": {
+          "test_property_string": {
+            "type": "string"
+          },
+          "test_property_string1": {
+            "type": "string"
+          },
+          "test_property_string2": {
+            "type": "string"
+          },
+          "test_property_string3": {
+            "type": "string"
+          },
+          "test_property_string4": {
+            "type": "string"
+          }
+        },
+        "description": "desc",
+        "additionalProperties": false
+      }"###;
     pub const PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES: &str = r###"{
         "verifier": "did:evan:verifier",
-        "createdAt": "2023-02-07T16:24:52.000Z",
-        "nonce": "VSTclwR8ed93y+vUkQIwVtHVmr8tm7y3EUEXn2fktAQ=",
+        "createdAt": "2023-03-22T15:42:23.000Z",
+        "nonce": "XxApxRDBXaF0QCXHh7zMS7Ms2ELVcBUc0TdhfaAzH8o=",
         "type": "BBS",
         "subProofRequests": [
             {
-                "schema": "did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg",
+                "schema": "did:evan:EiAn35ScK8_GsBE9GwMFC5BwvjZXkxEWIfmi6hAoCzvA0w",
                 "revealedAttributes": [
-                    1
+                    1,
+                    3
                 ]
             }
         ]
     }"###;
 
     pub const PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES_WITHOUT_VERIFIER: &str = r###"{
-        "createdAt": "2023-02-07T16:24:52.000Z",
-        "nonce": "VSTclwR8ed93y+vUkQIwVtHVmr8tm7y3EUEXn2fktAQ=",
+        "createdAt": "2023-03-22T15:42:23.000Z",
+        "nonce": "XxApxRDBXaF0QCXHh7zMS7Ms2ELVcBUc0TdhfaAzH8o=",
         "type": "BBS",
         "subProofRequests": [
             {
-                "schema": "did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg",
+                "schema": "did:evan:EiAn35ScK8_GsBE9GwMFC5BwvjZXkxEWIfmi6hAoCzvA0w",
                 "revealedAttributes": [
-                    1
+                    1,
+                    3
                 ]
             }
         ]
@@ -371,7 +330,7 @@ pub mod bbs_coherent_context_test_data {
             "https://schema.org/",
             "https://w3id.org/vc-revocation-list-2020/v1"
         ],
-        "id": "6d6bfa18-8cfe-40ec-9775-a0878e6f305a",
+        "id": "743875ce-8ec0-4b6a-a67d-33a64392a5d3",
         "type": [
             "VerifiablePresentation"
         ],
@@ -379,27 +338,27 @@ pub mod bbs_coherent_context_test_data {
             {
                 "@context": [
                     "https://www.w3.org/2018/credentials/v1",
-                    "https:://schema.org/",
+                    "https://schema.org/",
                     "https://w3id.org/vc-revocation-list-2020/v1"
                 ],
-                "id": "94450c72-5dc4-4e46-8df0-106819064656",
+                "id": "uuid:94450c72-5dc4-4e46-8df0-106819064656",
                 "type": [
                     "VerifiableCredential"
                 ],
                 "issuer": "did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g",
-                "issuanceDate": "2023-02-07T16:24:52.000Z",
+                "issuanceDate": "2023-03-22T15:42:23.000Z",
                 "credentialSubject": {
                     "id": "did:evan:holder",
                     "data": {
                         "test_property_string4": "value",
-                        "test_property_string2": "value",
-                        "test_property_string1": "value",
                         "test_property_string": "value",
-                        "test_property_string3": "value"
+                        "test_property_string2": "value",
+                        "test_property_string3": "value",
+                        "test_property_string1": "value"
                     }
                 },
                 "credentialSchema": {
-                    "id": "did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg",
+                    "id": "did:evan:EiAn35ScK8_GsBE9GwMFC5BwvjZXkxEWIfmi6hAoCzvA0w",
                     "type": "EvanZKPSchema"
                 },
                 "credentialStatus": {
@@ -410,21 +369,21 @@ pub mod bbs_coherent_context_test_data {
                 },
                 "proof": {
                     "type": "BbsBlsSignatureProof2020",
-                    "created": "2023-02-07T16:24:52.000Z",
+                    "created": "2023-03-22T15:42:23.000Z",
                     "proofPurpose": "assertionMethod",
-                    "credentialMessageCount": 6,
+                    "credentialMessageCount": 17,
                     "verificationMethod": "did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g#bbs-key-1",
-                    "nonce": "VSTclwR8ed93y+vUkQIwVtHVmr8tm7y3EUEXn2fktAQ=",
-                    "proof": "AAACHKtugFHiaXgjrnI+pyfT6f3J5fGUQDJh0JfDsbH0kurhMMdVUkB3gIUCFLksvRm1Ca8o+LkqLH4/lEcVGOd1aldGNsAw5IyEPmeWReYDPLSJroqSPdecEk8bLYbRR/SDno7FWUMUYOovWi/3jAyo7lrNlf4rKJW+2FRgvlf8HzWwaZhk1dB5uynsRIrwnDjqjwAAAHSEMZIcRYIj+fsVov2nt40lhyumTCdK0rlqDjIs1MHAJqNoWhrxqIFp5w6iZfYTlzoAAAACIWxKnfGSrrDg26fcm01ky3Wr1hCJ8I9PuuQ7SBpbaYhNprKueXJeMlIMCa1ocLiaWwurNikj4sfhtp3FnihEjYMUnP6MpwrZNKWYEVWID8y06YSaQDvC1bc3wfmB4GB0t9aIjl9ubYrKxgL3d4gtVwAAAAdc8Zq55QJ5MRHapXd4g3eC1jaLBYWe+SBP19phXorOQSTu1qcWuiIEE6A8mwW9pMeTDOyFoaJwooD8HNLgh0hIFEHHx9ou0YHql7KCbtN0XrxMNJLhU/EABWp8XJJFxKkH2uYXy5/T6wbuO5TQSuDrl7foiuETyEAfDDKD+zgVPmt5MUIgzWASShvaNZ7cQ22Oct8/w4vyQJpA38/3oMvJN/tp72vz2z1D7Qu9f4K73peEY3OnhYo0EW2jqjhJER8ngeHozTH85yX29uDI6T0zi8dMJEq80ijBlgLwCf9TqgAAAAEAAAABVYYuxWfEuaxvBkivWA/SfIa+XSWTfQxphjVs8yhmpfY="
+                    "nonce": "XxApxRDBXaF0QCXHh7zMS7Ms2ELVcBUc0TdhfaAzH8o=",
+                    "proof": "AAADXI6EsraZ9L1R3QGF4kupzwSjdMldq7ICW5pviwfmCYMYSCV/PR7ejUV8fsKVsllyBatqtkMbx0exBJrzzTYaRDDD1bFe3b/oUv6QU/ETjwyt1RFD3hOHVnPPwJeLIPHTMI8I4ABPkVKpMM/I+q5qRabzqR/6qEuGN/yMnxegGIYQmAJQ0e5fv7MRpi217H1xWgAAAHSZaY5vupCG683QLXQiukwsysMcLkPUt09lxSHZX6LY1P5tZ2OoLkC2eO2CkkbQqOYAAAACbOVRKtN/CxvlLQjiDwdBMokw/ZvNfyuBvOK9AL5rNAZwdwdUPQkOiHVFd+OCwRnzC/pkbW5giLcv+F0x2uPCU4NUkXS4UKstieJnM0w1Wtx70yaQ5tqvIx4H39KWVF9uESuRh02xoqEuyd+aDvy1MAAAABFoJlSiKrMKjOMABsFzzcNzlwS/7MJHlG+7qYTsxwxNvQGIO8GrRj4OXrh0f3oR66n5ADM4T51Ax5ttxEjdbpGUVdp6uubwAtUdGprYaTCmwBJbsg475gOxGX4eWdnihJQNbEGJWd+O9H1uJUS9AV+v4NwIut7RLLwotizlqFJEoV8MH506fF+FwTgEWm4m7uRv3BCfS7qgjLsEuUNKhplhaXE+WbNym4eT954vDAiIqgHKOWKk/T8GBortrQ5JJ/I+Y69hVomfloLImDTmSIn8PiZjlSZd5ktIIUTbvovjRgWyRJsw3tUwAhhoBHhAFs1A628oKICsluR9Kd/my+VdI17/yEZa62vWXh+f1i3HxcIzVhCL36uzH62Qky6UBhcxgHZ/RqIpbK/yp0bv2Ccy2Xf147Z+dIuspdxt1DsVcA/LJ4cwEFOmRAniuroG+2Ik1qkJajS4VpbILRZNHlEBYBOq6YCp7AmCtL1XcCYaD3/EfC1XtKltO4hBwZKhybQKyEoeYC0UyrBjauupsfATXTWenBTwqC45tq0sbevrRAUrR+Nau+wHaqYG4x9nYIFP/ybREwxIZry6tECxM/idOZ4/HJR0ruGwLNfbJ8Q3efzRuWzIw8LuYqxEnVCQXvZbsbVusEGXCRrHw8uwfIlk5KAzU+94R3a/zxY1UIkzmGX0l9RjK3tISuOmgnnQI9/730FbM4fXM5eRHsysWCJzAAAAAgAAAAFptm93jejWBvUgqSkOd+aEaUo/SXvgz/DDfXOR/HBHbgAAAAMuTNCnyK9M/tpuzIOLzTcaj+0pyTv2gJmQD0uw11i2Fg=="
                 }
             }
         ],
         "proof": {
             "type": "EcdsaPublicKeySecp256k1",
-            "created": "2023-02-07T16:24:52.000Z",
+            "created": "2023-03-22T15:42:23.000Z",
             "proofPurpose": "assertionMethod",
             "verificationMethod": "did:evan:verifier#key-1",
-            "jws": "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NkstUiJ9.eyJpYXQiOiIyMDIzLTAyLTA3VDE2OjI0OjUyLjAwMFoiLCJkb2MiOnsiQGNvbnRleHQiOlsiaHR0cHM6Ly93d3cudzMub3JnLzIwMTgvY3JlZGVudGlhbHMvdjEiLCJodHRwczovL3NjaGVtYS5vcmcvIiwiaHR0cHM6Ly93M2lkLm9yZy92Yy1yZXZvY2F0aW9uLWxpc3QtMjAyMC92MSJdLCJpZCI6IjZkNmJmYTE4LThjZmUtNDBlYy05Nzc1LWEwODc4ZTZmMzA1YSIsInR5cGUiOlsiVmVyaWZpYWJsZVByZXNlbnRhdGlvbiJdLCJ2ZXJpZmlhYmxlQ3JlZGVudGlhbCI6W3siQGNvbnRleHQiOlsiaHR0cHM6Ly93d3cudzMub3JnLzIwMTgvY3JlZGVudGlhbHMvdjEiLCJodHRwczo6Ly9zY2hlbWEub3JnLyIsImh0dHBzOi8vdzNpZC5vcmcvdmMtcmV2b2NhdGlvbi1saXN0LTIwMjAvdjEiXSwiaWQiOiI5NDQ1MGM3Mi01ZGM0LTRlNDYtOGRmMC0xMDY4MTkwNjQ2NTYiLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIl0sImlzc3VlciI6ImRpZDpldmFuOkVpRG1Sa0tzT2FleTh0UHpjNlJ5UXJZa01OanBxWFhWVGo5Z2d5MEViaVhTNGciLCJpc3N1YW5jZURhdGUiOiIyMDIzLTAyLTA3VDE2OjI0OjUyLjAwMFoiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJpZCI6ImRpZDpldmFuOmhvbGRlciIsImRhdGEiOnsidGVzdF9wcm9wZXJ0eV9zdHJpbmczIjoidmFsdWUiLCJ0ZXN0X3Byb3BlcnR5X3N0cmluZzIiOiJ2YWx1ZSIsInRlc3RfcHJvcGVydHlfc3RyaW5nMSI6InZhbHVlIiwidGVzdF9wcm9wZXJ0eV9zdHJpbmciOiJ2YWx1ZSIsInRlc3RfcHJvcGVydHlfc3RyaW5nNCI6InZhbHVlIn19LCJjcmVkZW50aWFsU2NoZW1hIjp7ImlkIjoiZGlkOmV2YW46RWlCbWlIQ0hMTWJHVm45aGxsUk01cVFPc3NodkVUVG9FQUxCQXRGcVAzUFVJZyIsInR5cGUiOiJFdmFuWktQU2NoZW1hIn0sImNyZWRlbnRpYWxTdGF0dXMiOnsiaWQiOiJkaWQ6ZXZhbjpyZXZvY2F0aW9uMTIzIzAiLCJ0eXBlIjoiUmV2b2NhdGlvbkxpc3QyMDIxU3RhdHVzIiwicmV2b2NhdGlvbkxpc3RJbmRleCI6IjAiLCJyZXZvY2F0aW9uTGlzdENyZWRlbnRpYWwiOiJkaWQ6ZXZhbjpyZXZvY2F0aW9uMTIzIn0sInByb29mIjp7InR5cGUiOiJCYnNCbHNTaWduYXR1cmVQcm9vZjIwMjAiLCJjcmVhdGVkIjoiMjAyMy0wMi0wN1QxNjoyNDo1Mi4wMDBaIiwicHJvb2ZQdXJwb3NlIjoiYXNzZXJ0aW9uTWV0aG9kIiwiY3JlZGVudGlhbE1lc3NhZ2VDb3VudCI6NiwidmVyaWZpY2F0aW9uTWV0aG9kIjoiZGlkOmV2YW46RWlEbVJrS3NPYWV5OHRQemM2UnlRcllrTU5qcHFYWFZUajlnZ3kwRWJpWFM0ZyNiYnMta2V5LTEiLCJub25jZSI6IlZTVGNsd1I4ZWQ5M3krdlVrUUl3VnRIVm1yOHRtN3kzRVVFWG4yZmt0QVE9IiwicHJvb2YiOiJBQUFDSEt0dWdGSGlhWGdqcm5JK3B5ZlQ2ZjNKNWZHVVFESmgwSmZEc2JIMGt1cmhNTWRWVWtCM2dJVUNGTGtzdlJtMUNhOG8rTGtxTEg0L2xFY1ZHT2QxYWxkR05zQXc1SXlFUG1lV1JlWURQTFNKcm9xU1BkZWNFazhiTFliUlIvU0RubzdGV1VNVVlPb3ZXaS8zakF5bzdsck5sZjRyS0pXKzJGUmd2bGY4SHpXd2FaaGsxZEI1dXluc1JJcnduRGpxandBQUFIU0VNWkljUllJaitmc1ZvdjJudDQwbGh5dW1UQ2RLMHJscURqSXMxTUhBSnFOb1docnhxSUZwNXc2aVpmWVRsem9BQUFBQ0lXeEtuZkdTcnJEZzI2ZmNtMDFreTNXcjFoQ0o4STlQdXVRN1NCcGJhWWhOcHJLdWVYSmVNbElNQ2Exb2NMaWFXd3VyTmlrajRzZmh0cDNGbmloRWpZTVVuUDZNcHdyWk5LV1lFVldJRDh5MDZZU2FRRHZDMWJjM3dmbUI0R0IwdDlhSWpsOXViWXJLeGdMM2Q0Z3RWd0FBQUFkYzhacTU1UUo1TVJIYXBYZDRnM2VDMWphTEJZV2UrU0JQMTlwaFhvck9RU1R1MXFjV3VpSUVFNkE4bXdXOXBNZVRET3lGb2FKd29vRDhITkxnaDBoSUZFSEh4OW91MFlIcWw3S0NidE4wWHJ4TU5KTGhVL0VBQldwOFhKSkZ4S2tIMnVZWHk1L1Q2d2J1TzVUUVN1RHJsN2ZvaXVFVHlFQWZEREtEK3pnVlBtdDVNVUlneldBU1NodmFOWjdjUTIyT2N0OC93NHZ5UUpwQTM4LzNvTXZKTi90cDcydnoyejFEN1F1OWY0SzczcGVFWTNPbmhZbzBFVzJqcWpoSkVSOG5nZUhvelRIODV5WDI5dURJNlQwemk4ZE1KRXE4MGlqQmxnTHdDZjlUcWdBQUFBRUFBQUFCVllZdXhXZkV1YXh2QmtpdldBL1NmSWErWFNXVGZReHBoalZzOHlobXBmWT0ifX1dfSwiaXNzIjoiZGlkOmV2YW46dmVyaWZpZXIifQ.ZaYJj5gS_2oj28P_AEOkVAY96YgjWixkRpy6CG-9ny4Rn5fpXj7dmLBLxsn8Xou3S0lJXkPnOA-3X2k_dVQpKQE"
+            "jws": "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NkstUiJ9.eyJpYXQiOiIyMDIzLTAzLTIyVDE1OjQyOjIzLjAwMFoiLCJkb2MiOnsiQGNvbnRleHQiOlsiaHR0cHM6Ly93d3cudzMub3JnLzIwMTgvY3JlZGVudGlhbHMvdjEiLCJodHRwczovL3NjaGVtYS5vcmcvIiwiaHR0cHM6Ly93M2lkLm9yZy92Yy1yZXZvY2F0aW9uLWxpc3QtMjAyMC92MSJdLCJpZCI6Ijc0Mzg3NWNlLThlYzAtNGI2YS1hNjdkLTMzYTY0MzkyYTVkMyIsInR5cGUiOlsiVmVyaWZpYWJsZVByZXNlbnRhdGlvbiJdLCJ2ZXJpZmlhYmxlQ3JlZGVudGlhbCI6W3siQGNvbnRleHQiOlsiaHR0cHM6Ly93d3cudzMub3JnLzIwMTgvY3JlZGVudGlhbHMvdjEiLCJodHRwczovL3NjaGVtYS5vcmcvIiwiaHR0cHM6Ly93M2lkLm9yZy92Yy1yZXZvY2F0aW9uLWxpc3QtMjAyMC92MSJdLCJpZCI6InV1aWQ6OTQ0NTBjNzItNWRjNC00ZTQ2LThkZjAtMTA2ODE5MDY0NjU2IiwidHlwZSI6WyJWZXJpZmlhYmxlQ3JlZGVudGlhbCJdLCJpc3N1ZXIiOiJkaWQ6ZXZhbjpFaURtUmtLc09hZXk4dFB6YzZSeVFyWWtNTmpwcVhYVlRqOWdneTBFYmlYUzRnIiwiaXNzdWFuY2VEYXRlIjoiMjAyMy0wMy0yMlQxNTo0MjoyMy4wMDBaIiwiY3JlZGVudGlhbFN1YmplY3QiOnsiaWQiOiJkaWQ6ZXZhbjpob2xkZXIiLCJkYXRhIjp7InRlc3RfcHJvcGVydHlfc3RyaW5nMSI6InZhbHVlIiwidGVzdF9wcm9wZXJ0eV9zdHJpbmc0IjoidmFsdWUiLCJ0ZXN0X3Byb3BlcnR5X3N0cmluZzIiOiJ2YWx1ZSIsInRlc3RfcHJvcGVydHlfc3RyaW5nMyI6InZhbHVlIiwidGVzdF9wcm9wZXJ0eV9zdHJpbmciOiJ2YWx1ZSJ9fSwiY3JlZGVudGlhbFNjaGVtYSI6eyJpZCI6ImRpZDpldmFuOkVpQW4zNVNjSzhfR3NCRTlHd01GQzVCd3ZqWlhreEVXSWZtaTZoQW9DenZBMHciLCJ0eXBlIjoiRXZhblpLUFNjaGVtYSJ9LCJjcmVkZW50aWFsU3RhdHVzIjp7ImlkIjoiZGlkOmV2YW46cmV2b2NhdGlvbjEyMyMwIiwidHlwZSI6IlJldm9jYXRpb25MaXN0MjAyMVN0YXR1cyIsInJldm9jYXRpb25MaXN0SW5kZXgiOiIwIiwicmV2b2NhdGlvbkxpc3RDcmVkZW50aWFsIjoiZGlkOmV2YW46cmV2b2NhdGlvbjEyMyJ9LCJwcm9vZiI6eyJ0eXBlIjoiQmJzQmxzU2lnbmF0dXJlUHJvb2YyMDIwIiwiY3JlYXRlZCI6IjIwMjMtMDMtMjJUMTU6NDI6MjMuMDAwWiIsInByb29mUHVycG9zZSI6ImFzc2VydGlvbk1ldGhvZCIsImNyZWRlbnRpYWxNZXNzYWdlQ291bnQiOjE3LCJ2ZXJpZmljYXRpb25NZXRob2QiOiJkaWQ6ZXZhbjpFaURtUmtLc09hZXk4dFB6YzZSeVFyWWtNTmpwcVhYVlRqOWdneTBFYmlYUzRnI2Jicy1rZXktMSIsIm5vbmNlIjoiWHhBcHhSREJYYUYwUUNYSGg3ek1TN01zMkVMVmNCVWMwVGRoZmFBekg4bz0iLCJwcm9vZiI6IkFBQURYSTZFc3JhWjlMMVIzUUdGNGt1cHp3U2pkTWxkcTdJQ1c1cHZpd2ZtQ1lNWVNDVi9QUjdlalVWOGZzS1ZzbGx5QmF0cXRrTWJ4MGV4QkpyenpUWWFSREREMWJGZTNiL29VdjZRVS9FVGp3eXQxUkZEM2hPSFZuUFB3SmVMSVBIVE1JOEk0QUJQa1ZLcE1NL0krcTVxUmFienFSLzZxRXVHTi95TW54ZWdHSVlRbUFKUTBlNWZ2N01ScGkyMTdIMXhXZ0FBQUhTWmFZNXZ1cENHNjgzUUxYUWl1a3dzeXNNY0xrUFV0MDlseFNIWlg2TFkxUDV0WjJPb0xrQzJlTzJDa2tiUXFPWUFBQUFDYk9WUkt0Ti9DeHZsTFFqaUR3ZEJNb2t3L1p2TmZ5dUJ2T0s5QUw1ck5BWndkd2RVUFFrT2lIVkZkK09Dd1JuekMvcGtiVzVnaUxjditGMHgydVBDVTROVWtYUzRVS3N0aWVKbk0wdzFXdHg3MHlhUTV0cXZJeDRIMzlLV1ZGOXVFU3VSaDAyeG9xRXV5ZCthRHZ5MU1BQUFBQkZvSmxTaUtyTUtqT01BQnNGenpjTnpsd1MvN01KSGxHKzdxWVRzeHd4TnZRR0lPOEdyUmo0T1hyaDBmM29SNjZuNUFETTRUNTFBeDV0dHhFamRicEdVVmRwNnV1YndBdFVkR3ByWWFUQ213Qkpic2c0NzVnT3hHWDRlV2RuaWhKUU5iRUdKV2QrTzlIMXVKVVM5QVYrdjROd0l1dDdSTEx3b3RpemxxRkpFb1Y4TUg1MDZmRitGd1RnRVdtNG03dVJ2M0JDZlM3cWdqTHNFdVVOS2hwbGhhWEUrV2JOeW00ZVQ5NTR2REFpSXFnSEtPV0trL1Q4R0JvcnRyUTVKSi9JK1k2OWhWb21mbG9MSW1EVG1TSW44UGlaamxTWmQ1a3RJSVVUYnZvdmpSZ1d5UkpzdzN0VXdBaGhvQkhoQUZzMUE2MjhvS0lDc2x1UjlLZC9teStWZEkxNy95RVphNjJ2V1hoK2YxaTNIeGNJelZoQ0wzNnV6SDYyUWt5NlVCaGN4Z0haL1JxSXBiSy95cDBidjJDY3kyWGYxNDdaK2RJdXNwZHh0MURzVmNBL0xKNGN3RUZPbVJBbml1cm9HKzJJazFxa0phalM0VnBiSUxSWk5IbEVCWUJPcTZZQ3A3QW1DdEwxWGNDWWFEMy9FZkMxWHRLbHRPNGhCd1pLaHliUUt5RW9lWUMwVXlyQmphdXVwc2ZBVFhUV2VuQlR3cUM0NXRxMHNiZXZyUkFVclIrTmF1K3dIYXFZRzR4OW5ZSUZQL3liUkV3eElacnk2dEVDeE0vaWRPWjQvSEpSMHJ1R3dMTmZiSjhRM2VmelJ1V3pJdzhMdVlxeEVuVkNRWHZaYnNiVnVzRUdYQ1JySHc4dXdmSWxrNUtBelUrOTRSM2EvenhZMVVJa3ptR1gwbDlSakszdElTdU9tZ25uUUk5LzczMEZiTTRmWE01ZVJIc3lzV0NKekFBQUFBZ0FBQUFGcHRtOTNqZWpXQnZVZ3FTa09kK2FFYVVvL1NYdmd6L0REZlhPUi9IQkhiZ0FBQUFNdVROQ255SzlNL3RwdXpJT0x6VGNhaiswcHlUdjJnSm1RRDB1dzExaTJGZz09In19XX0sImlzcyI6ImRpZDpldmFuOnZlcmlmaWVyIn0.XtSvdmnlbdWV81IZ15-WTebVgzl-KkovwMy1K3-ZW71egRFFkwX2Hz1yGzvjQZQQ3nR0prfs6TLYSVCfBfTAUgA"
         }
     }"###;
 
@@ -434,7 +393,7 @@ pub mod bbs_coherent_context_test_data {
             "https://schema.org/",
             "https://w3id.org/vc-revocation-list-2020/v1"
         ],
-        "id": "6d6bfa18-8cfe-40ec-9775-a0878e6f305a",
+        "id": "743875ce-8ec0-4b6a-a67d-33a64392a5d3",
         "type": [
             "VerifiablePresentation"
         ],
@@ -442,27 +401,27 @@ pub mod bbs_coherent_context_test_data {
             {
                 "@context": [
                     "https://www.w3.org/2018/credentials/v1",
-                    "https:://schema.org/",
+                    "https://schema.org/",
                     "https://w3id.org/vc-revocation-list-2020/v1"
                 ],
-                "id": "94450c72-5dc4-4e46-8df0-106819064656",
+                "id": "uuid:94450c72-5dc4-4e46-8df0-106819064656",
                 "type": [
                     "VerifiableCredential"
                 ],
                 "issuer": "did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g",
-                "issuanceDate": "2023-02-07T16:24:52.000Z",
+                "issuanceDate": "2023-03-22T15:42:23.000Z",
                 "credentialSubject": {
                     "id": "did:evan:holder",
                     "data": {
                         "test_property_string4": "value",
-                        "test_property_string2": "value",
-                        "test_property_string1": "value",
                         "test_property_string": "value",
-                        "test_property_string3": "value"
+                        "test_property_string2": "value",
+                        "test_property_string3": "value",
+                        "test_property_string1": "value"
                     }
                 },
                 "credentialSchema": {
-                    "id": "did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg",
+                    "id": "did:evan:EiAn35ScK8_GsBE9GwMFC5BwvjZXkxEWIfmi6hAoCzvA0w",
                     "type": "EvanZKPSchema"
                 },
                 "credentialStatus": {
@@ -473,11 +432,11 @@ pub mod bbs_coherent_context_test_data {
                 },
                 "proof": {
                     "type": "BbsBlsSignatureProof2020",
-                    "created": "2023-02-07T16:24:52.000Z",
+                    "created": "2023-03-22T15:42:23.000Z",
                     "proofPurpose": "assertionMethod",
-                    "credentialMessageCount": 6,
+                    "credentialMessageCount": 17,
                     "verificationMethod": "did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g#bbs-key-1",
-                    "nonce": "VSTclwR8ed93y+vUkQIwVtHVmr8tm7y3EUEXn2fktAQ=",
+                    "nonce": "XxApxRDBXaF0QCXHh7zMS7Ms2ELVcBUc0TdhfaAzH8o=",
                     "proof": "BBBCHKtugFHiaXgjrnI+pyfT6f3J5fGUQDJh0JfDsbH0kurhMMdVUkB3gIUCFLksvRm1Ca8o+LkqLH4/lEcVGOd1aldGNsAw5IyEPmeWReYDPLSJroqSPdecEk8bLYbRR/SDno7FWUMUYOovWi/3jAyo7lrNlf4rKJW+2FRgvlf8HzWwaZhk1dB5uynsRIrwnDjqjwAAAHSEMZIcRYIj+fsVov2nt40lhyumTCdK0rlqDjIs1MHAJqNoWhrxqIFp5w6iZfYTlzoAAAACIWxKnfGSrrDg26fcm01ky3Wr1hCJ8I9PuuQ7SBpbaYhNprKueXJeMlIMCa1ocLiaWwurNikj4sfhtp3FnihEjYMUnP6MpwrZNKWYEVWID8y06YSaQDvC1bc3wfmB4GB0t9aIjl9ubYrKxgL3d4gtVwAAAAdc8Zq55QJ5MRHapXd4g3eC1jaLBYWe+SBP19phXorOQSTu1qcWuiIEE6A8mwW9pMeTDOyFoaJwooD8HNLgh0hIFEHHx9ou0YHql7KCbtN0XrxMNJLhU/EABWp8XJJFxKkH2uYXy5/T6wbuO5TQSuDrl7foiuETyEAfDDKD+zgVPmt5MUIgzWASShvaNZ7cQ22Oct8/w4vyQJpA38/3oMvJN/tp72vz2z1D7Qu9f4K73peEY3OnhYo0EW2jqjhJER8ngeHozTH85yX29uDI6T0zi8dMJEq80ijBlgLwCf9TqgAAAAEAAAABVYYuxWfEuaxvBkivWA/SfIa+XSWTfQxphjVs8yhmpfY="
                 }
             }

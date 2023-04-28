@@ -18,8 +18,12 @@ use base64::Config;
 use bbs::{keys::DeterministicPublicKey, ProofNonce, SignatureMessage};
 #[cfg(not(target_arch = "wasm32"))]
 use chrono::Utc;
-use std::{error::Error, panic};
+use serde::Serialize;
+use ssi_json_ld::{json_to_dataset, urdna2015::normalize, JsonLdOptions, StaticLoader};
+use std::{collections::HashMap, error::Error, panic};
 use uuid::Uuid;
+
+use crate::{BbsProofRequest, BbsSubProofRequest, UnsignedBbsCredential};
 
 pub fn get_now_as_iso_string() -> String {
     #[cfg(target_arch = "wasm32")]
@@ -86,4 +90,105 @@ pub fn decode_base64_config<T: AsRef<[u8]>>(
     })?;
 
     Ok(decoded)
+}
+
+pub async fn convert_to_nquads(document_string: &str) -> Result<Vec<String>, Box<dyn Error>> {
+    let mut loader = StaticLoader;
+    let options = JsonLdOptions {
+        base: None,           // -b, Base IRI
+        expand_context: None, // -c, IRI for expandContext option
+        ..Default::default()
+    };
+    let dataset = json_to_dataset(
+        &document_string,
+        None, // will be patched into @context, e.g. Some(&r#"["https://schema.org/"]"#.to_string()),
+        false,
+        Some(&options),
+        &mut loader,
+    )
+    .await
+    .map_err(|err| err.to_string())?;
+    let dataset_normalized = normalize(&dataset).map_err(|err| err.to_string())?;
+    let normalized = dataset_normalized
+        .to_nquads()
+        .map_err(|err| err.to_string())?;
+    let non_empty_lines = normalized
+        .split("\n")
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string())
+        .collect();
+
+    Ok(non_empty_lines)
+}
+
+#[allow(dead_code)]
+pub async fn convert_to_credential_nquads<T>(credential: &T) -> Result<Vec<String>, Box<dyn Error>>
+where
+    T: Serialize,
+{
+    let unfinished_without_proof: UnsignedBbsCredential =
+        serde_json::from_str(&serde_json::to_string(&credential)?)?;
+    convert_to_nquads(&serde_json::to_string(&unfinished_without_proof)?).await
+}
+
+pub async fn get_nquads_schema_map(
+    proof_request: &BbsProofRequest,
+    unsigned_credentials: &Vec<UnsignedBbsCredential>,
+    only_revealed: bool,
+) -> Result<HashMap<String, Vec<String>>, Box<dyn Error>> {
+    let mut credential_schema_map: HashMap<String, &UnsignedBbsCredential> = HashMap::new();
+    for credential in unsigned_credentials {
+        credential_schema_map.insert(credential.credential_schema.id.to_owned(), credential);
+    }
+    let mut nquads_schema_map: HashMap<String, Vec<String>> = HashMap::new();
+
+    for BbsSubProofRequest {
+        schema: requested_schema,
+        revealed_attributes,
+        ..
+    } in &proof_request.sub_proof_requests
+    {
+        let credential = *credential_schema_map.get(requested_schema).ok_or_else(|| {
+            format!(
+                r#"schema "{}" not provided in credentials"#,
+                &requested_schema
+            )
+        })?;
+
+        let mut unfinished_without_proof: UnsignedBbsCredential =
+            serde_json::from_str(&serde_json::to_string(&credential)?)?;
+
+        // patch values from credential in presentation into draft credential for nquads
+        for (key, value) in credential.credential_subject.data.iter() {
+            unfinished_without_proof
+                .credential_subject
+                .data
+                .insert(key.to_owned(), value.to_owned());
+        }
+
+        let nquads = convert_to_nquads(&serde_json::to_string(&unfinished_without_proof)?).await?;
+
+        let attributes: Vec<String>;
+        if only_revealed {
+            attributes = revealed_attributes
+                .iter()
+                .map(|i| {
+                    nquads
+                        .get(*i - 1)
+                        .ok_or_else(|| Box::from(format!(
+                            r#"revealed attribute "{}" of schema "{}" could not be found in provided attribute nquads with length {}"#,
+                            *i - 1,
+                            &requested_schema,
+                            &nquads.len(),
+                        )))
+                        .map(|value| value.to_owned())
+                })
+                .collect::<Result<Vec<String>, Box<dyn Error>>>()?;
+        } else {
+            attributes = nquads;
+        }
+        nquads_schema_map.insert(requested_schema.to_owned(), attributes);
+    }
+
+    Ok(nquads_schema_map)
 }
