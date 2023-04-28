@@ -440,7 +440,7 @@ mod tests {
     extern crate utilities;
     use super::*;
     use crate::application::{
-        datatypes::{BbsCredentialOffer, BbsCredentialRequest, CredentialProposal},
+        datatypes::{BbsCredentialOffer, BbsCredentialRequest},
         prover::Prover,
     };
     use bbs::{issuer::Issuer as BbsIssuer, prover::Prover as BbsProver};
@@ -454,8 +454,7 @@ mod tests {
             SCHEMA,
             SECRET_KEY,
             UNSIGNED_CREDENTIAL,
-        },
-        vc_zkp::EXAMPLE_CREDENTIAL_PROPOSAL,
+        }
     };
     use vade_signer::{LocalSigner, Signer};
 
