@@ -52,7 +52,6 @@ impl Prover {
     ///
     /// # Arguments
     /// * `issuer_did` - DID of the issuer the proposal is for
-    /// * `subject_did` - DID of the proposal creator and potential subject of the credential
     /// * `schema_did` - DID of the schema to propose the credential for
     ///
     /// # Returns

@@ -256,7 +256,6 @@ pub mod bbs_coherent_context_test_data {
         }
     }"###;
 
-    pub const SUBJECT_DID: &str = "did:evan:subject";
     pub const SCHEMA_DID: &str = "did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg";
     pub const SCHEMA: &str = r###"{
         "@context": [

@@ -529,8 +529,6 @@ async fn workflow_can_create_finished_credential_without_credential_status(
 ) -> Result<(), Box<dyn Error>> {
     let mut vade = get_vade();
 
-    let _revocation_list = create_revocation_list(&mut vade).await?;
-
     let mut credential_values = HashMap::new();
     credential_values.insert("test_property_string".to_owned(), "value".to_owned());
 

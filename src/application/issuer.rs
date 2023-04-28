@@ -549,7 +549,6 @@ mod tests {
 
     #[test]
     fn can_offer_credential() -> Result<(), Box<dyn Error>> {
-        let _proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
         let offer = Issuer::offer_credential(&ISSUER_DID, 1)?;
 
         assert_eq!(&offer.issuer, &ISSUER_DID);
@@ -561,7 +560,6 @@ mod tests {
     fn can_issue_credential_one_property() -> Result<(), Box<dyn Error>> {
         let message_count = 1;
         let (dpk, sk) = BbsIssuer::new_short_keys(None);
-        let _proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
         let offer = Issuer::offer_credential(&ISSUER_DID, message_count)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
         let (credential_request, schema, nquads) = request_credential(&dpk, &offer)?;
@@ -603,7 +601,6 @@ mod tests {
         let dpk = DeterministicPublicKey::from(nonce_bytes);
         let nonce_bytes = decode_base64(&SECRET_KEY, "Secret Key")?.into_boxed_slice();
         let sk = SecretKey::from(nonce_bytes);
-        let _proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
         let offer = Issuer::offer_credential(&ISSUER_DID, message_count)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
         let (credential_request, schema, nquads) = request_credential(&dpk, &offer)?;
@@ -644,7 +641,6 @@ mod tests {
         let dpk = DeterministicPublicKey::from(nonce_bytes);
         let nonce_bytes = decode_base64(&SECRET_KEY, "Secret Key")?.into_boxed_slice();
         let sk = SecretKey::from(nonce_bytes);
-        let _proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
         let offer = Issuer::offer_credential(&ISSUER_DID, message_count)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
         let (credential_request, _, nquads) = request_credential(&dpk, &offer)?;
@@ -670,7 +666,6 @@ mod tests {
     fn cannot_issue_credential_larger_revocation_id() -> Result<(), Box<dyn Error>> {
         let message_count = 5;
         let (dpk, sk) = BbsIssuer::new_short_keys(None);
-        let _proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
         let offer = Issuer::offer_credential(&ISSUER_DID, message_count)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
         let (credential_request, schema, nquads) = request_credential(&dpk, &offer)?;
