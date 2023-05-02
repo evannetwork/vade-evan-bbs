@@ -143,16 +143,23 @@ async fn create_credential_request(
 async fn create_unfinished_credential(
     vade: &mut Vade,
     credential_request: BbsCredentialRequest,
-    revocation_list_did: String,
-    revocation_list_id: String,
+    revocation_list_did: Option<String>,
+    revocation_list_id: Option<String>,
 ) -> Result<UnfinishedBbsCredential, Box<dyn Error>> {
     let key_id = format!("{}#bbs-key-1", ISSUER_DID);
-    let issue_cred = IssueCredentialPayload {
-        credential_request: credential_request.clone(),
-        credential_status: Some(get_credential_status(
+    let mut credential_status = None;
+    if revocation_list_did.is_some() && revocation_list_id.is_some() {
+        let revocation_list_did =
+            revocation_list_did.ok_or_else(|| "Invalid revocation_list_did!")?;
+        let revocation_list_id = revocation_list_id.ok_or_else(|| "Invalid revocation_list_id!")?;
+        credential_status = Some(get_credential_status(
             revocation_list_did,
             revocation_list_id,
-        )),
+        ));
+    }
+    let issue_cred = IssueCredentialPayload {
+        credential_request: credential_request.clone(),
+        credential_status: credential_status,
         issuer_public_key_id: key_id.clone(),
         issuer_public_key: PUB_KEY.to_string(),
         issuer_secret_key: SECRET_KEY.to_string(),
@@ -303,6 +310,7 @@ async fn workflow_can_create_credential_offer_with_proposal() -> Result<(), Box<
             id: None,
             issuance_date: None,
             valid_until: None,
+            is_credential_status_required: true,
         }),
     };
 
@@ -324,6 +332,7 @@ async fn workflow_can_create_credential_request() -> Result<(), Box<dyn Error>> 
             id: None,
             issuance_date: None,
             valid_until: None,
+            is_credential_status_required: true,
         }),
     };
 
@@ -357,6 +366,7 @@ async fn workflow_cannot_create_credential_request_with_missing_required_schema_
             id: None,
             issuance_date: None,
             valid_until: None,
+            is_credential_status_required: true,
         }),
     };
 
@@ -394,6 +404,7 @@ async fn workflow_cannot_create_credential_request_with_empty_values() -> Result
             id: None,
             issuance_date: None,
             valid_until: None,
+            is_credential_status_required: true,
         }),
     };
 
@@ -433,6 +444,7 @@ async fn workflow_can_create_unfinished_credential() -> Result<(), Box<dyn Error
             id: None,
             issuance_date: None,
             valid_until: None,
+            is_credential_status_required: true,
         }),
     };
 
@@ -468,6 +480,7 @@ async fn workflow_can_create_finished_credential() -> Result<(), Box<dyn Error>>
         id: None,
         issuance_date: None,
         valid_until: None,
+        is_credential_status_required: true,
     });
     credential_draft.credential_subject.data = credential_values;
 
@@ -483,8 +496,8 @@ async fn workflow_can_create_finished_credential() -> Result<(), Box<dyn Error>>
     let unfinished_credential = create_unfinished_credential(
         &mut vade,
         credential_request.clone(),
-        revocation_list.id,
-        "0".to_string(),
+        Some(revocation_list.id),
+        Some("0".to_string()),
     )
     .await?;
 
@@ -536,31 +549,30 @@ async fn workflow_can_create_finished_credential_without_credential_status(
 ) -> Result<(), Box<dyn Error>> {
     let mut vade = get_vade();
 
-    let revocation_list = create_revocation_list(&mut vade).await?;
     let mut credential_values = HashMap::new();
     credential_values.insert("test_property_string".to_owned(), "value".to_owned());
+
     let schema = CredentialSchema::from_str(SCHEMA)?;
-    let draft_credential = schema.to_draft_credential(CredentialDraftOptions {
+    let mut credential_draft = schema.to_draft_credential(CredentialDraftOptions {
         issuer_did: ISSUER_DID.to_string(),
         id: None,
         issuance_date: None,
         valid_until: None,
+        is_credential_status_required: false,
     });
+    credential_draft.credential_subject.data = credential_values;
 
-    let offer_payload = OfferCredentialPayload { draft_credential };
+    let offer_payload = OfferCredentialPayload {
+        draft_credential: credential_draft,
+    };
 
     let offer = create_credential_offer(&mut vade, offer_payload).await?;
 
     let (credential_request, signature_blinding_base64) =
         create_credential_request(&mut vade, offer.clone()).await?;
 
-    let unfinished_credential = create_unfinished_credential(
-        &mut vade,
-        credential_request.clone(),
-        revocation_list.id,
-        "0".to_string(),
-    )
-    .await?;
+    let unfinished_credential =
+        create_unfinished_credential(&mut vade, credential_request.clone(), None, None).await?;
 
     let key_id = format!("{}#bbs-key-1", ISSUER_DID);
     let finished_credential =
@@ -568,6 +580,7 @@ async fn workflow_can_create_finished_credential_without_credential_status(
             .await?;
 
     assert_eq!(&finished_credential.issuer, ISSUER_DID);
+
     assert_eq!(&finished_credential.credential_schema.id, &SCHEMA_DID);
     assert_eq!(
         &finished_credential.proof.required_reveal_statements,
@@ -599,6 +612,7 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
         id: None,
         issuance_date: None,
         valid_until: None,
+        is_credential_status_required: true,
     });
     let mut credential_values = HashMap::new();
     credential_values.insert("test_property_string3".to_owned(), "value".to_owned());
@@ -612,25 +626,22 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
     };
 
     let offer = create_credential_offer(&mut vade, offer_payload).await?;
-
     let (credential_request, signature_blinding_base64) =
         create_credential_request(&mut vade, offer.clone()).await?;
 
     let unfinished_credential = create_unfinished_credential(
         &mut vade,
         credential_request,
-        revocation_list.id.clone(),
-        "0".to_string(),
+        Some(revocation_list.id.clone()),
+        Some("0".to_string()),
     )
     .await?;
-
     let finished_credential = create_finished_credential(
         &mut vade,
         unfinished_credential.clone(),
         signature_blinding_base64.clone(),
     )
     .await?;
-
     // create proof request
     let mut proof_request = create_proof_request(&mut vade).await?;
     proof_request.sub_proof_requests[0].revealed_attributes = vec![10, 11];
@@ -645,7 +656,6 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
         public_key_schema_map.clone(),
     )
     .await?;
-
     // verify proof
     let verify_proof_payload = VerifyProofPayload {
         presentation: presentation.clone(),
@@ -681,6 +691,7 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
         id: None,
         issuance_date: None,
         valid_until: None,
+        is_credential_status_required: true,
     });
     let mut credential_values = HashMap::new();
     credential_values.insert("test_property_string3".to_owned(), "value".to_owned());
@@ -701,8 +712,8 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
     let unfinished_credential = create_unfinished_credential(
         &mut vade,
         credential_request,
-        revocation_list.id.clone(),
-        "0".to_string(),
+        Some(revocation_list.id.clone()),
+        Some("0".to_string()),
     )
     .await?;
 

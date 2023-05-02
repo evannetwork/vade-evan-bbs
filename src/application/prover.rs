@@ -345,6 +345,7 @@ mod tests {
             id: None,
             issuance_date: None,
             valid_until: None,
+            is_credential_status_required: true,
         });
         credential_draft
             .credential_subject

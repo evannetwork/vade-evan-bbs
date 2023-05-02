@@ -91,6 +91,7 @@ pub struct CredentialDraftOptions {
     pub id: Option<String>,
     pub issuance_date: Option<String>,
     pub valid_until: Option<String>,
+    pub is_credential_status_required: bool,
 }
 
 impl CredentialSchema {
@@ -126,6 +127,7 @@ impl CredentialSchema {
                 id: self.id.to_owned(),
                 r#type: self.r#type.to_owned(),
             },
+            is_credential_status_required: options.is_credential_status_required,
         }
     }
 }
@@ -515,6 +517,7 @@ pub struct DraftBbsCredential {
     pub valid_until: Option<String>,
     pub credential_subject: CredentialSubject,
     pub credential_schema: CredentialSchemaReference,
+    pub is_credential_status_required: bool,
 }
 
 impl DraftBbsCredential {
@@ -575,9 +578,11 @@ impl LdProofVcDetail {
             message_count += 1;
         }
 
-        message_count += match &self.options.credential_status.r#type {
-            LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status => 4, // 1 link to sub-section, 3 lines with payload, 0 extra line for id (used in key)
-        };
+        if self.credential.is_credential_status_required {
+            message_count += match &self.options.credential_status.r#type {
+                LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status => 4, // 1 link to sub-section, 3 lines with payload, 0 extra line for id (used in key)
+            };
+        }
 
         Ok(message_count)
     }

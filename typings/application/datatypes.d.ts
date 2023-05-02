@@ -285,6 +285,7 @@ export interface DraftBbsCredential {
   validUntil?: string;
   credentialSubject: CredentialSubject;
   credentialSchema: CredentialSchemaReference;
+  isCredentialStatusRequired: boolean;
 }
 
 export enum LdProofVcDetailOptionsType {

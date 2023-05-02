@@ -587,6 +587,7 @@ mod tests {
             id: None,
             issuance_date: None,
             valid_until: None,
+            is_credential_status_required: true,
         });
 
         draft.issuer = ISSUER_DID.to_string();
@@ -616,6 +617,7 @@ mod tests {
             id: None,
             issuance_date: None,
             valid_until: Some(get_now_as_iso_string()),
+            is_credential_status_required: true,
         });
         let mut offer = Issuer::offer_credential(&draft)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
@@ -665,6 +667,7 @@ mod tests {
             id: None,
             issuance_date: None,
             valid_until: None,
+            is_credential_status_required: true,
         });
         let mut offer = Issuer::offer_credential(&draft)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
@@ -715,6 +718,7 @@ mod tests {
             id: None,
             issuance_date: None,
             valid_until: None,
+            is_credential_status_required: true,
         });
         let mut offer = Issuer::offer_credential(&draft)?;
         let key_id = format!("{}#key-1", ISSUER_DID);
@@ -753,6 +757,7 @@ mod tests {
             id: None,
             issuance_date: None,
             valid_until: None,
+            is_credential_status_required: true,
         });
         let mut offer = Issuer::offer_credential(&draft)?;
         let key_id = format!("{}#key-1", ISSUER_DID);

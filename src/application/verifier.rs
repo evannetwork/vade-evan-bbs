@@ -351,16 +351,13 @@ mod tests {
                 .clone(),
             key,
         );
-
-        let nquads: Vec<String> =
-            convert_to_credential_nquads(&presentation.verifiable_credential.get(0)).await?;
         let mut nquads_to_schema_map = HashMap::new();
         nquads_to_schema_map.insert(
             presentation.verifiable_credential[0]
                 .credential_schema
                 .id
                 .clone(),
-            nquads,
+            vec![NQUADS[0].to_string()],
         );
 
         Verifier::verify_proof(
