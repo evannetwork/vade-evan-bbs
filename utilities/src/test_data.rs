@@ -22,6 +22,9 @@ pub mod accounts {
 
         pub const HOLDER_DID: &str = "did:evan:holder";
 
+        // if different from HOLDER_DID
+        pub const SUBJECT_DID: &str = "did:evan:subject";
+
         pub const VERIFIER_DID: &str = "did:evan:verifier";
 
         #[allow(dead_code)]
@@ -49,16 +52,8 @@ pub mod accounts {
 pub mod vc_zkp {
     pub const EXAMPLE_CREDENTIAL_PROPOSAL: &str = r###"
     {
-        "issuer":"did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g",
-        "type":"EvanCredentialProposal",
-        "schema":"did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg"
-     }
-    "###;
-    pub const EXAMPLE_CREDENTIAL_OFFERING: &str = r###"
-    {
-        "issuer":"did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g",
-        "nonce":"VprTtI2gGnaPU7Bi9ug5U5k8qpZF3y6loo/8ZpetOEk=",
-        "credentialMessageCount":6
+        "issuer": "did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g",
+        "schema": "did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg"
     }
     "###;
 }
@@ -258,76 +253,41 @@ pub mod bbs_coherent_context_test_data {
 
     pub const SCHEMA_DID: &str = "did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg";
     pub const SCHEMA: &str = r###"{
-        "@context": [
-            "https://www.w3.org/ns/did/v1",
-            "https://w3id.org/security/suites/jws-2020/v1",
-            {
-                "@vocab": "https://www.w3.org/ns/did#"
-            }
-        ],
-        "id": "did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg",
+        "id": "did:evan:EiAn35ScK8_GsBE9GwMFC5BwvjZXkxEWIfmi6hAoCzvA0w",
+        "name": "'sample.test.schema.unique85986",
         "type": "EvanVCSchema",
-        "name": "sample.test.schema.unique385895114662",
-        "author": "did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g",
-        "createdAt": "2023-02-07T08:17:05.000Z",
-        "description": "Test sample schema",
-        "properties": {
-            "test_property_string3": {
-                "type": "string"
-            },
-            "test_property_string2": {
-                "type": "string"
-            },
-            "test_property_string": {
-                "type": "string"
-            },
-            "test_property_string4": {
-                "type": "string"
-            },
-            "test_property_string1": {
-                "type": "string"
-            }
-        },
-        "required": [
-            "test_property_string"
-        ],
-        "additionalProperties": false,
         "proof": {
-            "type": "EcdsaPublicKeySecp256k1",
-            "created": "2023-02-07T08:17:05.000Z",
-            "proofPurpose": "assertionMethod",
-            "verificationMethod": "did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g#key1",
-            "jws": "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NkstUiJ9.eyJpYXQiOiIyMDIzLTAyLTA3VDA4OjE3OjA1LjAwMFoiLCJkb2MiOnsiaWQiOiJkaWQ6ZXZhbjpFaUJtaUhDSExNYkdWbjlobGxSTTVxUU9zc2h2RVRUb0VBTEJBdEZxUDNQVUlnIiwidHlwZSI6IkV2YW5WQ1NjaGVtYSIsIm5hbWUiOiJzYW1wbGUudGVzdC5zY2hlbWEudW5pcXVlMzg1ODk1MTE0NjYyIiwiYXV0aG9yIjoiZGlkOmV2YW46RWlEbVJrS3NPYWV5OHRQemM2UnlRcllrTU5qcHFYWFZUajlnZ3kwRWJpWFM0ZyIsImNyZWF0ZWRBdCI6IjIwMjMtMDItMDdUMDg6MTc6MDUuMDAwWiIsImRlc2NyaXB0aW9uIjoiVGVzdCBzYW1wbGUgc2NoZW1hIiwicHJvcGVydGllcyI6eyJ0ZXN0X3Byb3BlcnR5X3N0cmluZzMiOnsidHlwZSI6InN0cmluZyJ9LCJ0ZXN0X3Byb3BlcnR5X3N0cmluZzIiOnsidHlwZSI6InN0cmluZyJ9LCJ0ZXN0X3Byb3BlcnR5X3N0cmluZyI6eyJ0eXBlIjoic3RyaW5nIn0sInRlc3RfcHJvcGVydHlfc3RyaW5nNCI6eyJ0eXBlIjoic3RyaW5nIn0sInRlc3RfcHJvcGVydHlfc3RyaW5nMSI6eyJ0eXBlIjoic3RyaW5nIn19LCJyZXF1aXJlZCI6WyJ0ZXN0X3Byb3BlcnR5X3N0cmluZyJdLCJhZGRpdGlvbmFsUHJvcGVydGllcyI6ZmFsc2V9LCJpc3MiOiJkaWQ6ZXZhbjpFaURtUmtLc09hZXk4dFB6YzZSeVFyWWtNTmpwcVhYVlRqOWdneTBFYmlYUzRnIn0.2D-cW8eoB-kEBWvlIpiV7POre4tbgi_knPbhq8BQZ409nuRNZUMpva9gJVpaR3bZqTAtJ63Tx-8HCs4emSlirxs"
+          "jws": "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NkstUiJ9.eyJpYXQiOiIyMDIzLTAzLTIxVDEzOjU0OjAxLjAwMFoiLCJkb2MiOnsiaWQiOiJkaWQ6ZXZhbjpFaUFuMzVTY0s4X0dzQkU5R3dNRkM1Qnd2alpYa3hFV0lmbWk2aEFvQ3p2QTB3IiwidHlwZSI6IkV2YW5WQ1NjaGVtYSIsIm5hbWUiOiInc2FtcGxlLnRlc3Quc2NoZW1hLnVuaXF1ZTg1OTg2IiwiYXV0aG9yIjoiZGlkOmV2YW46RWlDdThiUkhoMmxTM0lMaHc3OWNiVFowc1pkS2tvN3hfTU82d0dHRlJYcUc1ZyIsImNyZWF0ZWRBdCI6IjIwMjMtMDMtMjFUMTM6NTQ6MDEuMDAwWiIsImRlc2NyaXB0aW9uIjoiZGVzYyIsInByb3BlcnRpZXMiOnsidGVzdF9wcm9wZXJ0eV9zdHJpbmcxIjp7InR5cGUiOiJzdHJpbmcifSwidGVzdF9wcm9wZXJ0eV9zdHJpbmc0Ijp7InR5cGUiOiJzdHJpbmcifSwidGVzdF9wcm9wZXJ0eV9zdHJpbmciOnsidHlwZSI6InN0cmluZyJ9LCJ0ZXN0X3Byb3BlcnR5X3N0cmluZzMiOnsidHlwZSI6InN0cmluZyJ9LCJ0ZXN0X3Byb3BlcnR5X3N0cmluZzIiOnsidHlwZSI6InN0cmluZyJ9fSwicmVxdWlyZWQiOlsidGVzdF9wcm9wZXJ0eV9zdHJpbmciXSwiYWRkaXRpb25hbFByb3BlcnRpZXMiOmZhbHNlfSwiaXNzIjoiZGlkOmV2YW46RWlDdThiUkhoMmxTM0lMaHc3OWNiVFowc1pkS2tvN3hfTU82d0dHRlJYcUc1ZyJ9.cl_1Eya0KiXIfpb2AsEv-YJsJB76GJm44lIBoERKCHZ09ASVx6eFamUWObKz3rYAXFXDYL7MirSYaoIstdDYnBw",
+          "type": "EcdsaPublicKeySecp256k1",
+          "created": "2023-03-21T13:54:01.000Z",
+          "proofPurpose": "assertionMethod",
+          "verificationMethod": "did:evan:EiCu8bRHh2lS3ILhw79cbTZ0sZdKko7x_MO6wGGFRXqG5g#key1"
         },
-        "verificationMethod": [
-            {
-                "id": "#signingKey",
-                "controller": "did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg",
-                "type": "Secp256k1VerificationKey2018",
-                "publicKeyJwk": {
-                    "kty": "EC",
-                    "x": "3QSU-mD5tDdnoEua0fmMko5EFDTEmcmp7CX04KQmLQ0",
-                    "y": "AzuPhzPh4YI28mVbioVFgc3Bk1Cw0cHOIjkKfdkVpjI",
-                    "crv": "secp256k1"
-                }
-            }
+        "author": "did:evan:EiCu8bRHh2lS3ILhw79cbTZ0sZdKko7x_MO6wGGFRXqG5g",
+        "required": [
+          "test_property_string"
         ],
-        "authentication": [
-            "#signingKey"
-        ],
-        "assertionMethod": [
-            "#signingKey"
-        ],
-        "capabilityInvocation": [
-            "#signingKey"
-        ],
-        "capabilityDelegation": [
-            "#signingKey"
-        ],
-        "keyAgreement": [
-            "#signingKey"
-        ]
-    }"###;
+        "createdAt": "2023-03-21T13:54:01.000Z",
+        "properties": {
+          "test_property_string": {
+            "type": "string"
+          },
+          "test_property_string1": {
+            "type": "string"
+          },
+          "test_property_string2": {
+            "type": "string"
+          },
+          "test_property_string3": {
+            "type": "string"
+          },
+          "test_property_string4": {
+            "type": "string"
+          }
+        },
+        "description": "desc",
+        "additionalProperties": false
+      }"###;
     pub const PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES: &str = r###"{
         "verifier":"did:evan:verifier",
         "createdAt":"2023-04-18T15:17:43.000Z",
@@ -440,7 +400,7 @@ pub mod bbs_coherent_context_test_data {
             "https://schema.org/",
             "https://w3id.org/vc-revocation-list-2020/v1"
         ],
-        "id": "6d6bfa18-8cfe-40ec-9775-a0878e6f305a",
+        "id": "743875ce-8ec0-4b6a-a67d-33a64392a5d3",
         "type": [
             "VerifiablePresentation"
         ],
@@ -448,26 +408,26 @@ pub mod bbs_coherent_context_test_data {
             {
                 "@context": [
                     "https://www.w3.org/2018/credentials/v1",
-                    "https:://schema.org/",
+                    "https://schema.org/",
                     "https://w3id.org/vc-revocation-list-2020/v1"
                 ],
-                "id": "94450c72-5dc4-4e46-8df0-106819064656",
+                "id": "uuid:94450c72-5dc4-4e46-8df0-106819064656",
                 "type": [
                     "VerifiableCredential"
                 ],
                 "issuer": "did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g",
-                "issuanceDate": "2023-02-07T16:24:52.000Z",
+                "issuanceDate": "2023-03-22T15:42:23.000Z",
                 "credentialSubject": {
                     "data": {
                         "test_property_string4": "value",
-                        "test_property_string2": "value",
-                        "test_property_string1": "value",
                         "test_property_string": "value",
-                        "test_property_string3": "value"
+                        "test_property_string2": "value",
+                        "test_property_string3": "value",
+                        "test_property_string1": "value"
                     }
                 },
                 "credentialSchema": {
-                    "id": "did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg",
+                    "id": "did:evan:EiAn35ScK8_GsBE9GwMFC5BwvjZXkxEWIfmi6hAoCzvA0w",
                     "type": "EvanZKPSchema"
                 },
                 "credentialStatus": {
@@ -478,11 +438,11 @@ pub mod bbs_coherent_context_test_data {
                 },
                 "proof": {
                     "type": "BbsBlsSignatureProof2020",
-                    "created": "2023-02-07T16:24:52.000Z",
+                    "created": "2023-03-22T15:42:23.000Z",
                     "proofPurpose": "assertionMethod",
-                    "credentialMessageCount": 6,
+                    "credentialMessageCount": 17,
                     "verificationMethod": "did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g#bbs-key-1",
-                    "nonce": "VSTclwR8ed93y+vUkQIwVtHVmr8tm7y3EUEXn2fktAQ=",
+                    "nonce": "XxApxRDBXaF0QCXHh7zMS7Ms2ELVcBUc0TdhfaAzH8o=",
                     "proof": "BBBCHKtugFHiaXgjrnI+pyfT6f3J5fGUQDJh0JfDsbH0kurhMMdVUkB3gIUCFLksvRm1Ca8o+LkqLH4/lEcVGOd1aldGNsAw5IyEPmeWReYDPLSJroqSPdecEk8bLYbRR/SDno7FWUMUYOovWi/3jAyo7lrNlf4rKJW+2FRgvlf8HzWwaZhk1dB5uynsRIrwnDjqjwAAAHSEMZIcRYIj+fsVov2nt40lhyumTCdK0rlqDjIs1MHAJqNoWhrxqIFp5w6iZfYTlzoAAAACIWxKnfGSrrDg26fcm01ky3Wr1hCJ8I9PuuQ7SBpbaYhNprKueXJeMlIMCa1ocLiaWwurNikj4sfhtp3FnihEjYMUnP6MpwrZNKWYEVWID8y06YSaQDvC1bc3wfmB4GB0t9aIjl9ubYrKxgL3d4gtVwAAAAdc8Zq55QJ5MRHapXd4g3eC1jaLBYWe+SBP19phXorOQSTu1qcWuiIEE6A8mwW9pMeTDOyFoaJwooD8HNLgh0hIFEHHx9ou0YHql7KCbtN0XrxMNJLhU/EABWp8XJJFxKkH2uYXy5/T6wbuO5TQSuDrl7foiuETyEAfDDKD+zgVPmt5MUIgzWASShvaNZ7cQ22Oct8/w4vyQJpA38/3oMvJN/tp72vz2z1D7Qu9f4K73peEY3OnhYo0EW2jqjhJER8ngeHozTH85yX29uDI6T0zi8dMJEq80ijBlgLwCf9TqgAAAAEAAAABVYYuxWfEuaxvBkivWA/SfIa+XSWTfQxphjVs8yhmpfY="
                 }
             }

@@ -220,7 +220,7 @@ mod tests {
     use crate::{
         application::{
             datatypes::{CredentialSchema, RevocationListCredential, UnfinishedProofPresentation},
-            utils::get_dpk_from_string,
+            utils::{convert_to_credential_nquads, get_dpk_from_string},
         },
         crypto::crypto_utils::create_assertion_proof,
     };
@@ -335,8 +335,8 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn can_verify_proof() -> Result<(), Box<dyn Error>> {
+    #[tokio::test]
+    async fn can_verify_proof() -> Result<(), Box<dyn Error>> {
         let signer_address = SIGNER_1_ADDRESS;
         let presentation: ProofPresentation = serde_json::from_str(&PROOF_PRESENTATION)?;
         let proof_request: BbsProofRequest =
@@ -352,13 +352,15 @@ mod tests {
             key,
         );
 
+        let nquads: Vec<String> =
+            convert_to_credential_nquads(&presentation.verifiable_credential.get(0)).await?;
         let mut nquads_to_schema_map = HashMap::new();
         nquads_to_schema_map.insert(
             presentation.verifiable_credential[0]
                 .credential_schema
                 .id
                 .clone(),
-            vec![NQUADS[0].to_string()],
+            nquads,
         );
 
         Verifier::verify_proof(
@@ -372,8 +374,8 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn can_verify_proof_without_verifier() -> Result<(), Box<dyn Error>> {
+    #[tokio::test]
+    async fn can_verify_proof_without_verifier() -> Result<(), Box<dyn Error>> {
         let signer_address = SIGNER_1_ADDRESS;
         let presentation: ProofPresentation = serde_json::from_str(&PROOF_PRESENTATION)?;
         let proof_request: BbsProofRequest =
@@ -389,13 +391,15 @@ mod tests {
             key,
         );
 
+        let nquads: Vec<String> =
+            convert_to_credential_nquads(&presentation.verifiable_credential.get(0)).await?;
         let mut nquads_to_schema_map = HashMap::new();
         nquads_to_schema_map.insert(
             presentation.verifiable_credential[0]
                 .credential_schema
                 .id
                 .clone(),
-            vec![NQUADS[0].to_string()],
+            nquads,
         );
 
         Verifier::verify_proof(
@@ -437,18 +441,17 @@ mod tests {
             key,
         );
 
-        let mut nqsm: HashMap<String, Vec<String>> = HashMap::new();
-        nqsm.insert(
-            proof_request.sub_proof_requests[0].schema.clone(),
-            vec![NQUADS[0].to_string()],
-        );
+        let nquads: Vec<String> =
+            convert_to_credential_nquads(&presentation.verifiable_credential.get(0)).await?;
+        let mut nquads_to_schema_map = HashMap::new();
+        nquads_to_schema_map.insert(proof_request.sub_proof_requests[0].schema.clone(), nquads);
 
         match Verifier::verify_proof(
             &presentation,
             &proof_request,
             &keys_to_schema_map,
             holder_address,
-            &nqsm,
+            &nquads_to_schema_map,
         ) {
             Ok(_) => assert!(false, "This test should have failed"),
             Err(e) => assert_eq!(

@@ -20,10 +20,8 @@
  * Incorporates the nonce value sent in `BbsCredentialOffer`.
  */
 export interface BbsCredentialRequest {
-  schema: string;
-  type: string;
+  credentialOffer: BbsCredentialOffer;
   blindSignatureContext: string;
-  credentialValues: Record<string, string>;
 }
 
 /**
@@ -62,6 +60,14 @@ export interface CredentialSchema {
   proof?: AssertionProof;
 }
 
+export interface CredentialDraftOptions {
+  issuerDid: String,
+  id?: string;
+  issuanceDate?: string;
+  subjectDid?: string;
+  validUntil?: string;
+}
+
 export interface SchemaProperty {
   type: string;
   format?: string;
@@ -80,13 +86,11 @@ export interface AssertionProof {
 }
 
 /**
- * Message following a `CredentialProposal`, sent by an issuer.
- * Specifies the DIDs of both the `CredentialSchema` and `CredentialDefinition`
- * to be used for issuance.
+ * Message sent by an issuer.
+ * Defines how the credential to be issued will look like.
  */
 export interface BbsCredentialOffer {
-  issuer: string;
-  credentialMessageCount: number;
+  ldProofVcDetail: LdProofVcDetail;
   nonce: string;
 }
 
@@ -96,7 +100,6 @@ export interface BbsCredentialOffer {
  */
 export interface CredentialProposal {
   issuer: string;
-  type: string;
   schema: string;
 }
 
@@ -271,4 +274,38 @@ export interface RevocationListCredential {
   issued: string;
   credentialSubject: RevocationListCredentialSubject;
   proof: AssertionProof;
+}
+
+export interface DraftBbsCredential {
+  '@context': (string | { [key in string]?: { '@type': string } })[];
+  id: string;
+  type: string[];
+  issuer: string;
+  issuanceDate: string;
+  validUntil?: string;
+  credentialSubject: CredentialSubject;
+  credentialSchema: CredentialSchemaReference;
+}
+
+export enum LdProofVcDetailOptionsType {
+  Ed25519Signature2018 = 'Ed25519Signature2018',
+}
+
+export enum LdProofVcDetailOptionsCredentialStatusType {
+  RevocationList2021Status = 'RevocationList2021Status',
+}
+
+export interface LdProofVcDetailOptionsCredentialStatus {
+  type: LdProofVcDetailOptionsCredentialStatusType;
+}
+
+export interface LdProofVcDetailOptions {
+    created: string;
+    proofType: LdProofVcDetailOptionsType;
+    credentialStatus: LdProofVcDetailOptionsCredentialStatus;
+}
+
+export interface LdProofVcDetail {
+    credential: DraftBbsCredential;
+    options: LdProofVcDetailOptions;
 }
