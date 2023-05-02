@@ -90,7 +90,6 @@ pub struct CredentialDraftOptions {
     pub issuer_did: String,
     pub id: Option<String>,
     pub issuance_date: Option<String>,
-    pub subject_did: Option<String>,
     pub valid_until: Option<String>,
 }
 
@@ -519,7 +518,10 @@ pub struct DraftBbsCredential {
 }
 
 impl DraftBbsCredential {
-    pub fn to_unsigned_credential(&self, status: Option<CredentialStatus>) -> UnsignedBbsCredential {
+    pub fn to_unsigned_credential(
+        &self,
+        status: Option<CredentialStatus>,
+    ) -> UnsignedBbsCredential {
         UnsignedBbsCredential {
             context: self.context.clone(),
             id: self.id.to_owned(),

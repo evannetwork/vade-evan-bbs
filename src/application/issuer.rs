@@ -469,7 +469,7 @@ mod tests {
     use super::*;
     use crate::{
         application::{
-            datatypes::{BbsCredentialOffer, BbsCredentialRequest, CredentialProposal},
+            datatypes::{BbsCredentialOffer, BbsCredentialRequest},
             prover::Prover,
             utils::convert_to_nquads,
         },
@@ -478,12 +478,7 @@ mod tests {
     use bbs::{issuer::Issuer as BbsIssuer, prover::Prover as BbsProver};
     use std::collections::HashMap;
     use utilities::test_data::{
-        accounts::local::{
-            HOLDER_DID,
-            ISSUER_DID,
-            ISSUER_PRIVATE_KEY,
-            ISSUER_PUBLIC_KEY_DID,
-        },
+        accounts::local::{ISSUER_DID, ISSUER_PRIVATE_KEY, ISSUER_PUBLIC_KEY_DID},
         bbs_coherent_context_test_data::{
             EXAMPLE_REVOCATION_LIST_DID,
             PUB_KEY,
@@ -491,7 +486,6 @@ mod tests {
             SCHEMA,
             SECRET_KEY,
         },
-        vc_zkp::EXAMPLE_CREDENTIAL_PROPOSAL,
     };
     use vade_signer::{LocalSigner, Signer};
 
@@ -587,7 +581,6 @@ mod tests {
 
     #[test]
     fn can_offer_credential() -> Result<(), Box<dyn Error>> {
-        let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
         let schema: CredentialSchema = serde_json::from_str(&SCHEMA)?;
         let mut draft = schema.to_draft_credential(CredentialDraftOptions {
             issuer_did: ISSUER_DID.to_string(),
@@ -611,11 +604,6 @@ mod tests {
         let offer = Issuer::offer_credential(&draft)?;
 
         assert_eq!(&offer.ld_proof_vc_detail.credential.issuer, &ISSUER_DID);
-        assert_eq!(
-            &offer.ld_proof_vc_detail.credential.credential_subject.id,
-            &proposal.subject
-        );
-
         Ok(())
     }
 
@@ -640,8 +628,15 @@ mod tests {
             revocation_list_credential: EXAMPLE_REVOCATION_LIST_DID.to_string(),
         };
 
-        let result =
-            Issuer::sign_nquads(&credential_request, &status, &key_id, &dpk, &sk, vec![1]).await;
+        let result = Issuer::sign_nquads(
+            &credential_request,
+            Some(status),
+            &key_id,
+            &dpk,
+            &sk,
+            vec![1],
+        )
+        .await;
         match result {
             Ok(cred) => {
                 assert_credential(
@@ -669,7 +664,6 @@ mod tests {
             issuer_did: ISSUER_DID.to_string(),
             id: None,
             issuance_date: None,
-
             valid_until: None,
         });
         let mut offer = Issuer::offer_credential(&draft)?;
@@ -683,8 +677,15 @@ mod tests {
             revocation_list_credential: EXAMPLE_REVOCATION_LIST_DID.to_string(),
         };
 
-        let result =
-            Issuer::sign_nquads(&credential_request, &status, &key_id, &dpk, &sk, vec![1]).await;
+        let result = Issuer::sign_nquads(
+            &credential_request,
+            Some(status),
+            &key_id,
+            &dpk,
+            &sk,
+            vec![1],
+        )
+        .await;
 
         match result {
             Ok(cred) => {
@@ -726,7 +727,16 @@ mod tests {
             revocation_list_credential: EXAMPLE_REVOCATION_LIST_DID.to_string(),
         };
 
-        match Issuer::sign_nquads(&credential_request, &status, &key_id, &dpk, &sk, vec![1]).await {
+        match Issuer::sign_nquads(
+            &credential_request,
+            Some(status),
+            &key_id,
+            &dpk,
+            &sk,
+            vec![1],
+        )
+        .await
+        {
             Ok(cred) => assert_credential_proof(cred, &key_id, [1].to_vec()),
             Err(e) => assert!(false, "Received error when issuing credential: {}", e),
         }
@@ -758,7 +768,7 @@ mod tests {
         let unsigned = &offer
             .ld_proof_vc_detail
             .credential
-            .to_unsigned_credential(&status);
+            .to_unsigned_credential(Some(status));
         let nquads = convert_to_nquads(&serde_json::to_string(&unsigned)?).await?;
 
         let result = Issuer::issue_credential(

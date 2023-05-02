@@ -315,13 +315,7 @@ mod tests {
         SignatureBlinding,
     };
     use utilities::test_data::{
-        accounts::local::{
-            HOLDER_DID,
-            ISSUER_DID,
-            SIGNER_1_ADDRESS,
-            SIGNER_1_PRIVATE_KEY,
-            VERIFIER_DID,
-        },
+        accounts::local::{ISSUER_DID, SIGNER_1_ADDRESS, SIGNER_1_PRIVATE_KEY, VERIFIER_DID},
         bbs_coherent_context_test_data::{
             FINISHED_CREDENTIAL,
             MASTER_SECRET,
@@ -350,7 +344,6 @@ mod tests {
             issuer_did: ISSUER_DID.to_string(),
             id: None,
             issuance_date: None,
-            subject_did: Some(SUBJECT_DID.to_string()),
             valid_until: None,
         });
         credential_draft
@@ -465,8 +458,7 @@ mod tests {
 
     #[test]
     fn can_propose_credential() {
-        let proposal = Prover::propose_credential(&ISSUER_DID, Some(&HOLDER_DID), "schema-did");
-        assert_eq!(proposal.subject, Some(HOLDER_DID.to_string()));
+        let proposal = Prover::propose_credential(&ISSUER_DID, "schema-did");
         assert_eq!(&proposal.issuer, &ISSUER_DID);
         assert_eq!(&proposal.schema, "schema-did");
     }
@@ -484,15 +476,6 @@ mod tests {
                 .credential_schema
                 .id,
             schema.id
-        );
-        assert_eq!(
-            credential_request
-                .credential_offer
-                .ld_proof_vc_detail
-                .credential
-                .credential_subject
-                .id,
-            offering.ld_proof_vc_detail.credential.credential_subject.id
         );
         Ok(())
     }
