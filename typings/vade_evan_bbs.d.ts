@@ -29,6 +29,7 @@ import {
   RevocationListCredential,
   SchemaProperty,
   UnfinishedBbsCredential,
+  LdProofVcDetailOptionsCredentialStatusType,
 } from './application/datatypes';
 
 /** Message passed to vade containing the desired credential type.
@@ -79,6 +80,8 @@ export interface IssueCredentialPayload {
 export interface OfferCredentialPayload {
   /** credential draft, outlining structure of future credential (without proof and status) */
   draftCredential: DraftBbsCredential;
+  credentialStatusType: LdProofVcDetailOptionsCredentialStatusType,
+
 }
 
 /** API payload for creating a zero-knowledge proof out of a BBS+ signature. */

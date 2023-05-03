@@ -285,7 +285,6 @@ export interface DraftBbsCredential {
   validUntil?: string;
   credentialSubject: CredentialSubject;
   credentialSchema: CredentialSchemaReference;
-  isCredentialStatusRequired: boolean;
 }
 
 export enum LdProofVcDetailOptionsType {
@@ -294,6 +293,7 @@ export enum LdProofVcDetailOptionsType {
 
 export enum LdProofVcDetailOptionsCredentialStatusType {
   RevocationList2021Status = 'RevocationList2021Status',
+  None = 'None',
 }
 
 export interface LdProofVcDetailOptionsCredentialStatus {
