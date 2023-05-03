@@ -133,6 +133,7 @@ impl Issuer {
     /// * `BbsCredentialOffer` - The message to be sent to the prover.
     pub fn offer_credential(
         credential: &DraftBbsCredential,
+        credential_status_type: &LdProofVcDetailOptionsCredentialStatusType,
     ) -> Result<BbsCredentialOffer, Box<dyn Error>> {
         let nonce = base64::encode(BbsIssuer::generate_signing_nonce().to_bytes_compressed_form());
 
@@ -143,8 +144,7 @@ impl Issuer {
                     created: get_now_as_iso_string(),
                     proof_type: LdProofVcDetailOptionsType::Ed25519Signature2018,
                     credential_status: LdProofVcDetailOptionsCredentialStatus {
-                        r#type:
-                            LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
+                        r#type: credential_status_type.to_owned(),
                     },
                 },
             },
@@ -587,7 +587,6 @@ mod tests {
             id: None,
             issuance_date: None,
             valid_until: None,
-            is_credential_status_required: true,
         });
 
         draft.issuer = ISSUER_DID.to_string();
@@ -602,7 +601,10 @@ mod tests {
             .data
             .insert("test_property_string2".to_string(), "bar".to_string());
 
-        let offer = Issuer::offer_credential(&draft)?;
+        let offer = Issuer::offer_credential(
+            &draft,
+            &LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
+        )?;
 
         assert_eq!(&offer.ld_proof_vc_detail.credential.issuer, &ISSUER_DID);
         Ok(())
@@ -617,9 +619,11 @@ mod tests {
             id: None,
             issuance_date: None,
             valid_until: Some(get_now_as_iso_string()),
-            is_credential_status_required: true,
         });
-        let mut offer = Issuer::offer_credential(&draft)?;
+        let mut offer = Issuer::offer_credential(
+            &draft,
+            &LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
+        )?;
         let key_id = format!("{}#key-1", ISSUER_DID);
         let (credential_request, _) = request_credential(&dpk, &mut offer, 1).await?;
 
@@ -667,9 +671,11 @@ mod tests {
             id: None,
             issuance_date: None,
             valid_until: None,
-            is_credential_status_required: true,
         });
-        let mut offer = Issuer::offer_credential(&draft)?;
+        let mut offer = Issuer::offer_credential(
+            &draft,
+            &LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
+        )?;
         let key_id = format!("{}#key-1", ISSUER_DID);
         let (credential_request, _) = request_credential(&dpk, &mut offer, 5).await?;
 
@@ -718,9 +724,11 @@ mod tests {
             id: None,
             issuance_date: None,
             valid_until: None,
-            is_credential_status_required: true,
         });
-        let mut offer = Issuer::offer_credential(&draft)?;
+        let mut offer = Issuer::offer_credential(
+            &draft,
+            &LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
+        )?;
         let key_id = format!("{}#key-1", ISSUER_DID);
         let (credential_request, _) = request_credential(&dpk, &mut offer, 5).await?;
 
@@ -757,9 +765,11 @@ mod tests {
             id: None,
             issuance_date: None,
             valid_until: None,
-            is_credential_status_required: true,
         });
-        let mut offer = Issuer::offer_credential(&draft)?;
+        let mut offer = Issuer::offer_credential(
+            &draft,
+            &LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
+        )?;
         let key_id = format!("{}#key-1", ISSUER_DID);
         let (credential_request, _) = request_credential(&dpk, &mut offer, 5).await?;
 

@@ -25,6 +25,7 @@ use crate::{
             CredentialProposal,
             CredentialSchema,
             CredentialSubject,
+            LdProofVcDetailOptionsCredentialStatusType,
             ProofPresentation,
             RevocationListCredential,
             SchemaProperty,
@@ -134,6 +135,7 @@ pub struct IssueCredentialPayload {
 pub struct OfferCredentialPayload {
     /// credential draft, outlining structure of future credential (without proof and status)
     pub draft_credential: DraftBbsCredential,
+    pub credential_status_type: LdProofVcDetailOptionsCredentialStatusType,
 }
 
 /// API payload for creating a zero-knowledge proof out of a BBS+ signature.
@@ -534,7 +536,8 @@ impl VadePlugin for VadeEvanBbs {
         ignore_unrelated!(method, options);
 
         let payload: OfferCredentialPayload = parse!(&payload, "payload");
-        let result: BbsCredentialOffer = Issuer::offer_credential(&payload.draft_credential)?;
+        let result: BbsCredentialOffer =
+            Issuer::offer_credential(&payload.draft_credential, &payload.credential_status_type)?;
         Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
             &result,
         )?)))

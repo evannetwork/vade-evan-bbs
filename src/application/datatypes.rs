@@ -91,7 +91,6 @@ pub struct CredentialDraftOptions {
     pub id: Option<String>,
     pub issuance_date: Option<String>,
     pub valid_until: Option<String>,
-    pub is_credential_status_required: bool,
 }
 
 impl CredentialSchema {
@@ -127,7 +126,6 @@ impl CredentialSchema {
                 id: self.id.to_owned(),
                 r#type: self.r#type.to_owned(),
             },
-            is_credential_status_required: options.is_credential_status_required,
         }
     }
 }
@@ -517,7 +515,6 @@ pub struct DraftBbsCredential {
     pub valid_until: Option<String>,
     pub credential_subject: CredentialSubject,
     pub credential_schema: CredentialSchemaReference,
-    pub is_credential_status_required: bool,
 }
 
 impl DraftBbsCredential {
@@ -547,6 +544,7 @@ pub enum LdProofVcDetailOptionsType {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum LdProofVcDetailOptionsCredentialStatusType {
     RevocationList2021Status,
+    None,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -578,11 +576,10 @@ impl LdProofVcDetail {
             message_count += 1;
         }
 
-        if self.credential.is_credential_status_required {
-            message_count += match &self.options.credential_status.r#type {
-                LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status => 4, // 1 link to sub-section, 3 lines with payload, 0 extra line for id (used in key)
-            };
-        }
+        message_count += match &self.options.credential_status.r#type {
+            LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status => 4, // 1 link to sub-section, 3 lines with payload, 0 extra line for id (used in key)
+            LdProofVcDetailOptionsCredentialStatusType::None => 0,
+        };
 
         Ok(message_count)
     }

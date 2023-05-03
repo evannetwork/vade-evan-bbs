@@ -310,8 +310,9 @@ async fn workflow_can_create_credential_offer_with_proposal() -> Result<(), Box<
             id: None,
             issuance_date: None,
             valid_until: None,
-            is_credential_status_required: true,
         }),
+        credential_status_type:
+            LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
     };
 
     let offering = create_credential_offer(&mut vade, offer_payload).await?;
@@ -332,8 +333,9 @@ async fn workflow_can_create_credential_request() -> Result<(), Box<dyn Error>> 
             id: None,
             issuance_date: None,
             valid_until: None,
-            is_credential_status_required: true,
         }),
+        credential_status_type:
+            LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
     };
 
     let offer = create_credential_offer(&mut vade, offer_payload).await?;
@@ -366,8 +368,9 @@ async fn workflow_cannot_create_credential_request_with_missing_required_schema_
             id: None,
             issuance_date: None,
             valid_until: None,
-            is_credential_status_required: true,
         }),
+        credential_status_type:
+            LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
     };
 
     let mut offer = create_credential_offer(&mut vade, offer_payload).await?;
@@ -404,8 +407,9 @@ async fn workflow_cannot_create_credential_request_with_empty_values() -> Result
             id: None,
             issuance_date: None,
             valid_until: None,
-            is_credential_status_required: true,
         }),
+        credential_status_type:
+            LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
     };
 
     let mut offer = create_credential_offer(&mut vade, offer_payload).await?;
@@ -444,8 +448,9 @@ async fn workflow_can_create_unfinished_credential() -> Result<(), Box<dyn Error
             id: None,
             issuance_date: None,
             valid_until: None,
-            is_credential_status_required: true,
         }),
+        credential_status_type:
+            LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
     };
 
     let offer = create_credential_offer(&mut vade, offer_payload).await?;
@@ -480,12 +485,13 @@ async fn workflow_can_create_finished_credential() -> Result<(), Box<dyn Error>>
         id: None,
         issuance_date: None,
         valid_until: None,
-        is_credential_status_required: true,
     });
     credential_draft.credential_subject.data = credential_values;
 
     let offer_payload = OfferCredentialPayload {
         draft_credential: credential_draft,
+        credential_status_type:
+            LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
     };
 
     let offer = create_credential_offer(&mut vade, offer_payload).await?;
@@ -558,12 +564,12 @@ async fn workflow_can_create_finished_credential_without_credential_status(
         id: None,
         issuance_date: None,
         valid_until: None,
-        is_credential_status_required: false,
     });
     credential_draft.credential_subject.data = credential_values;
 
     let offer_payload = OfferCredentialPayload {
         draft_credential: credential_draft,
+        credential_status_type: LdProofVcDetailOptionsCredentialStatusType::None,
     };
 
     let offer = create_credential_offer(&mut vade, offer_payload).await?;
@@ -612,7 +618,6 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
         id: None,
         issuance_date: None,
         valid_until: None,
-        is_credential_status_required: true,
     });
     let mut credential_values = HashMap::new();
     credential_values.insert("test_property_string3".to_owned(), "value".to_owned());
@@ -623,6 +628,8 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
     credential_draft.credential_subject.data = credential_values;
     let offer_payload = OfferCredentialPayload {
         draft_credential: credential_draft,
+        credential_status_type:
+            LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
     };
 
     let offer = create_credential_offer(&mut vade, offer_payload).await?;
@@ -691,7 +698,6 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
         id: None,
         issuance_date: None,
         valid_until: None,
-        is_credential_status_required: true,
     });
     let mut credential_values = HashMap::new();
     credential_values.insert("test_property_string3".to_owned(), "value".to_owned());
@@ -702,6 +708,8 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
     credential_draft.credential_subject.data = credential_values;
     let offer_payload = OfferCredentialPayload {
         draft_credential: credential_draft,
+        credential_status_type:
+            LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
     };
 
     let offer = create_credential_offer(&mut vade, offer_payload).await?;
