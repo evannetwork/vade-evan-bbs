@@ -571,12 +571,13 @@ pub struct LdProofVcDetailOptions {
     pub created: String,
     pub proof_type: LdProofVcDetailOptionsType,
     pub credential_status: LdProofVcDetailOptionsCredentialStatus,
+    pub required_reveal_statements: Vec<u32>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct LdProofVcDetail {
     pub credential: DraftBbsCredential,
-    pub options: LdProofVcDetailOptions,
+    pub options: LdProofVcDetailOptions, 
 }
 
 impl LdProofVcDetail {

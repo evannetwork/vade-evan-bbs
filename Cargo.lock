@@ -2399,6 +2399,7 @@ dependencies = [
 [[package]]
 name = "vade-signer"
 version = "0.0.1"
+source = "git+https://github.com/evannetwork/vade-signer.git?branch=develop#c8636eef53ca71637c534a9098bad21f48852810"
 dependencies = [
  "async-trait",
  "byteorder",

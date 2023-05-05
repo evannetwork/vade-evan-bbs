@@ -133,6 +133,7 @@ impl Issuer {
     /// * `BbsCredentialOffer` - The message to be sent to the prover.
     pub fn offer_credential(
         credential: &DraftBbsCredential,
+        required_reveal_statements: Vec<u32>,
     ) -> Result<BbsCredentialOffer, Box<dyn Error>> {
         let nonce = base64::encode(BbsIssuer::generate_signing_nonce().to_bytes_compressed_form());
 
@@ -146,6 +147,7 @@ impl Issuer {
                         r#type:
                             LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
                     },
+                    required_reveal_statements,
                 },
             },
             nonce,
@@ -585,7 +587,7 @@ mod tests {
     fn can_offer_credential() -> Result<(), Box<dyn Error>> {
         let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
         let schema: CredentialSchema = serde_json::from_str(&SCHEMA)?;
-        let mut draft = schema.to_draft_credential(CredentialDraftOptions {
+        let mut draft: DraftBbsCredential = schema.to_draft_credential(CredentialDraftOptions {
             issuer_did: ISSUER_DID.to_string(),
             id: None,
             issuance_date: None,
