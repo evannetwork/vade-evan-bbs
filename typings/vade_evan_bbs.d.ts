@@ -29,6 +29,7 @@ import {
   RevocationListCredential,
   SchemaProperty,
   UnfinishedBbsCredential,
+  LdProofVcDetailOptionsCredentialStatusType,
 } from './application/datatypes';
 
 /** Message passed to vade containing the desired credential type.
@@ -79,6 +80,8 @@ export interface IssueCredentialPayload {
 export interface OfferCredentialPayload {
   /** credential draft, outlining structure of future credential (without proof and status) */
   draftCredential: DraftBbsCredential;
+  credentialStatusType: LdProofVcDetailOptionsCredentialStatusType,
+
 }
 
 /** API payload for creating a zero-knowledge proof out of a BBS+ signature. */
@@ -105,8 +108,6 @@ export interface PresentProofPayload {
 export interface CreateCredentialProposalPayload {
   /** DID of the issuer */
   issuer: string;
-  /** DID of the subject */
-  subject: string;
   /** DID of a credential schema to propose */
   schema: string;
 }
@@ -193,7 +194,7 @@ export interface VerifyProofPayload {
   /** Signer address */
   signerAddress: string;
   /** revocation list credential */
-  revocationList: RevocationListCredential;
+  revocationList?: RevocationListCredential;
 }
 
 /** API payload to create new BBS+ keys and persist them on the DID document. */
