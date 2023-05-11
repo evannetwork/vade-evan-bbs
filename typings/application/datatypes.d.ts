@@ -240,6 +240,7 @@ export interface BbsPresentationProof {
   proofPurpose: string;
   credentialMessageCount: number;
   verificationMethod: string;
+  requiredRevealStatements: number[];
   nonce: string;
   proof: string;
 }
@@ -304,6 +305,7 @@ export interface LdProofVcDetailOptions {
     created: string;
     proofType: LdProofVcDetailOptionsType;
     credentialStatus: LdProofVcDetailOptionsCredentialStatus;
+    requiredRevealStatements: number[];
 }
 
 export interface LdProofVcDetail {
