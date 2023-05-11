@@ -4,14 +4,18 @@
 
 ### Features
 
+### Fixes
+
+### Deprecations
+
+## v0.4.0
+
+### Features
+
 - add custom function to derive public key from private key (`get_public_key_from_private_key`)
 - combine `sdk` and `develop` branches to support both builds on `develop`
 - adjust `credential_status` to be optional property in Credential types
 - adjust `revocation_list` param in `VerifyProofPayload` to be optional
-
-### Fixes
-
-### Deprecations
 
 ## v0.3.0
 
