@@ -35,6 +35,7 @@ use crate::{
         issuer::Issuer,
         prover::Prover,
         utils::{
+            concate_required_and_reveal_statements,
             convert_to_nquads,
             decode_base64,
             generate_uuid,
@@ -534,8 +535,11 @@ impl VadePlugin for VadeEvanBbs {
         ignore_unrelated!(method, options);
 
         let payload: OfferCredentialPayload = parse!(&payload, "payload");
-        let result: BbsCredentialOffer =
-            Issuer::offer_credential(&payload.draft_credential, &payload.required_reveal_statements,&payload.credential_status_type)?;
+        let result: BbsCredentialOffer = Issuer::offer_credential(
+            &payload.draft_credential,
+            &payload.required_reveal_statements,
+            &payload.credential_status_type,
+        )?;
         Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
             &result,
         )?)))
@@ -764,6 +768,27 @@ impl VadePlugin for VadeEvanBbs {
 
         let payload: VerifyProofPayload = parse!(&payload, "payload");
 
+        let mut proof_request = payload.proof_request.to_owned();
+        for sub_request in &mut proof_request.sub_proof_requests {
+            let vc = payload
+                .presentation
+                .verifiable_credential
+                .iter()
+                .find(|cred| cred.credential_schema.id == sub_request.schema)
+                .ok_or_else(|| {
+                    format!(
+                        "Invalid Schema! No credential with schema {} found in presentation",
+                        sub_request.schema
+                    )
+                })?;
+            let required_reveal_statements = vc.proof.required_reveal_statements.to_owned();
+            let revealed_statements = sub_request.revealed_attributes.to_owned();
+            let all_revealed_statements = concate_required_and_reveal_statements(
+                required_reveal_statements,
+                revealed_statements,
+            )?;
+            sub_request.revealed_attributes = all_revealed_statements;
+        }
         let mut public_key_schema_map: HashMap<String, DeterministicPublicKey> = HashMap::new();
         for (schema_did, base64_public_key) in payload.keys_to_schema_map.iter() {
             public_key_schema_map
@@ -777,16 +802,13 @@ impl VadePlugin for VadeEvanBbs {
             .map(|c| UnsignedBbsCredential::from_proof_presentation(c))
             .collect::<Result<Vec<UnsignedBbsCredential>, _>>()?;
 
-        let nquads_schema_map = get_nquads_schema_map(
-            &payload.proof_request,
-            &unsigned_credentials_without_proof,
-            true,
-        )
-        .await?;
+        let nquads_schema_map =
+            get_nquads_schema_map(&proof_request, &unsigned_credentials_without_proof, true)
+                .await?;
 
         let mut verification_result = Verifier::verify_proof(
             &payload.presentation,
-            &payload.proof_request,
+            &proof_request,
             &public_key_schema_map,
             &payload.signer_address,
             &nquads_schema_map,

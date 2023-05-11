@@ -198,7 +198,12 @@ impl Issuer {
             created: get_now_as_iso_string(),
             proof_purpose: CREDENTIAL_PROOF_PURPOSE.to_owned(),
             verification_method: issuer_public_key_id.to_owned(),
-            required_reveal_statements: credential_request.credential_offer.ld_proof_vc_detail.options.required_reveal_statements.to_owned(),
+            required_reveal_statements: credential_request
+                .credential_offer
+                .ld_proof_vc_detail
+                .options
+                .required_reveal_statements
+                .to_owned(),
             credential_message_count: nquads.len() + ADDITIONAL_HIDDEN_MESSAGES_COUNT,
             blind_signature: base64::encode(blind_signature.to_bytes_compressed_form()),
         };
@@ -606,6 +611,7 @@ mod tests {
 
         let offer = Issuer::offer_credential(
             &draft,
+            &vec![1],
             &LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
         )?;
 
@@ -625,6 +631,7 @@ mod tests {
         });
         let mut offer = Issuer::offer_credential(
             &draft,
+            &vec![1],
             &LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
         )?;
         let key_id = format!("{}#key-1", ISSUER_DID);
@@ -637,15 +644,8 @@ mod tests {
             revocation_list_credential: EXAMPLE_REVOCATION_LIST_DID.to_string(),
         };
 
-        let result = Issuer::sign_nquads(
-            &credential_request,
-            Some(status),
-            &key_id,
-            &dpk,
-            &sk,
-            vec![1],
-        )
-        .await;
+        let result =
+            Issuer::sign_nquads(&credential_request, Some(status), &key_id, &dpk, &sk).await;
         match result {
             Ok(cred) => {
                 assert_credential(
@@ -677,6 +677,7 @@ mod tests {
         });
         let mut offer = Issuer::offer_credential(
             &draft,
+            &vec![1],
             &LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
         )?;
         let key_id = format!("{}#key-1", ISSUER_DID);
@@ -689,15 +690,8 @@ mod tests {
             revocation_list_credential: EXAMPLE_REVOCATION_LIST_DID.to_string(),
         };
 
-        let result = Issuer::sign_nquads(
-            &credential_request,
-            Some(status),
-            &key_id,
-            &dpk,
-            &sk,
-            vec![1],
-        )
-        .await;
+        let result =
+            Issuer::sign_nquads(&credential_request, Some(status), &key_id, &dpk, &sk).await;
 
         match result {
             Ok(cred) => {
@@ -730,6 +724,7 @@ mod tests {
         });
         let mut offer = Issuer::offer_credential(
             &draft,
+            &vec![1],
             &LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
         )?;
         let key_id = format!("{}#key-1", ISSUER_DID);
@@ -742,16 +737,7 @@ mod tests {
             revocation_list_credential: EXAMPLE_REVOCATION_LIST_DID.to_string(),
         };
 
-        match Issuer::sign_nquads(
-            &credential_request,
-            Some(status),
-            &key_id,
-            &dpk,
-            &sk,
-            vec![1],
-        )
-        .await
-        {
+        match Issuer::sign_nquads(&credential_request, Some(status), &key_id, &dpk, &sk).await {
             Ok(cred) => assert_credential_proof(cred, &key_id, [1].to_vec()),
             Err(e) => assert!(false, "Received error when issuing credential: {}", e),
         }
@@ -771,6 +757,7 @@ mod tests {
         });
         let mut offer = Issuer::offer_credential(
             &draft,
+            &vec![1],
             &LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
         )?;
         let key_id = format!("{}#key-1", ISSUER_DID);

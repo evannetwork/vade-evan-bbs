@@ -148,7 +148,6 @@ impl Verifier {
         if presentation.verifiable_credential.len() == 0 {
             return Err(Box::from("Invalid presentation: No credentials provided"));
         }
-
         check_assertion_proof(&serde_json::to_string(&presentation)?, signer_address)?;
 
         let challenge =

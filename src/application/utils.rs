@@ -192,3 +192,26 @@ pub async fn get_nquads_schema_map(
 
     Ok(nquads_schema_map)
 }
+
+pub fn concate_required_and_reveal_statements(
+    required_reveal_statements: Vec<u32>,
+    revealed_statements: Vec<usize>,
+) -> Result<Vec<usize>, Box<dyn Error>> {
+    let mut all_revealed_statements: Vec<usize> = vec![];
+    for required_index in required_reveal_statements {
+        if required_index == 0 {
+            return Err(Box::from(
+                "Invalid reveal index!, index 0 can't be revealed",
+            ));
+        }
+        all_revealed_statements.push(required_index as usize);
+    }
+
+    for revealed_index in revealed_statements {
+        if !all_revealed_statements.contains(&revealed_index) {
+            all_revealed_statements.push(revealed_index);
+        }
+    }
+    all_revealed_statements.sort();
+    Ok(all_revealed_statements)
+}

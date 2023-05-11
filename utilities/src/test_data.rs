@@ -410,6 +410,7 @@ pub mod bbs_coherent_context_test_data {
                "created":"2023-05-02T12:56:07.000Z",
                "proofPurpose":"assertionMethod",
                "credentialMessageCount":17,
+               "requiredRevealStatements":[1],
                "verificationMethod":"did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g#bbs-key-1",
                "nonce":"Ren4koCh6lIDeeVODbesrd/nZj5rvf5Uj1orC+MyxKY=",
                "proof":"AAADXLaKsJIrzhIoepOUbLoxiYkbVTV5lZFh4qZTVSpegJZjZxPX+tZ5RpRcJIXiJ7HmCo4OHOc5gLDNE8WynpIN+0wKMCm60+XIBc5vTLVoZZStfk8ICC6ernkvbQ64+VicVIMY54eDSE8VJV1J7PkwkdkKDExP47eeRydqQ85Uu7Fj9IQOH2LZPDxHs7QCWTxOyAAAAHSxTgvZ0wvfNaMkwpjGBpUOq5a6egscEj9iNUeWJC6tS7C8Y0SYogr04nFHCFWTzR4AAAACPcNTHZ7tCo3Ee+FwPyIVtuFi6I+t2B5DIHE6FC5aypFj0jpEkhgnbnxyouAZoXbJD12JMAy/yBx3bysu2/gMJ5BWWpj+uO8vm2rcRyaaxoePUy9bR5KmNkQzqFgmasjmZOelK4V+osfHujjcWQWiFgAAABFf9o85jgob5/x6171ivxwowxysBCFVoqnBR+N6JVlf2nEe3ykO2kFIvDNwyKgh0iXZGdhVaYTue6eJQ0QZzwQ6VMia51FfdiGXf4Hwtd14C/E0olhscpvFxJPNIbKftjEoggIg3eMXVMXDD/Ka29uzYJ3IbL+j3i/8KzyId1O/kjsWULxZ0gv19ylIw/S5n4jOc0RE1V5WYn/MflO3TXixX/5OrLWQ4fZoEmG8G8VtVnwCax4/zOMDHKiDb3hesa1w+wAXDrrf7iUHAIWWP/G0OU0aFbehLKmKjvUbTHyy/gwfYxcOHrihq9Lf8mSXazjgZOuHvSBYb+XdmwTioH+hKpXw7CwuaK296Okd9deyw5FJb2glRqshJb5trX3QV3pbK9GfBDL8FS3KMgZKM+GOg6X1TYOFC6W0w1pjb4dA8GNzNDcBrStSdUm0zUtso68kBabLHxIcxF7oms8tBW6qF/F6zQ9mQAFgE8Iw+q5cn4V9/YJFhq0vKICyl4IKdPdYyjmNeB86vmXi3XPg3FMI1Bt0SYgWOxdgwA47PSpdFl4ZwzlPCug7dv1MPP9QnqcSyAjiHKTkh4DT4KHWGZT2SGDRxi3pw1tfbep1Vd/VAGj7yRitiPR+hvVFRiYPizRyoY2frsWEe50E2AZz0WdGWSQEiFQ3KGmVlYHhei9KBmZ0NdTQjqU22/mjntBTZd6Tt10BVVJVdfzUtT3InwUfAAAAAgAAAApbW8IfIW09a9avCC6ldA6iaqjfsZj0JqD6wKVOZZoXBgAAAAsFnuYa41LQpFmhhhn4u2raXdWzPs1CJF+1sQhsXO0KIA=="
@@ -472,6 +473,7 @@ pub mod bbs_coherent_context_test_data {
                     "created": "2023-03-22T15:42:23.000Z",
                     "proofPurpose": "assertionMethod",
                     "credentialMessageCount": 17,
+                    "requiredRevealStatements":[1],
                     "verificationMethod": "did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g#bbs-key-1",
                     "nonce": "XxApxRDBXaF0QCXHh7zMS7Ms2ELVcBUc0TdhfaAzH8o=",
                     "proof": "BBBCHKtugFHiaXgjrnI+pyfT6f3J5fGUQDJh0JfDsbH0kurhMMdVUkB3gIUCFLksvRm1Ca8o+LkqLH4/lEcVGOd1aldGNsAw5IyEPmeWReYDPLSJroqSPdecEk8bLYbRR/SDno7FWUMUYOovWi/3jAyo7lrNlf4rKJW+2FRgvlf8HzWwaZhk1dB5uynsRIrwnDjqjwAAAHSEMZIcRYIj+fsVov2nt40lhyumTCdK0rlqDjIs1MHAJqNoWhrxqIFp5w6iZfYTlzoAAAACIWxKnfGSrrDg26fcm01ky3Wr1hCJ8I9PuuQ7SBpbaYhNprKueXJeMlIMCa1ocLiaWwurNikj4sfhtp3FnihEjYMUnP6MpwrZNKWYEVWID8y06YSaQDvC1bc3wfmB4GB0t9aIjl9ubYrKxgL3d4gtVwAAAAdc8Zq55QJ5MRHapXd4g3eC1jaLBYWe+SBP19phXorOQSTu1qcWuiIEE6A8mwW9pMeTDOyFoaJwooD8HNLgh0hIFEHHx9ou0YHql7KCbtN0XrxMNJLhU/EABWp8XJJFxKkH2uYXy5/T6wbuO5TQSuDrl7foiuETyEAfDDKD+zgVPmt5MUIgzWASShvaNZ7cQ22Oct8/w4vyQJpA38/3oMvJN/tp72vz2z1D7Qu9f4K73peEY3OnhYo0EW2jqjhJER8ngeHozTH85yX29uDI6T0zi8dMJEq80ijBlgLwCf9TqgAAAAEAAAABVYYuxWfEuaxvBkivWA/SfIa+XSWTfQxphjVs8yhmpfY="

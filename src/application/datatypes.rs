@@ -423,6 +423,7 @@ impl BbsPresentation {
             proof: BbsPresentationProof {
                 created: cred.proof.created,
                 proof_purpose: cred.proof.proof_purpose,
+                required_reveal_statements: cred.proof.required_reveal_statements,
                 proof: base64::encode(proof.to_bytes_compressed_form()),
                 credential_message_count: cred.proof.credential_message_count,
                 r#type: PROOF_SIGNATURE_TYPE.to_owned(),
@@ -442,6 +443,7 @@ pub struct BbsPresentationProof {
     pub proof_purpose: String,
     pub credential_message_count: usize,
     pub verification_method: String,
+    pub required_reveal_statements: Vec<u32>,
     pub nonce: String,
     pub proof: String,
 }
@@ -564,7 +566,7 @@ pub struct LdProofVcDetailOptions {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct LdProofVcDetail {
     pub credential: DraftBbsCredential,
-    pub options: LdProofVcDetailOptions, 
+    pub options: LdProofVcDetailOptions,
 }
 
 impl LdProofVcDetail {

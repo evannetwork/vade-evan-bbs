@@ -28,7 +28,7 @@ use super::{
         UnfinishedProofPresentation,
         DEFAULT_CREDENTIAL_CONTEXTS,
     },
-    utils::get_nonce_from_string,
+    utils::{concate_required_and_reveal_statements, get_nonce_from_string},
 };
 use crate::{
     application::utils::generate_uuid,
@@ -43,6 +43,7 @@ use bbs::{
     SignatureMessage,
     ToVariableLengthBytes,
 };
+
 use std::{collections::HashMap, convert::From, error::Error};
 use vade_signer::Signer;
 
@@ -199,7 +200,8 @@ impl Prover {
         signer: &Box<dyn Signer>,
     ) -> Result<ProofPresentation, Box<dyn Error>> {
         let mut poks: HashMap<String, PoKOfSignature> = HashMap::new();
-        for sub_proof_request in &proof_request.sub_proof_requests {
+        let mut proof_request = proof_request.to_owned();
+        for sub_proof_request in &mut proof_request.sub_proof_requests {
             let credential: BbsCredential = credential_schema_map
                 .get(&sub_proof_request.schema)
                 .ok_or(format!(
@@ -207,6 +209,15 @@ impl Prover {
                     &sub_proof_request.schema
                 ))?
                 .clone();
+
+            let required_reveal_statements = credential.proof.required_reveal_statements.to_owned();
+            let revealed_statements = sub_proof_request.revealed_attributes.to_owned();
+            let all_revealed_statements = concate_required_and_reveal_statements(
+                required_reveal_statements,
+                revealed_statements,
+            )?;
+            sub_proof_request.revealed_attributes = all_revealed_statements;
+
             let dpk = public_key_schema_map
                 .get(&sub_proof_request.schema)
                 .ok_or(format!(
@@ -360,6 +371,7 @@ mod tests {
                         r#type:
                             LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
                     },
+                    required_reveal_statements: vec![1]
                 },
         },
         nonce: "WzM0LDIxNSwyNDEsODgsMTg2LDExMiwyOSwxNTksNjUsMjE1LDI0MiwxNjQsMTksOCwyMDEsNzgsNTUsMTA4LDE1NCwxMTksMTg0LDIyNCwyMjUsNDAsNDgsMTgwLDY5LDE3OCwxNDgsNSw1OSwxMTFd".to_string(), };
