@@ -215,3 +215,18 @@ pub fn concate_required_and_reveal_statements(
     all_revealed_statements.sort();
     Ok(all_revealed_statements)
 }
+
+pub fn check_for_requird_reveal_index0(
+    required_revealed_statements: &Vec<u32>,
+) -> Result<(), Box<dyn Error>> {
+    match required_revealed_statements
+        .into_iter()
+        .find(|index| **index == 0)
+        .is_some()
+    {
+        true => Err(Box::from(
+            "Invalid required_revealed_index! index 0 can't be revealed".to_owned(),
+        )),
+        false => Ok(()),
+    }
+}

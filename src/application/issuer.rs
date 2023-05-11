@@ -36,7 +36,13 @@ use crate::{
             DEFAULT_CREDENTIAL_CONTEXTS,
             DEFAULT_REVOCATION_CONTEXTS,
         },
-        utils::{decode_base64, decode_base64_config, generate_uuid, get_now_as_iso_string},
+        utils::{
+            check_for_requird_reveal_index0,
+            decode_base64,
+            decode_base64_config,
+            generate_uuid,
+            get_now_as_iso_string,
+        },
     },
     crypto::{crypto_issuer::CryptoIssuer, crypto_utils::create_assertion_proof},
     DraftBbsCredential,
@@ -139,6 +145,8 @@ impl Issuer {
         credential_status_type: &LdProofVcDetailOptionsCredentialStatusType,
     ) -> Result<BbsCredentialOffer, Box<dyn Error>> {
         let nonce = base64::encode(BbsIssuer::generate_signing_nonce().to_bytes_compressed_form());
+
+        check_for_requird_reveal_index0(required_reveal_statements)?;
 
         Ok(BbsCredentialOffer {
             ld_proof_vc_detail: LdProofVcDetail {
@@ -248,6 +256,13 @@ impl Issuer {
         revocation_list_id: Option<&str>,
         valid_until: Option<String>,
     ) -> Result<UnfinishedBbsCredential, Box<dyn Error>> {
+        check_for_requird_reveal_index0(
+            &credential_offer
+                .ld_proof_vc_detail
+                .options
+                .required_reveal_statements,
+        )?;
+
         let mut credential_status: Option<CredentialStatus> = None;
         if revocation_list_id.is_some() || revocation_list_did.is_some() {
             let revocation_list_id =

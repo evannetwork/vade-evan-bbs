@@ -810,3 +810,134 @@ async fn workflow_can_get_public_key_from_private_key() -> Result<(), Box<dyn Er
 
     Ok(())
 }
+
+#[tokio::test]
+async fn workflow_can_not_verify_presentation_mismatch_revealed_statements(
+) -> Result<(), Box<dyn Error>> {
+    let mut vade = get_vade();
+
+    let revocation_list = create_revocation_list(&mut vade).await?;
+
+    // Create credential offering
+    let schema = CredentialSchema::from_str(SCHEMA)?;
+    let mut credential_draft = schema.to_draft_credential(CredentialDraftOptions {
+        issuer_did: ISSUER_DID.to_string(),
+        id: None,
+        issuance_date: None,
+        valid_until: None,
+    });
+    let mut credential_values = HashMap::new();
+    credential_values.insert("test_property_string3".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string1".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string2".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string4".to_owned(), "value".to_owned());
+    credential_draft.credential_subject.data = credential_values;
+    let offer_payload = OfferCredentialPayload {
+        draft_credential: credential_draft,
+        credential_status_type:
+            LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
+        required_reveal_statements: vec![1],
+    };
+
+    let offer = create_credential_offer(&mut vade, offer_payload).await?;
+    let (credential_request, signature_blinding_base64) =
+        create_credential_request(&mut vade, offer.clone()).await?;
+
+    let unfinished_credential = create_unfinished_credential(
+        &mut vade,
+        credential_request,
+        Some(revocation_list.id.clone()),
+        Some("0".to_string()),
+    )
+    .await?;
+    let finished_credential = create_finished_credential(
+        &mut vade,
+        unfinished_credential.clone(),
+        signature_blinding_base64.clone(),
+    )
+    .await?;
+    // create proof request
+    let mut proof_request = create_proof_request(&mut vade).await?;
+    proof_request.sub_proof_requests[0].revealed_attributes = vec![10, 11];
+
+    // create proof
+    let mut public_key_schema_map = HashMap::new();
+    public_key_schema_map.insert(SCHEMA_DID.to_string(), PUB_KEY.to_string());
+    let presentation = create_presentation(
+        &mut vade,
+        finished_credential.clone(),
+        proof_request.clone(),
+        public_key_schema_map.clone(),
+    )
+    .await?;
+
+    // change proof request revealed after presentation creation
+    proof_request.sub_proof_requests[0].revealed_attributes = vec![12, 13];
+    // verify proof
+    let verify_proof_payload = VerifyProofPayload {
+        presentation: presentation.clone(),
+        proof_request: proof_request.clone(),
+        keys_to_schema_map: public_key_schema_map,
+        signer_address: SIGNER_1_ADDRESS.to_string(),
+        revocation_list: Some(revocation_list.clone()),
+    };
+    let verify_proof_json = serde_json::to_string(&verify_proof_payload)?;
+    let results = vade
+        .vc_zkp_verify_proof(EVAN_METHOD, TYPE_OPTIONS, &verify_proof_json)
+        .await?;
+
+    let result: BbsProofVerification =
+        serde_json::from_str(&results[0].as_ref().ok_or("could not get result")?)?;
+
+    assert_eq!(&result.presented_proof, &presentation.id);
+    assert_eq!(&result.status, &"rejected".to_string());
+    assert!(&result
+        .reason
+        .ok_or("Invalid error reason")?
+        .contains("Revealed message invalid for expected nquad"));
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn workflow_can_not_offer_credenial_with_required_revealed_index_0(
+) -> Result<(), Box<dyn Error>> {
+    let mut vade = get_vade();
+
+    // Create credential offering
+    let schema = CredentialSchema::from_str(SCHEMA)?;
+    let mut credential_draft = schema.to_draft_credential(CredentialDraftOptions {
+        issuer_did: ISSUER_DID.to_string(),
+        id: None,
+        issuance_date: None,
+        valid_until: None,
+    });
+    let mut credential_values = HashMap::new();
+    credential_values.insert("test_property_string3".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string1".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string2".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string4".to_owned(), "value".to_owned());
+    credential_draft.credential_subject.data = credential_values;
+    let offer_payload = OfferCredentialPayload {
+        draft_credential: credential_draft,
+        credential_status_type:
+            LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
+        required_reveal_statements: vec![0],
+    };
+
+    let result: Result<BbsCredentialOffer, Box<dyn Error>> =
+        create_credential_offer(&mut vade, offer_payload).await;
+    assert!(result.is_err());
+    match result {
+        Ok(_) => assert!(false, "Credential offer creation should fail"),
+        Err(e) => {
+            assert!(e
+                .to_string()
+                .contains("Invalid required_revealed_index! index 0 can't be revealed"))
+        }
+    }
+
+    Ok(())
+}

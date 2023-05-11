@@ -28,7 +28,11 @@ use super::{
         UnfinishedProofPresentation,
         DEFAULT_CREDENTIAL_CONTEXTS,
     },
-    utils::{concate_required_and_reveal_statements, get_nonce_from_string},
+    utils::{
+        check_for_requird_reveal_index0,
+        concate_required_and_reveal_statements,
+        get_nonce_from_string,
+    },
 };
 use crate::{
     application::utils::generate_uuid,
@@ -156,6 +160,7 @@ impl Prover {
         issuer_public_key: &DeterministicPublicKey,
         blinding: &SignatureBlinding,
     ) -> Result<BbsCredential, Box<dyn Error>> {
+        check_for_requird_reveal_index0(&unfinished_credential.proof.required_reveal_statements)?;
         let final_signature = CryptoProver::finish_credential_signature(
             nquads.clone(),
             master_secret,
@@ -211,6 +216,7 @@ impl Prover {
                 .clone();
 
             let required_reveal_statements = credential.proof.required_reveal_statements.to_owned();
+            check_for_requird_reveal_index0(&required_reveal_statements)?;
             let revealed_statements = sub_proof_request.revealed_attributes.to_owned();
             let all_revealed_statements = concate_required_and_reveal_statements(
                 required_reveal_statements,
