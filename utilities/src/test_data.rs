@@ -364,121 +364,125 @@ pub mod bbs_coherent_context_test_data {
      }"###;
 
     pub const PROOF_PRESENTATION: &str = r###"{
-      "@context":[
-         "https://www.w3.org/2018/credentials/v1",
-         "https://schema.org/",
-         "https://w3id.org/vc-revocation-list-2020/v1"
-      ],
-      "id":"5920976a-e591-476e-be19-82968545e9e9",
-      "type":[
-         "VerifiablePresentation"
-      ],
-      "verifiableCredential":[
-         {
-            "@context":[
-               "https://www.w3.org/2018/credentials/v1",
-               "https://schema.org/",
-               "https://w3id.org/vc-revocation-list-2020/v1"
-            ],
-            "id":"uuid:c2872087-3fe6-4aeb-932d-a528709b0f0a",
-            "type":[
-               "VerifiableCredential"
-            ],
-            "issuer":"did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g",
-            "issuanceDate":"2023-05-02T12:56:07.000Z",
-            "credentialSubject":{
-               "data":{
-                  "test_property_string3":"value",
-                  "test_property_string1":"value",
-                  "test_property_string":"value",
-                  "test_property_string4":"value",
-                  "test_property_string2":"value"
-               }
-            },
-            "credentialSchema":{
-               "id":"did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg",
-               "type":"EvanVCSchema"
-            },
-            "credentialStatus":{
-               "id":"did:evan:revocation123#0",
-               "type":"RevocationList2021Status",
-               "revocationListIndex":"0",
-               "revocationListCredential":"did:evan:revocation123"
-            },
-            "proof":{
-               "type":"BbsBlsSignatureProof2020",
-               "created":"2023-05-02T12:56:07.000Z",
-               "proofPurpose":"assertionMethod",
-               "credentialMessageCount":17,
-               "requiredRevealStatements":[1],
-               "verificationMethod":"did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g#bbs-key-1",
-               "nonce":"Ren4koCh6lIDeeVODbesrd/nZj5rvf5Uj1orC+MyxKY=",
-               "proof":"AAADXLaKsJIrzhIoepOUbLoxiYkbVTV5lZFh4qZTVSpegJZjZxPX+tZ5RpRcJIXiJ7HmCo4OHOc5gLDNE8WynpIN+0wKMCm60+XIBc5vTLVoZZStfk8ICC6ernkvbQ64+VicVIMY54eDSE8VJV1J7PkwkdkKDExP47eeRydqQ85Uu7Fj9IQOH2LZPDxHs7QCWTxOyAAAAHSxTgvZ0wvfNaMkwpjGBpUOq5a6egscEj9iNUeWJC6tS7C8Y0SYogr04nFHCFWTzR4AAAACPcNTHZ7tCo3Ee+FwPyIVtuFi6I+t2B5DIHE6FC5aypFj0jpEkhgnbnxyouAZoXbJD12JMAy/yBx3bysu2/gMJ5BWWpj+uO8vm2rcRyaaxoePUy9bR5KmNkQzqFgmasjmZOelK4V+osfHujjcWQWiFgAAABFf9o85jgob5/x6171ivxwowxysBCFVoqnBR+N6JVlf2nEe3ykO2kFIvDNwyKgh0iXZGdhVaYTue6eJQ0QZzwQ6VMia51FfdiGXf4Hwtd14C/E0olhscpvFxJPNIbKftjEoggIg3eMXVMXDD/Ka29uzYJ3IbL+j3i/8KzyId1O/kjsWULxZ0gv19ylIw/S5n4jOc0RE1V5WYn/MflO3TXixX/5OrLWQ4fZoEmG8G8VtVnwCax4/zOMDHKiDb3hesa1w+wAXDrrf7iUHAIWWP/G0OU0aFbehLKmKjvUbTHyy/gwfYxcOHrihq9Lf8mSXazjgZOuHvSBYb+XdmwTioH+hKpXw7CwuaK296Okd9deyw5FJb2glRqshJb5trX3QV3pbK9GfBDL8FS3KMgZKM+GOg6X1TYOFC6W0w1pjb4dA8GNzNDcBrStSdUm0zUtso68kBabLHxIcxF7oms8tBW6qF/F6zQ9mQAFgE8Iw+q5cn4V9/YJFhq0vKICyl4IKdPdYyjmNeB86vmXi3XPg3FMI1Bt0SYgWOxdgwA47PSpdFl4ZwzlPCug7dv1MPP9QnqcSyAjiHKTkh4DT4KHWGZT2SGDRxi3pw1tfbep1Vd/VAGj7yRitiPR+hvVFRiYPizRyoY2frsWEe50E2AZz0WdGWSQEiFQ3KGmVlYHhei9KBmZ0NdTQjqU22/mjntBTZd6Tt10BVVJVdfzUtT3InwUfAAAAAgAAAApbW8IfIW09a9avCC6ldA6iaqjfsZj0JqD6wKVOZZoXBgAAAAsFnuYa41LQpFmhhhn4u2raXdWzPs1CJF+1sQhsXO0KIA=="
-            }
-         }
-      ],
-      "proof":{
-         "type":"EcdsaPublicKeySecp256k1",
-         "created":"2023-05-02T12:56:07.000Z",
-         "proofPurpose":"assertionMethod",
-         "verificationMethod":"did:evan:verifier#key-1",
-         "jws":"eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NkstUiJ9.eyJpYXQiOiIyMDIzLTA1LTAyVDEyOjU2OjA3LjAwMFoiLCJkb2MiOnsiQGNvbnRleHQiOlsiaHR0cHM6Ly93d3cudzMub3JnLzIwMTgvY3JlZGVudGlhbHMvdjEiLCJodHRwczovL3NjaGVtYS5vcmcvIiwiaHR0cHM6Ly93M2lkLm9yZy92Yy1yZXZvY2F0aW9uLWxpc3QtMjAyMC92MSJdLCJpZCI6IjU5MjA5NzZhLWU1OTEtNDc2ZS1iZTE5LTgyOTY4NTQ1ZTllOSIsInR5cGUiOlsiVmVyaWZpYWJsZVByZXNlbnRhdGlvbiJdLCJ2ZXJpZmlhYmxlQ3JlZGVudGlhbCI6W3siQGNvbnRleHQiOlsiaHR0cHM6Ly93d3cudzMub3JnLzIwMTgvY3JlZGVudGlhbHMvdjEiLCJodHRwczovL3NjaGVtYS5vcmcvIiwiaHR0cHM6Ly93M2lkLm9yZy92Yy1yZXZvY2F0aW9uLWxpc3QtMjAyMC92MSJdLCJpZCI6InV1aWQ6YzI4NzIwODctM2ZlNi00YWViLTkzMmQtYTUyODcwOWIwZjBhIiwidHlwZSI6WyJWZXJpZmlhYmxlQ3JlZGVudGlhbCJdLCJpc3N1ZXIiOiJkaWQ6ZXZhbjpFaURtUmtLc09hZXk4dFB6YzZSeVFyWWtNTmpwcVhYVlRqOWdneTBFYmlYUzRnIiwiaXNzdWFuY2VEYXRlIjoiMjAyMy0wNS0wMlQxMjo1NjowNy4wMDBaIiwiY3JlZGVudGlhbFN1YmplY3QiOnsiZGF0YSI6eyJ0ZXN0X3Byb3BlcnR5X3N0cmluZzMiOiJ2YWx1ZSIsInRlc3RfcHJvcGVydHlfc3RyaW5nIjoidmFsdWUiLCJ0ZXN0X3Byb3BlcnR5X3N0cmluZzQiOiJ2YWx1ZSIsInRlc3RfcHJvcGVydHlfc3RyaW5nMSI6InZhbHVlIiwidGVzdF9wcm9wZXJ0eV9zdHJpbmcyIjoidmFsdWUifX0sImNyZWRlbnRpYWxTY2hlbWEiOnsiaWQiOiJkaWQ6ZXZhbjpFaUJtaUhDSExNYkdWbjlobGxSTTVxUU9zc2h2RVRUb0VBTEJBdEZxUDNQVUlnIiwidHlwZSI6IkV2YW5WQ1NjaGVtYSJ9LCJjcmVkZW50aWFsU3RhdHVzIjp7ImlkIjoiZGlkOmV2YW46cmV2b2NhdGlvbjEyMyMwIiwidHlwZSI6IlJldm9jYXRpb25MaXN0MjAyMVN0YXR1cyIsInJldm9jYXRpb25MaXN0SW5kZXgiOiIwIiwicmV2b2NhdGlvbkxpc3RDcmVkZW50aWFsIjoiZGlkOmV2YW46cmV2b2NhdGlvbjEyMyJ9LCJwcm9vZiI6eyJ0eXBlIjoiQmJzQmxzU2lnbmF0dXJlUHJvb2YyMDIwIiwiY3JlYXRlZCI6IjIwMjMtMDUtMDJUMTI6NTY6MDcuMDAwWiIsInByb29mUHVycG9zZSI6ImFzc2VydGlvbk1ldGhvZCIsImNyZWRlbnRpYWxNZXNzYWdlQ291bnQiOjE3LCJ2ZXJpZmljYXRpb25NZXRob2QiOiJkaWQ6ZXZhbjpFaURtUmtLc09hZXk4dFB6YzZSeVFyWWtNTmpwcVhYVlRqOWdneTBFYmlYUzRnI2Jicy1rZXktMSIsIm5vbmNlIjoiUmVuNGtvQ2g2bElEZWVWT0RiZXNyZC9uWmo1cnZmNVVqMW9yQytNeXhLWT0iLCJwcm9vZiI6IkFBQURYTGFLc0pJcnpoSW9lcE9VYkxveGlZa2JWVFY1bFpGaDRxWlRWU3BlZ0paalp4UFgrdFo1UnBSY0pJWGlKN0htQ280T0hPYzVnTERORThXeW5wSU4rMHdLTUNtNjArWElCYzV2VExWb1paU3RmazhJQ0M2ZXJua3ZiUTY0K1ZpY1ZJTVk1NGVEU0U4VkpWMUo3UGt3a2RrS0RFeFA0N2VlUnlkcVE4NVV1N0ZqOUlRT0gyTFpQRHhIczdRQ1dUeE95QUFBQUhTeFRndlowd3ZmTmFNa3dwakdCcFVPcTVhNmVnc2NFajlpTlVlV0pDNnRTN0M4WTBTWW9ncjA0bkZIQ0ZXVHpSNEFBQUFDUGNOVEhaN3RDbzNFZStGd1B5SVZ0dUZpNkkrdDJCNURJSEU2RkM1YXlwRmowanBFa2hnbmJueHlvdUFab1hiSkQxMkpNQXkveUJ4M2J5c3UyL2dNSjVCV1dwait1Tzh2bTJyY1J5YWF4b2VQVXk5YlI1S21Oa1F6cUZnbWFzam1aT2VsSzRWK29zZkh1ampjV1FXaUZnQUFBQkZmOW84NWpnb2I1L3g2MTcxaXZ4d293eHlzQkNGVm9xbkJSK042SlZsZjJuRWUzeWtPMmtGSXZETnd5S2doMGlYWkdkaFZhWVR1ZTZlSlEwUVp6d1E2Vk1pYTUxRmZkaUdYZjRId3RkMTRDL0Uwb2xoc2NwdkZ4SlBOSWJLZnRqRW9nZ0lnM2VNWFZNWEREL0thMjl1ellKM0liTCtqM2kvOEt6eUlkMU8va2pzV1VMeFowZ3YxOXlsSXcvUzVuNGpPYzBSRTFWNVdZbi9NZmxPM1RYaXhYLzVPckxXUTRmWm9FbUc4RzhWdFZud0NheDQvek9NREhLaURiM2hlc2Exdyt3QVhEcnJmN2lVSEFJV1dQL0cwT1UwYUZiZWhMS21LanZVYlRIeXkvZ3dmWXhjT0hyaWhxOUxmOG1TWGF6amdaT3VIdlNCWWIrWGRtd1Rpb0graEtwWHc3Q3d1YUsyOTZPa2Q5ZGV5dzVGSmIyZ2xScXNoSmI1dHJYM1FWM3BiSzlHZkJETDhGUzNLTWdaS00rR09nNlgxVFlPRkM2VzB3MXBqYjRkQThHTnpORGNCclN0U2RVbTB6VXRzbzY4a0JhYkxIeEljeEY3b21zOHRCVzZxRi9GNnpROW1RQUZnRThJdytxNWNuNFY5L1lKRmhxMHZLSUN5bDRJS2RQZFl5am1OZUI4NnZtWGkzWFBnM0ZNSTFCdDBTWWdXT3hkZ3dBNDdQU3BkRmw0Wnd6bFBDdWc3ZHYxTVBQOVFucWNTeUFqaUhLVGtoNERUNEtIV0daVDJTR0RSeGkzcHcxdGZiZXAxVmQvVkFHajd5Uml0aVBSK2h2VkZSaVlQaXpSeW9ZMmZyc1dFZTUwRTJBWnowV2RHV1NRRWlGUTNLR21WbFlIaGVpOUtCbVowTmRUUWpxVTIyL21qbnRCVFpkNlR0MTBCVlZKVmRmelV0VDNJbndVZkFBQUFBZ0FBQUFwYlc4SWZJVzA5YTlhdkNDNmxkQTZpYXFqZnNaajBKcUQ2d0tWT1pab1hCZ0FBQUFzRm51WWE0MUxRcEZtaGhobjR1MnJhWGRXelBzMUNKRisxc1Foc1hPMEtJQT09In19XX0sImlzcyI6ImRpZDpldmFuOnZlcmlmaWVyIn0.3pC8nIGxB9NrENJq7gdMv7edE7fyihDy-5FptUg0kcFrCjgSryj74q7V0oh30bIRRr6PXdpURda4Dh_Pp4peMgA"
-      }
-   }"###;
+        "@context":[
+           "https://www.w3.org/2018/credentials/v1",
+           "https://schema.org/",
+           "https://w3id.org/vc-revocation-list-2020/v1"
+        ],
+        "id":"eef83094-8ac1-498e-857e-9ee616166874",
+        "type":[
+           "VerifiablePresentation"
+        ],
+        "verifiableCredential":[
+           {
+              "@context":[
+                 "https://www.w3.org/2018/credentials/v1",
+                 "https://schema.org/",
+                 "https://w3id.org/vc-revocation-list-2020/v1"
+              ],
+              "id":"uuid:bacd08f9-70c1-400a-b02b-8c25266801fc",
+              "type":[
+                 "VerifiableCredential"
+              ],
+              "issuer":"did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g",
+              "issuanceDate":"2023-05-11T09:08:30.000Z",
+              "credentialSubject":{
+                 "data":{
+                    "test_property_string3":"value",
+                    "test_property_string":"value",
+                    "test_property_string2":"value",
+                    "test_property_string1":"value",
+                    "test_property_string4":"value"
+                 }
+              },
+              "credentialSchema":{
+                 "id":"did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg",
+                 "type":"EvanVCSchema"
+              },
+              "credentialStatus":{
+                 "id":"did:evan:revocation123#0",
+                 "type":"RevocationList2021Status",
+                 "revocationListIndex":"0",
+                 "revocationListCredential":"did:evan:revocation123"
+              },
+              "proof":{
+                 "type":"BbsBlsSignatureProof2020",
+                 "created":"2023-05-11T09:08:30.000Z",
+                 "proofPurpose":"assertionMethod",
+                 "credentialMessageCount":17,
+                 "verificationMethod":"did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g#bbs-key-1",
+                 "requiredRevealStatements":[
+                    1
+                 ],
+                 "nonce":"SOl8UwURM8e25OmQdWnuRbjN9odp3VLvIkjoQLKkqKM=",
+                 "proof":"AAADPK/vJrC2jKwaR66pJRln5YEVlBb2ahgk69m+AjWvgMoJIoZcQFJ7q1lt/f5Zyd2YjpAPsyVtD/IUUKJP5AT/o0IENYvowNxwWQpJBmKkg1rh2hZ0wTiW4PDanV68LzPbtIZo52vQov6p1lRV3mPs6xM/fv3aK1hmo1vdwGldMEVy3i7HkXQZh8EVfznigyuenAAAAHSHog3MayRRDrIlHShgZ0rWVazCyy6gJRSI1EyfG2GkeX9lzxnK0/3+4Uh+S+q/+yoAAAACMXz1UD6KLjj0AG0WLS1vIH8pLdOxMHZnZJVJLPtz2yQVZrpu7Vlm9rOrORtUyreXZnVRrJv0U1a5JJtquAJNdpB5AEeUI+Sw7CV/uwlGTwJpVeC7uH0wJvqSNSqK4QxteTpthgYhtOBYYxZakfgL/AAAABAMc/8nNHJ1oqLAP5jeSAWQVU7nRYhmzNvP18rRvqJHCEEkfh0p4oUAoytCjY7dNuYgqt3eN3DdyB2dE82hmddFAjWwjcOBXIbkTaAb7EuFpVyqTmZmhI4f0pGEipZaaypTJKqZAJz7yS5b+pPLHYPws4P9k6BW8QJQiR92p+rztFejcbyVbbbDQfKBq0D3/zeOqnjbfrPpD4GN8qpTJfcgAijXwdhUS8FNPvOw03NhQY9AcSxyourl+iU1uKVbW91cKsiqQyoOVBDppSi59YXcQ2yt41YnfgO1cPTFSgC3FV55OfqGZdAv5J5FuMvMrliiT/BYo/xQkVCysKA03voCB/rpUYhPrEIszGzMz6DaCudSewf36+esRSRY4x4zYmRipJ2tGszZ69L3ymqXrf9sGuyHCX1BXsB3rHo1LSiALzva6XwU5zQjLwypRLh/LLhZcXk+yPgCNfozXXnLvcuILG2GrewSMqfN2pvJF2PoJm4HiriJuM+ToQgDHB82esk8+lz41ehjSY7hJUqHU57oYKvy1w5mjGlIDLRamiwQvgUWwggKdFgN1+PiVhcxVc7HCf1C+ZJ/rzzXMpV70iOXTBu4P2NWLrvu3fjJMrmGNtJkIx1vfF7nAD4z7KUSooEam0PtPvPPUC+f8eg1QDCRbTL+SbcdEVkNExbNfE2SoAAAAAMAAAABFN4XaxUBPChiGzTnZ97Rwp65wHsUo6dM7lQbtDOyNcQAAAAKSL9XmufOj5Sei+rHLru0gEkw73SjwF2aX8iuixs+quEAAAALcNid9ZwC9vrKXg7JI4keNSSF+mgyW8Kz+QgFt255TsM="
+              }
+           }
+        ],
+        "proof":{
+           "type":"EcdsaPublicKeySecp256k1",
+           "created":"2023-05-11T09:08:30.000Z",
+           "proofPurpose":"assertionMethod",
+           "verificationMethod":"did:evan:verifier#key-1",
+           "jws":"eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NkstUiJ9.eyJpYXQiOiIyMDIzLTA1LTExVDA5OjA4OjMwLjAwMFoiLCJkb2MiOnsiQGNvbnRleHQiOlsiaHR0cHM6Ly93d3cudzMub3JnLzIwMTgvY3JlZGVudGlhbHMvdjEiLCJodHRwczovL3NjaGVtYS5vcmcvIiwiaHR0cHM6Ly93M2lkLm9yZy92Yy1yZXZvY2F0aW9uLWxpc3QtMjAyMC92MSJdLCJpZCI6ImVlZjgzMDk0LThhYzEtNDk4ZS04NTdlLTllZTYxNjE2Njg3NCIsInR5cGUiOlsiVmVyaWZpYWJsZVByZXNlbnRhdGlvbiJdLCJ2ZXJpZmlhYmxlQ3JlZGVudGlhbCI6W3siQGNvbnRleHQiOlsiaHR0cHM6Ly93d3cudzMub3JnLzIwMTgvY3JlZGVudGlhbHMvdjEiLCJodHRwczovL3NjaGVtYS5vcmcvIiwiaHR0cHM6Ly93M2lkLm9yZy92Yy1yZXZvY2F0aW9uLWxpc3QtMjAyMC92MSJdLCJpZCI6InV1aWQ6YmFjZDA4ZjktNzBjMS00MDBhLWIwMmItOGMyNTI2NjgwMWZjIiwidHlwZSI6WyJWZXJpZmlhYmxlQ3JlZGVudGlhbCJdLCJpc3N1ZXIiOiJkaWQ6ZXZhbjpFaURtUmtLc09hZXk4dFB6YzZSeVFyWWtNTmpwcVhYVlRqOWdneTBFYmlYUzRnIiwiaXNzdWFuY2VEYXRlIjoiMjAyMy0wNS0xMVQwOTowODozMC4wMDBaIiwiY3JlZGVudGlhbFN1YmplY3QiOnsiZGF0YSI6eyJ0ZXN0X3Byb3BlcnR5X3N0cmluZzQiOiJ2YWx1ZSIsInRlc3RfcHJvcGVydHlfc3RyaW5nMyI6InZhbHVlIiwidGVzdF9wcm9wZXJ0eV9zdHJpbmciOiJ2YWx1ZSIsInRlc3RfcHJvcGVydHlfc3RyaW5nMiI6InZhbHVlIiwidGVzdF9wcm9wZXJ0eV9zdHJpbmcxIjoidmFsdWUifX0sImNyZWRlbnRpYWxTY2hlbWEiOnsiaWQiOiJkaWQ6ZXZhbjpFaUJtaUhDSExNYkdWbjlobGxSTTVxUU9zc2h2RVRUb0VBTEJBdEZxUDNQVUlnIiwidHlwZSI6IkV2YW5WQ1NjaGVtYSJ9LCJjcmVkZW50aWFsU3RhdHVzIjp7ImlkIjoiZGlkOmV2YW46cmV2b2NhdGlvbjEyMyMwIiwidHlwZSI6IlJldm9jYXRpb25MaXN0MjAyMVN0YXR1cyIsInJldm9jYXRpb25MaXN0SW5kZXgiOiIwIiwicmV2b2NhdGlvbkxpc3RDcmVkZW50aWFsIjoiZGlkOmV2YW46cmV2b2NhdGlvbjEyMyJ9LCJwcm9vZiI6eyJ0eXBlIjoiQmJzQmxzU2lnbmF0dXJlUHJvb2YyMDIwIiwiY3JlYXRlZCI6IjIwMjMtMDUtMTFUMDk6MDg6MzAuMDAwWiIsInByb29mUHVycG9zZSI6ImFzc2VydGlvbk1ldGhvZCIsImNyZWRlbnRpYWxNZXNzYWdlQ291bnQiOjE3LCJ2ZXJpZmljYXRpb25NZXRob2QiOiJkaWQ6ZXZhbjpFaURtUmtLc09hZXk4dFB6YzZSeVFyWWtNTmpwcVhYVlRqOWdneTBFYmlYUzRnI2Jicy1rZXktMSIsInJlcXVpcmVkUmV2ZWFsU3RhdGVtZW50cyI6WzFdLCJub25jZSI6IlNPbDhVd1VSTThlMjVPbVFkV251UmJqTjlvZHAzVkx2SWtqb1FMS2txS009IiwicHJvb2YiOiJBQUFEUEsvdkpyQzJqS3dhUjY2cEpSbG41WUVWbEJiMmFoZ2s2OW0rQWpXdmdNb0pJb1pjUUZKN3ExbHQvZjVaeWQyWWpwQVBzeVZ0RC9JVVVLSlA1QVQvbzBJRU5Zdm93Tnh3V1FwSkJtS2tnMXJoMmhaMHdUaVc0UERhblY2OEx6UGJ0SVpvNTJ2UW92NnAxbFJWM21QczZ4TS9mdjNhSzFobW8xdmR3R2xkTUVWeTNpN0hrWFFaaDhFVmZ6bmlneXVlbkFBQUFIU0hvZzNNYXlSUkRySWxIU2hnWjByV1ZhekN5eTZnSlJTSTFFeWZHMkdrZVg5bHp4bkswLzMrNFVoK1MrcS8reW9BQUFBQ01YejFVRDZLTGpqMEFHMFdMUzF2SUg4cExkT3hNSFpuWkpWSkxQdHoyeVFWWnJwdTdWbG05ck9yT1J0VXlyZVhablZSckp2MFUxYTVKSnRxdUFKTmRwQjVBRWVVSStTdzdDVi91d2xHVHdKcFZlQzd1SDB3SnZxU05TcUs0UXh0ZVRwdGhnWWh0T0JZWXhaYWtmZ0wvQUFBQUJBTWMvOG5OSEoxb3FMQVA1amVTQVdRVlU3blJZaG16TnZQMThyUnZxSkhDRUVrZmgwcDRvVUFveXRDalk3ZE51WWdxdDNlTjNEZHlCMmRFODJobWRkRkFqV3dqY09CWElia1RhQWI3RXVGcFZ5cVRtWm1oSTRmMHBHRWlwWmFheXBUSktxWkFKejd5UzViK3BQTEhZUHdzNFA5azZCVzhRSlFpUjkycCtyenRGZWpjYnlWYmJiRFFmS0JxMEQzL3plT3FuamJmclBwRDRHTjhxcFRKZmNnQWlqWHdkaFVTOEZOUHZPdzAzTmhRWTlBY1N4eW91cmwraVUxdUtWYlc5MWNLc2lxUXlvT1ZCRHBwU2k1OVlYY1EyeXQ0MVluZmdPMWNQVEZTZ0MzRlY1NU9mcUdaZEF2NUo1RnVNdk1ybGlpVC9CWW8veFFrVkN5c0tBMDN2b0NCL3JwVVloUHJFSXN6R3pNejZEYUN1ZFNld2YzNitlc1JTUlk0eDR6WW1SaXBKMnRHc3paNjlMM3ltcVhyZjlzR3V5SENYMUJYc0IzckhvMUxTaUFMenZhNlh3VTV6UWpMd3lwUkxoL0xMaFpjWGsreVBnQ05mb3pYWG5MdmN1SUxHMkdyZXdTTXFmTjJwdkpGMlBvSm00SGlyaUp1TStUb1FnREhCODJlc2s4K2x6NDFlaGpTWTdoSlVxSFU1N29ZS3Z5MXc1bWpHbElETFJhbWl3UXZnVVd3Z2dLZEZnTjErUGlWaGN4VmM3SENmMUMrWkovcnp6WE1wVjcwaU9YVEJ1NFAyTldMcnZ1M2ZqSk1ybUdOdEprSXgxdmZGN25BRDR6N0tVU29vRWFtMFB0UHZQUFVDK2Y4ZWcxUURDUmJUTCtTYmNkRVZrTkV4Yk5mRTJTb0FBQUFBTUFBQUFCRk40WGF4VUJQQ2hpR3pUblo5N1J3cDY1d0hzVW82ZE03bFFidERPeU5jUUFBQUFLU0w5WG11Zk9qNVNlaStySExydTBnRWt3NzNTandGMmFYOGl1aXhzK3F1RUFBQUFMY05pZDlad0M5dnJLWGc3Skk0a2VOU1NGK21neVc4S3orUWdGdDI1NVRzTT0ifX1dfSwiaXNzIjoiZGlkOmV2YW46dmVyaWZpZXIifQ.DZ_7YdG2ONbNZx7vuxD2BOGshj_RAuvitcW2xDMCYn5UNVbs72ZiWkUBM6MdTVF9vTF9IjbXrISWgJOmeaejIwA"
+        }
+     }"###;
 
     pub const PROOF_PRESENTATION_INVALID_SIGNATURE_AND_WITHOUT_JWS: &str = r###"{
-        "@context": [
-            "https://www.w3.org/2018/credentials/v1",
-            "https://schema.org/",
-            "https://w3id.org/vc-revocation-list-2020/v1"
+        "@context":[
+           "https://www.w3.org/2018/credentials/v1",
+           "https://schema.org/",
+           "https://w3id.org/vc-revocation-list-2020/v1"
         ],
-        "id": "743875ce-8ec0-4b6a-a67d-33a64392a5d3",
-        "type": [
-            "VerifiablePresentation"
+        "id":"eef83094-8ac1-498e-857e-9ee616166874",
+        "type":[
+           "VerifiablePresentation"
         ],
-        "verifiableCredential": [
-            {
-                "@context": [
-                    "https://www.w3.org/2018/credentials/v1",
-                    "https://schema.org/",
-                    "https://w3id.org/vc-revocation-list-2020/v1"
-                ],
-                "id": "uuid:94450c72-5dc4-4e46-8df0-106819064656",
-                "type": [
-                    "VerifiableCredential"
-                ],
-                "issuer": "did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g",
-                "issuanceDate": "2023-03-22T15:42:23.000Z",
-                "credentialSubject": {
-                    "data": {
-                        "test_property_string4": "value",
-                        "test_property_string": "value",
-                        "test_property_string2": "value",
-                        "test_property_string3": "value",
-                        "test_property_string1": "value"
-                    }
-                },
-                "credentialSchema": {
-                    "id": "did:evan:EiAn35ScK8_GsBE9GwMFC5BwvjZXkxEWIfmi6hAoCzvA0w",
-                    "type": "EvanZKPSchema"
-                },
-                "credentialStatus": {
-                    "id": "did:evan:revocation123#0",
-                    "type": "RevocationList2021Status",
-                    "revocationListIndex": "0",
-                    "revocationListCredential": "did:evan:revocation123"
-                },
-                "proof": {
-                    "type": "BbsBlsSignatureProof2020",
-                    "created": "2023-03-22T15:42:23.000Z",
-                    "proofPurpose": "assertionMethod",
-                    "credentialMessageCount": 17,
-                    "requiredRevealStatements":[1],
-                    "verificationMethod": "did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g#bbs-key-1",
-                    "nonce": "XxApxRDBXaF0QCXHh7zMS7Ms2ELVcBUc0TdhfaAzH8o=",
-                    "proof": "BBBCHKtugFHiaXgjrnI+pyfT6f3J5fGUQDJh0JfDsbH0kurhMMdVUkB3gIUCFLksvRm1Ca8o+LkqLH4/lEcVGOd1aldGNsAw5IyEPmeWReYDPLSJroqSPdecEk8bLYbRR/SDno7FWUMUYOovWi/3jAyo7lrNlf4rKJW+2FRgvlf8HzWwaZhk1dB5uynsRIrwnDjqjwAAAHSEMZIcRYIj+fsVov2nt40lhyumTCdK0rlqDjIs1MHAJqNoWhrxqIFp5w6iZfYTlzoAAAACIWxKnfGSrrDg26fcm01ky3Wr1hCJ8I9PuuQ7SBpbaYhNprKueXJeMlIMCa1ocLiaWwurNikj4sfhtp3FnihEjYMUnP6MpwrZNKWYEVWID8y06YSaQDvC1bc3wfmB4GB0t9aIjl9ubYrKxgL3d4gtVwAAAAdc8Zq55QJ5MRHapXd4g3eC1jaLBYWe+SBP19phXorOQSTu1qcWuiIEE6A8mwW9pMeTDOyFoaJwooD8HNLgh0hIFEHHx9ou0YHql7KCbtN0XrxMNJLhU/EABWp8XJJFxKkH2uYXy5/T6wbuO5TQSuDrl7foiuETyEAfDDKD+zgVPmt5MUIgzWASShvaNZ7cQ22Oct8/w4vyQJpA38/3oMvJN/tp72vz2z1D7Qu9f4K73peEY3OnhYo0EW2jqjhJER8ngeHozTH85yX29uDI6T0zi8dMJEq80ijBlgLwCf9TqgAAAAEAAAABVYYuxWfEuaxvBkivWA/SfIa+XSWTfQxphjVs8yhmpfY="
+        "verifiableCredential":[
+           {
+              "@context":[
+                 "https://www.w3.org/2018/credentials/v1",
+                 "https://schema.org/",
+                 "https://w3id.org/vc-revocation-list-2020/v1"
+              ],
+              "id":"uuid:bacd08f9-70c1-400a-b02b-8c25266801fc",
+              "type":[
+                 "VerifiableCredential"
+              ],
+              "issuer":"did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g",
+              "issuanceDate":"2023-05-11T09:08:30.000Z",
+              "credentialSubject":{
+                 "data":{
+                    "test_property_string3":"value",
+                    "test_property_string":"value",
+                    "test_property_string2":"value",
+                    "test_property_string1":"value",
+                    "test_property_string4":"value"
+                 }
+              },
+              "credentialSchema":{
+                 "id":"did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg",
+                 "type":"EvanVCSchema"
+              },
+              "credentialStatus":{
+                 "id":"did:evan:revocation123#0",
+                 "type":"RevocationList2021Status",
+                 "revocationListIndex":"0",
+                 "revocationListCredential":"did:evan:revocation123"
+              },
+              "proof":{
+                 "type":"BbsBlsSignatureProof2020",
+                 "created":"2023-05-11T09:08:30.000Z",
+                 "proofPurpose":"assertionMethod",
+                 "credentialMessageCount":17,
+                 "verificationMethod":"did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g#bbs-key-1",
+                 "requiredRevealStatements":[
+                    1
+                 ],
+                 "nonce":"SOl8UwURM8e25OmQdWnuRbjN9odp3VLvIkjoQLKkqKM=",
+                 "proof": "BBBCHKtugFHiaXgjrnI+pyfT6f3J5fGUQDJh0JfDsbH0kurhMMdVUkB3gIUCFLksvRm1Ca8o+LkqLH4/lEcVGOd1aldGNsAw5IyEPmeWReYDPLSJroqSPdecEk8bLYbRR/SDno7FWUMUYOovWi/3jAyo7lrNlf4rKJW+2FRgvlf8HzWwaZhk1dB5uynsRIrwnDjqjwAAAHSEMZIcRYIj+fsVov2nt40lhyumTCdK0rlqDjIs1MHAJqNoWhrxqIFp5w6iZfYTlzoAAAACIWxKnfGSrrDg26fcm01ky3Wr1hCJ8I9PuuQ7SBpbaYhNprKueXJeMlIMCa1ocLiaWwurNikj4sfhtp3FnihEjYMUnP6MpwrZNKWYEVWID8y06YSaQDvC1bc3wfmB4GB0t9aIjl9ubYrKxgL3d4gtVwAAAAdc8Zq55QJ5MRHapXd4g3eC1jaLBYWe+SBP19phXorOQSTu1qcWuiIEE6A8mwW9pMeTDOyFoaJwooD8HNLgh0hIFEHHx9ou0YHql7KCbtN0XrxMNJLhU/EABWp8XJJFxKkH2uYXy5/T6wbuO5TQSuDrl7foiuETyEAfDDKD+zgVPmt5MUIgzWASShvaNZ7cQ22Oct8/w4vyQJpA38/3oMvJN/tp72vz2z1D7Qu9f4K73peEY3OnhYo0EW2jqjhJER8ngeHozTH85yX29uDI6T0zi8dMJEq80ijBlgLwCf9TqgAAAAEAAAABVYYuxWfEuaxvBkivWA/SfIa+XSWTfQxphjVs8yhmpfY="
                 }
-            }
+           }
         ]
-    }"###;
+     }"###;
 }
