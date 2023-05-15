@@ -32,20 +32,20 @@ impl CryptoIssuer {
     pub fn create_signature(
         blind_signature_context: &BlindSignatureContext,
         signing_nonce: &ProofNonce,
-        credential_values: Vec<String>,
+        nquads: Vec<String>,
         issuer_public_key: &DeterministicPublicKey,
         issuer_secret_key: &SecretKey,
     ) -> Result<BlindSignature, Box<dyn Error>> {
         let mut messages: BTreeMap<usize, SignatureMessage> = BTreeMap::new();
         let mut i = 1; // 0 is always reserved for master secret
-        for value in &credential_values {
+        for value in &nquads {
             let message = SignatureMessage::hash(value);
             messages.insert(i, message);
             i += 1;
         }
 
         let pub_key = issuer_public_key
-            .to_public_key(credential_values.len() + ADDITIONAL_HIDDEN_MESSAGES_COUNT)
+            .to_public_key(nquads.len() + ADDITIONAL_HIDDEN_MESSAGES_COUNT)
             .map_err(|_| "Error creating signature: Schema for blinded signature context does not match provided values")?;
 
         let signature = BbsIssuer::blind_sign(
@@ -83,6 +83,7 @@ mod tests {
 
         // Issuer
         let mut values = Vec::new();
+        // TODO: use full credential here
         values.insert(0, "test_property_string: test_value".to_owned());
         let signature =
             CryptoIssuer::create_signature(&blind_signature_context, &nonce, values, &dpk, &sk);
@@ -109,6 +110,7 @@ mod tests {
             2, /*sent by issuer in credential offering*/
         )?;
 
+        // TODO: use full credential here
         let mut values = Vec::new();
         values.insert(0, "test_property_string: test_value".to_owned());
         values.insert(1, "property_not_included_in_schema: test_value".to_owned());
