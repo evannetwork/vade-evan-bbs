@@ -38,7 +38,7 @@ sha3 = "0.8.2"
 ssi-json-ld = "0.1.0"
 uuid = { version = "0.8.1", features = ["serde", "v4", "wasm-bindgen"] }
 vade = "0.1.0"
-vade-signer = { git = "https://github.com/evannetwork/vade-signer.git", branch = "develop", version = "0.0.1" }
+vade-signer = "0.0.1"
 
 [dev-dependencies]
 tokio = { version = "1.7.1", features = ["macros", "rt-multi-thread"] }

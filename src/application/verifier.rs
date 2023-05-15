@@ -231,6 +231,7 @@ mod tests {
             NQUADS,
             PROOF_PRESENTATION,
             PROOF_PRESENTATION_INVALID_SIGNATURE_AND_WITHOUT_JWS,
+            PROOF_REQUEST,
             PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES,
             PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES_WITHOUT_VERIFIER,
             PUB_KEY,
@@ -350,16 +351,13 @@ mod tests {
                 .clone(),
             key,
         );
-
-        let nquads: Vec<String> =
-            convert_to_credential_nquads(&presentation.verifiable_credential.get(0)).await?;
         let mut nquads_to_schema_map = HashMap::new();
         nquads_to_schema_map.insert(
             presentation.verifiable_credential[0]
                 .credential_schema
                 .id
                 .clone(),
-            nquads,
+            vec![NQUADS[0].to_string()],
         );
 
         Verifier::verify_proof(
@@ -554,8 +552,7 @@ mod tests {
         // Our assertion got corrupted mysteriously
         let presentation: ProofPresentation = serde_json::from_str(&PROOF_PRESENTATION)?;
 
-        let proof_request: BbsProofRequest =
-            serde_json::from_str(&PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES)?;
+        let proof_request: BbsProofRequest = serde_json::from_str(&PROOF_REQUEST)?;
         let key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;
 
         let mut keys_to_schema_map = HashMap::new();

@@ -25,6 +25,7 @@ use crate::{
             CredentialProposal,
             CredentialSchema,
             CredentialSubject,
+            LdProofVcDetailOptionsCredentialStatusType,
             ProofPresentation,
             RevocationListCredential,
             SchemaProperty,
@@ -118,7 +119,7 @@ pub struct IssueCredentialPayload {
     /// credential request
     pub credential_request: BbsCredentialRequest,
     /// status to be appended to credential in offer
-    pub credential_status: CredentialStatus,
+    pub credential_status: Option<CredentialStatus>,
     /// DID url of the public key of the issuer used to later verify the signature
     pub issuer_public_key_id: String,
     /// The public bbs+ key of the issuer used to later verify the signature
@@ -134,6 +135,7 @@ pub struct IssueCredentialPayload {
 pub struct OfferCredentialPayload {
     /// credential draft, outlining structure of future credential (without proof and status)
     pub draft_credential: DraftBbsCredential,
+    pub credential_status_type: LdProofVcDetailOptionsCredentialStatusType,
 }
 
 /// API payload for creating a zero-knowledge proof out of a BBS+ signature.
@@ -164,9 +166,6 @@ pub struct PresentProofPayload {
 pub struct CreateCredentialProposalPayload {
     /// DID of the issuer
     pub issuer: String,
-    /// DID of the subject
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub subject: Option<String>,
     /// DID of a credential schema to propose
     pub schema: String,
 }
@@ -265,7 +264,7 @@ pub struct VerifyProofPayload {
     /// Signer address
     pub signer_address: String,
     /// revocation list credential
-    pub revocation_list: RevocationListCredential,
+    pub revocation_list: Option<RevocationListCredential>,
 }
 
 /// API payload to create new BBS+ keys and persist them on the DID document.
@@ -487,7 +486,7 @@ impl VadePlugin for VadeEvanBbs {
 
         let unfinished_credential = Issuer::sign_nquads(
             &payload.credential_request,
-            &payload.credential_status,
+            payload.credential_status,
             &payload.issuer_public_key_id,
             &public_key,
             &sk,
@@ -537,7 +536,8 @@ impl VadePlugin for VadeEvanBbs {
         ignore_unrelated!(method, options);
 
         let payload: OfferCredentialPayload = parse!(&payload, "payload");
-        let result: BbsCredentialOffer = Issuer::offer_credential(&payload.draft_credential)?;
+        let result: BbsCredentialOffer =
+            Issuer::offer_credential(&payload.draft_credential, &payload.credential_status_type)?;
         Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
             &result,
         )?)))
@@ -626,11 +626,8 @@ impl VadePlugin for VadeEvanBbs {
     ) -> Result<VadePluginResultValue<Option<String>>, Box<dyn Error>> {
         ignore_unrelated!(method, options);
         let payload: CreateCredentialProposalPayload = parse!(&payload, "payload");
-        let result: CredentialProposal = Prover::propose_credential(
-            &payload.issuer,
-            payload.subject.as_deref(),
-            &payload.schema,
-        );
+        let result: CredentialProposal =
+            Prover::propose_credential(&payload.issuer, &payload.schema);
 
         Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
             &result,
@@ -798,15 +795,24 @@ impl VadePlugin for VadeEvanBbs {
         )?;
         if verification_result.status != "rejected" {
             // check revocation status
+            let revocation_list = payload
+                .revocation_list
+                .ok_or_else(|| "Invalid revocation list!")?;
             for cred in &payload.presentation.verifiable_credential {
-                let revoked =
-                    CryptoVerifier::is_revoked(&cred.credential_status, &payload.revocation_list)?;
-                if revoked {
-                    verification_result = BbsProofVerification {
-                        presented_proof: payload.presentation.id.to_string(),
-                        status: "rejected".to_string(),
-                        reason: Some(format!("Credential id {} is revoked", cred.id)),
-                    };
+                if cred.credential_status.is_some() {
+                    let credential_status = cred
+                        .credential_status
+                        .as_ref()
+                        .ok_or_else(|| "Invalid credential status!")?;
+
+                    let revoked = CryptoVerifier::is_revoked(&credential_status, &revocation_list)?;
+                    if revoked {
+                        verification_result = BbsProofVerification {
+                            presented_proof: payload.presentation.id.to_string(),
+                            status: "rejected".to_string(),
+                            reason: Some(format!("Credential id {} is revoked", cred.id)),
+                        };
+                    }
                 }
             }
         }

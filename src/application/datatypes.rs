@@ -90,7 +90,6 @@ pub struct CredentialDraftOptions {
     pub issuer_did: String,
     pub id: Option<String>,
     pub issuance_date: Option<String>,
-    pub subject_did: Option<String>,
     pub valid_until: Option<String>,
 }
 
@@ -116,7 +115,6 @@ impl CredentialSchema {
                 .issuance_date
                 .unwrap_or_else(|| get_now_as_iso_string()),
             credential_subject: CredentialSubject {
-                id: options.subject_did,
                 data: self // fill ALL subject data fields with empty string (mandatory and optional ones)
                     .properties
                     .clone()
@@ -169,13 +167,11 @@ pub struct BbsCredentialOffer {
 #[serde(rename_all = "camelCase")]
 pub struct CredentialProposal {
     pub issuer: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub subject: Option<String>,
     pub schema: String,
 }
 
 /// A verifiable credential issued by an issuer upon receiving a `CredentialRequest`.
-/// Specifies the signed values, the DID of the prover/subject, the `CredentialSchema`, and the `CredentialSignature`
+/// Specifies the signed values, the `CredentialSchema`, and the `CredentialSignature`
 /// including revocation info.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -190,7 +186,7 @@ pub struct BbsCredential {
     pub valid_until: Option<String>,
     pub credential_subject: CredentialSubject,
     pub credential_schema: CredentialSchemaReference,
-    pub credential_status: CredentialStatus,
+    pub credential_status: Option<CredentialStatus>,
     pub proof: BbsCredentialSignature,
 }
 
@@ -204,19 +200,13 @@ impl BbsCredential {
             issuance_date: cred.issuance_date,
             valid_until: cred.valid_until,
             credential_subject: CredentialSubject {
-                id: cred.credential_subject.id,
                 data: cred.credential_subject.data,
             },
             credential_schema: CredentialSchemaReference {
                 id: cred.credential_schema.id,
                 r#type: cred.credential_schema.r#type,
             },
-            credential_status: CredentialStatus {
-                id: cred.credential_status.id,
-                r#type: cred.credential_status.r#type,
-                revocation_list_index: cred.credential_status.revocation_list_index,
-                revocation_list_credential: cred.credential_status.revocation_list_credential,
-            },
+            credential_status: cred.credential_status,
             proof: BbsCredentialSignature {
                 created: cred.proof.created,
                 proof_purpose: cred.proof.proof_purpose,
@@ -244,7 +234,7 @@ pub struct UnsignedBbsCredential {
     pub issuance_date: String,
     pub credential_subject: CredentialSubject,
     pub credential_schema: CredentialSchemaReference,
-    pub credential_status: CredentialStatus,
+    pub credential_status: Option<CredentialStatus>,
 }
 
 impl UnsignedBbsCredential {
@@ -271,7 +261,7 @@ pub struct UnfinishedBbsCredential {
     pub issuance_date: String,
     pub credential_subject: CredentialSubject,
     pub credential_schema: CredentialSchemaReference,
-    pub credential_status: CredentialStatus,
+    pub credential_status: Option<CredentialStatus>,
     pub proof: UnfinishedBbsCredentialSignature,
 }
 
@@ -299,8 +289,6 @@ impl UnfinishedBbsCredential {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct CredentialSubject {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub id: Option<String>,
     pub data: HashMap<String, String>,
 }
 
@@ -409,7 +397,7 @@ pub struct BbsPresentation {
     pub issuance_date: String,
     pub credential_subject: CredentialSubject,
     pub credential_schema: CredentialSchemaReference,
-    pub credential_status: CredentialStatus,
+    pub credential_status: Option<CredentialStatus>,
     pub proof: BbsPresentationProof,
 }
 
@@ -431,12 +419,7 @@ impl BbsPresentation {
                 id: cred.credential_schema.id,
                 r#type: cred.credential_schema.r#type,
             },
-            credential_status: CredentialStatus {
-                id: cred.credential_status.id,
-                r#type: cred.credential_status.r#type,
-                revocation_list_index: cred.credential_status.revocation_list_index,
-                revocation_list_credential: cred.credential_status.revocation_list_credential,
-            },
+            credential_status: cred.credential_status,
             proof: BbsPresentationProof {
                 created: cred.proof.created,
                 proof_purpose: cred.proof.proof_purpose,
@@ -535,7 +518,10 @@ pub struct DraftBbsCredential {
 }
 
 impl DraftBbsCredential {
-    pub fn to_unsigned_credential(&self, status: &CredentialStatus) -> UnsignedBbsCredential {
+    pub fn to_unsigned_credential(
+        &self,
+        status: Option<CredentialStatus>,
+    ) -> UnsignedBbsCredential {
         UnsignedBbsCredential {
             context: self.context.clone(),
             id: self.id.to_owned(),
@@ -558,6 +544,7 @@ pub enum LdProofVcDetailOptionsType {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum LdProofVcDetailOptionsCredentialStatusType {
     RevocationList2021Status,
+    None,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -591,6 +578,7 @@ impl LdProofVcDetail {
 
         message_count += match &self.options.credential_status.r#type {
             LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status => 4, // 1 link to sub-section, 3 lines with payload, 0 extra line for id (used in key)
+            LdProofVcDetailOptionsCredentialStatusType::None => 0,
         };
 
         Ok(message_count)

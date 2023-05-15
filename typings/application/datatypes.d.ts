@@ -100,13 +100,12 @@ export interface BbsCredentialOffer {
  */
 export interface CredentialProposal {
   issuer: string;
-  subject: string;
   schema: string;
 }
 
 /**
  * A verifiable credential issued by an issuer upon receiving a `CredentialRequest`.
- * Specifies the signed values, the DID of the prover/subject, the `CredentialSchema`, and the `CredentialSignature`
+ * Specifies the signed values, the `CredentialSchema`, and the `CredentialSignature`
  * including revocation info.
  */
 export interface BbsCredential {
@@ -116,7 +115,7 @@ export interface BbsCredential {
   issuer: string;
   credentialSubject: CredentialSubject;
   credentialSchema: CredentialSchemaReference;
-  credentialStatus: CredentialStatus;
+  credentialStatus?: CredentialStatus;
   validUntil?: string;
   issuanceDate: string;
   proof: BbsCredentialSignature;
@@ -132,7 +131,7 @@ export interface UnsignedCredential {
   issuer: string;
   credentialSubject: CredentialSubject;
   credentialSchema: CredentialSchemaReference;
-  credentialStatus: CredentialStatus;
+  credentialStatus?: CredentialStatus;
   validUntil?: string;
   issuanceDate: string;
 }
@@ -147,14 +146,13 @@ export interface UnfinishedBbsCredential {
   issuer: string;
   credentialSubject: CredentialSubject;
   credentialSchema: CredentialSchemaReference;
-  credentialStatus: CredentialStatus;
+  credentialStatus?: CredentialStatus;
   validUntil?: string;
   issuanceDate: string;
   proof: BbsUnfinishedCredentialSignature;
 }
 
 export interface CredentialSubject {
-  id?: string;
   data: Record<string, string>;
 }
 
@@ -229,7 +227,7 @@ export interface BbsPresentation {
   issuanceDate: string;
   credentialSubject: CredentialSubject;
   credentialSchema: CredentialSchemaReference;
-  credentialStatus: CredentialStatus;
+  credentialStatus?: CredentialStatus;
   proof: BbsPresentationProof;
 }
 
@@ -295,6 +293,7 @@ export enum LdProofVcDetailOptionsType {
 
 export enum LdProofVcDetailOptionsCredentialStatusType {
   RevocationList2021Status = 'RevocationList2021Status',
+  None = 'None',
 }
 
 export interface LdProofVcDetailOptionsCredentialStatus {

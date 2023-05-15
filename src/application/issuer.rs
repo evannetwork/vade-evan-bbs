@@ -133,6 +133,7 @@ impl Issuer {
     /// * `BbsCredentialOffer` - The message to be sent to the prover.
     pub fn offer_credential(
         credential: &DraftBbsCredential,
+        credential_status_type: &LdProofVcDetailOptionsCredentialStatusType,
     ) -> Result<BbsCredentialOffer, Box<dyn Error>> {
         let nonce = base64::encode(BbsIssuer::generate_signing_nonce().to_bytes_compressed_form());
 
@@ -143,8 +144,7 @@ impl Issuer {
                     created: get_now_as_iso_string(),
                     proof_type: LdProofVcDetailOptionsType::Ed25519Signature2018,
                     credential_status: LdProofVcDetailOptionsCredentialStatus {
-                        r#type:
-                            LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
+                        r#type: credential_status_type.to_owned(),
                     },
                 },
             },
@@ -154,7 +154,7 @@ impl Issuer {
 
     pub async fn sign_nquads(
         credential_request: &BbsCredentialRequest,
-        credential_status: &CredentialStatus,
+        credential_status: Option<CredentialStatus>,
         issuer_public_key_id: &str,
         issuer_public_key: &DeterministicPublicKey,
         issuer_secret_key: &SecretKey,
@@ -164,7 +164,7 @@ impl Issuer {
             .credential_offer
             .ld_proof_vc_detail
             .credential
-            .to_unsigned_credential(&credential_status);
+            .to_unsigned_credential(credential_status);
         let nquads = convert_to_nquads(&serde_json::to_string(&unsigned_credential)?).await?;
 
         let blind_signature_context: BlindSignatureContext = decode_base64(
@@ -228,7 +228,6 @@ impl Issuer {
     #[allow(dead_code)]
     pub fn issue_credential(
         issuer_did: &str,
-        subject_did: &str,
         credential_offer: &BbsCredentialOffer,
         credential_request: &BbsCredentialRequest,
         issuer_public_key_id: &str,
@@ -237,24 +236,36 @@ impl Issuer {
         credential_schema: CredentialSchema,
         required_indices: Vec<u32>,
         nquads: Vec<String>,
-        revocation_list_did: &str,
-        revocation_list_id: &str,
+        revocation_list_did: Option<&str>,
+        revocation_list_id: Option<&str>,
         valid_until: Option<String>,
     ) -> Result<UnfinishedBbsCredential, Box<dyn Error>> {
-        let revocation_list_index_number = revocation_list_id
-            .parse::<usize>()
-            .map_err(|e| format!("Error parsing revocation_list_id: {}", e))?;
+        let mut credential_status: Option<CredentialStatus> = None;
+        if revocation_list_id.is_some() || revocation_list_did.is_some() {
+            let revocation_list_id =
+                revocation_list_id.ok_or_else(|| "Error parsing revocation_list_id")?;
+            let revocation_list_did =
+                revocation_list_did.ok_or_else(|| "Error parsing revocation_list_did")?;
+            let revocation_list_index_number = revocation_list_id
+                .parse::<usize>()
+                .map_err(|e| format!("Error parsing revocation_list_id: {}", e))?;
 
-        if revocation_list_index_number > MAX_REVOCATION_ENTRIES {
-            let error = format!(
+            if revocation_list_index_number > MAX_REVOCATION_ENTRIES {
+                let error = format!(
                 "Cannot issue credential: revocation_list_id {} is larger than list limit of {}",
                 revocation_list_index_number, MAX_REVOCATION_ENTRIES
             );
-            return Err(Box::from(error));
+                return Err(Box::from(error));
+            }
+            credential_status = Some(CredentialStatus {
+                id: format!("{}#{}", revocation_list_did, revocation_list_id),
+                r#type: "RevocationList2020Status".to_string(),
+                revocation_list_index: revocation_list_id.to_string(),
+                revocation_list_credential: revocation_list_did.to_string(),
+            });
         }
 
         let credential_subject = CredentialSubject {
-            id: Some(subject_did.to_owned()),
             data: credential_request
                 .credential_offer
                 .ld_proof_vc_detail
@@ -311,12 +322,7 @@ impl Issuer {
             valid_until,
             issuance_date: get_now_as_iso_string(),
             credential_schema: schema_reference,
-            credential_status: CredentialStatus {
-                id: format!("{}#{}", revocation_list_did, revocation_list_id),
-                r#type: "RevocationList2020Status".to_string(),
-                revocation_list_index: revocation_list_id.to_string(),
-                revocation_list_credential: revocation_list_did.to_string(),
-            },
+            credential_status,
             proof: vc_signature,
         };
         Ok(credential)
@@ -463,7 +469,7 @@ mod tests {
     use super::*;
     use crate::{
         application::{
-            datatypes::{BbsCredentialOffer, BbsCredentialRequest, CredentialProposal},
+            datatypes::{BbsCredentialOffer, BbsCredentialRequest},
             prover::Prover,
             utils::convert_to_nquads,
         },
@@ -472,13 +478,7 @@ mod tests {
     use bbs::{issuer::Issuer as BbsIssuer, prover::Prover as BbsProver};
     use std::collections::HashMap;
     use utilities::test_data::{
-        accounts::local::{
-            HOLDER_DID,
-            ISSUER_DID,
-            ISSUER_PRIVATE_KEY,
-            ISSUER_PUBLIC_KEY_DID,
-            SUBJECT_DID,
-        },
+        accounts::local::{ISSUER_DID, ISSUER_PRIVATE_KEY, ISSUER_PUBLIC_KEY_DID},
         bbs_coherent_context_test_data::{
             EXAMPLE_REVOCATION_LIST_DID,
             PUB_KEY,
@@ -486,7 +486,6 @@ mod tests {
             SCHEMA,
             SECRET_KEY,
         },
-        vc_zkp::EXAMPLE_CREDENTIAL_PROPOSAL,
     };
     use vade_signer::{LocalSigner, Signer};
 
@@ -544,7 +543,6 @@ mod tests {
         valid_until: Option<String>,
     ) {
         assert_eq!(&cred.issuer, ISSUER_DID);
-        assert_eq!(cred.credential_subject.id, Some(HOLDER_DID.to_string()));
         assert_eq!(&cred.credential_schema.id, schema_id);
         // proof
         assert_eq!(&cred.proof.required_reveal_statements, &[1].to_vec());
@@ -583,13 +581,11 @@ mod tests {
 
     #[test]
     fn can_offer_credential() -> Result<(), Box<dyn Error>> {
-        let proposal: CredentialProposal = serde_json::from_str(&EXAMPLE_CREDENTIAL_PROPOSAL)?;
         let schema: CredentialSchema = serde_json::from_str(&SCHEMA)?;
         let mut draft = schema.to_draft_credential(CredentialDraftOptions {
             issuer_did: ISSUER_DID.to_string(),
             id: None,
             issuance_date: None,
-            subject_did: Some(SUBJECT_DID.to_string()),
             valid_until: None,
         });
 
@@ -605,14 +601,12 @@ mod tests {
             .data
             .insert("test_property_string2".to_string(), "bar".to_string());
 
-        let offer = Issuer::offer_credential(&draft)?;
+        let offer = Issuer::offer_credential(
+            &draft,
+            &LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
+        )?;
 
         assert_eq!(&offer.ld_proof_vc_detail.credential.issuer, &ISSUER_DID);
-        assert_eq!(
-            &offer.ld_proof_vc_detail.credential.credential_subject.id,
-            &proposal.subject
-        );
-
         Ok(())
     }
 
@@ -624,10 +618,12 @@ mod tests {
             issuer_did: ISSUER_DID.to_string(),
             id: None,
             issuance_date: None,
-            subject_did: Some(HOLDER_DID.to_string()),
             valid_until: Some(get_now_as_iso_string()),
         });
-        let mut offer = Issuer::offer_credential(&draft)?;
+        let mut offer = Issuer::offer_credential(
+            &draft,
+            &LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
+        )?;
         let key_id = format!("{}#key-1", ISSUER_DID);
         let (credential_request, _) = request_credential(&dpk, &mut offer, 1).await?;
 
@@ -638,8 +634,15 @@ mod tests {
             revocation_list_credential: EXAMPLE_REVOCATION_LIST_DID.to_string(),
         };
 
-        let result =
-            Issuer::sign_nquads(&credential_request, &status, &key_id, &dpk, &sk, vec![1]).await;
+        let result = Issuer::sign_nquads(
+            &credential_request,
+            Some(status),
+            &key_id,
+            &dpk,
+            &sk,
+            vec![1],
+        )
+        .await;
         match result {
             Ok(cred) => {
                 assert_credential(
@@ -667,10 +670,12 @@ mod tests {
             issuer_did: ISSUER_DID.to_string(),
             id: None,
             issuance_date: None,
-            subject_did: Some(HOLDER_DID.to_string()),
             valid_until: None,
         });
-        let mut offer = Issuer::offer_credential(&draft)?;
+        let mut offer = Issuer::offer_credential(
+            &draft,
+            &LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
+        )?;
         let key_id = format!("{}#key-1", ISSUER_DID);
         let (credential_request, _) = request_credential(&dpk, &mut offer, 5).await?;
 
@@ -681,8 +686,15 @@ mod tests {
             revocation_list_credential: EXAMPLE_REVOCATION_LIST_DID.to_string(),
         };
 
-        let result =
-            Issuer::sign_nquads(&credential_request, &status, &key_id, &dpk, &sk, vec![1]).await;
+        let result = Issuer::sign_nquads(
+            &credential_request,
+            Some(status),
+            &key_id,
+            &dpk,
+            &sk,
+            vec![1],
+        )
+        .await;
 
         match result {
             Ok(cred) => {
@@ -711,10 +723,12 @@ mod tests {
             issuer_did: ISSUER_DID.to_string(),
             id: None,
             issuance_date: None,
-            subject_did: Some(SUBJECT_DID.to_string()),
             valid_until: None,
         });
-        let mut offer = Issuer::offer_credential(&draft)?;
+        let mut offer = Issuer::offer_credential(
+            &draft,
+            &LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
+        )?;
         let key_id = format!("{}#key-1", ISSUER_DID);
         let (credential_request, _) = request_credential(&dpk, &mut offer, 5).await?;
 
@@ -725,7 +739,16 @@ mod tests {
             revocation_list_credential: EXAMPLE_REVOCATION_LIST_DID.to_string(),
         };
 
-        match Issuer::sign_nquads(&credential_request, &status, &key_id, &dpk, &sk, vec![1]).await {
+        match Issuer::sign_nquads(
+            &credential_request,
+            Some(status),
+            &key_id,
+            &dpk,
+            &sk,
+            vec![1],
+        )
+        .await
+        {
             Ok(cred) => assert_credential_proof(cred, &key_id, [1].to_vec()),
             Err(e) => assert!(false, "Received error when issuing credential: {}", e),
         }
@@ -741,10 +764,12 @@ mod tests {
             issuer_did: ISSUER_DID.to_string(),
             id: None,
             issuance_date: None,
-            subject_did: Some(SUBJECT_DID.to_string()),
             valid_until: None,
         });
-        let mut offer = Issuer::offer_credential(&draft)?;
+        let mut offer = Issuer::offer_credential(
+            &draft,
+            &LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
+        )?;
         let key_id = format!("{}#key-1", ISSUER_DID);
         let (credential_request, _) = request_credential(&dpk, &mut offer, 5).await?;
 
@@ -758,12 +783,11 @@ mod tests {
         let unsigned = &offer
             .ld_proof_vc_detail
             .credential
-            .to_unsigned_credential(&status);
+            .to_unsigned_credential(Some(status));
         let nquads = convert_to_nquads(&serde_json::to_string(&unsigned)?).await?;
 
         let result = Issuer::issue_credential(
             &ISSUER_DID,
-            &HOLDER_DID,
             &offer,
             &credential_request,
             &key_id,
@@ -772,8 +796,8 @@ mod tests {
             schema.clone(),
             [1].to_vec(),
             nquads,
-            EXAMPLE_REVOCATION_LIST_DID,
-            &(MAX_REVOCATION_ENTRIES + 1).to_string(),
+            Some(EXAMPLE_REVOCATION_LIST_DID),
+            Some(&(MAX_REVOCATION_ENTRIES + 1).to_string()),
             None,
         )
         .map_err(|e| format!("{}", e))

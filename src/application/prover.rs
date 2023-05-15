@@ -53,19 +53,13 @@ impl Prover {
     ///
     /// # Arguments
     /// * `issuer_did` - DID of the issuer the proposal is for
-    /// * `subject_did` - DID of the proposal creator and potential subject of the credential
     /// * `schema_did` - DID of the schema to propose the credential for
     ///
     /// # Returns
     /// * `CredentialProposal` - The message to be sent to an issuer
-    pub fn propose_credential(
-        issuer_did: &str,
-        subject_did: Option<&str>,
-        schema_did: &str,
-    ) -> CredentialProposal {
+    pub fn propose_credential(issuer_did: &str, schema_did: &str) -> CredentialProposal {
         CredentialProposal {
             issuer: issuer_did.to_owned(),
-            subject: subject_did.map(|value| value.to_string()),
             schema: schema_did.to_owned(),
         }
     }
@@ -321,14 +315,7 @@ mod tests {
         SignatureBlinding,
     };
     use utilities::test_data::{
-        accounts::local::{
-            HOLDER_DID,
-            ISSUER_DID,
-            SIGNER_1_ADDRESS,
-            SIGNER_1_PRIVATE_KEY,
-            SUBJECT_DID,
-            VERIFIER_DID,
-        },
+        accounts::local::{ISSUER_DID, SIGNER_1_ADDRESS, SIGNER_1_PRIVATE_KEY, VERIFIER_DID},
         bbs_coherent_context_test_data::{
             FINISHED_CREDENTIAL,
             MASTER_SECRET,
@@ -357,7 +344,6 @@ mod tests {
             issuer_did: ISSUER_DID.to_string(),
             id: None,
             issuance_date: None,
-            subject_did: Some(SUBJECT_DID.to_string()),
             valid_until: None,
         });
         credential_draft
@@ -407,7 +393,6 @@ mod tests {
         revealed_data.remove("test_property_string4");
 
         let revealed = CredentialSubject {
-            id: Some(HOLDER_DID.to_string()),
             data: revealed_data,
         };
         let mut revealed_properties_map = HashMap::new();
@@ -453,7 +438,6 @@ mod tests {
             .get(schema_id)
             .ok_or("Error!")?
             .clone();
-        assert_eq!(proof_cred.credential_subject.id, new_credential_subject.id);
         // Only reveals the provided subject data, not the credential's original subject data
         assert_eq!(
             proof_cred.credential_subject.data,
@@ -474,8 +458,7 @@ mod tests {
 
     #[test]
     fn can_propose_credential() {
-        let proposal = Prover::propose_credential(&ISSUER_DID, Some(&HOLDER_DID), "schema-did");
-        assert_eq!(proposal.subject, Some(HOLDER_DID.to_string()));
+        let proposal = Prover::propose_credential(&ISSUER_DID, "schema-did");
         assert_eq!(&proposal.issuer, &ISSUER_DID);
         assert_eq!(&proposal.schema, "schema-did");
     }
@@ -493,15 +476,6 @@ mod tests {
                 .credential_schema
                 .id,
             schema.id
-        );
-        assert_eq!(
-            credential_request
-                .credential_offer
-                .ld_proof_vc_detail
-                .credential
-                .credential_subject
-                .id,
-            offering.ld_proof_vc_detail.credential.credential_subject.id
         );
         Ok(())
     }
