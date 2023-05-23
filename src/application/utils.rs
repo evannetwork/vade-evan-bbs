@@ -209,9 +209,7 @@ pub fn concate_required_and_reveal_statements(
     let mut all_revealed_statements: Vec<usize> = vec![];
     for required_index in required_reveal_statements {
         if required_index == 0 {
-            return Err(Box::from(
-                "Invalid reveal index, index 0 can't be revealed",
-            ));
+            return Err(Box::from("Invalid reveal index, index 0 can't be revealed"));
         }
         all_revealed_statements.push(required_index as usize);
     }
