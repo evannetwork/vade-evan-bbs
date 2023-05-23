@@ -225,7 +225,7 @@ pub fn check_for_requird_reveal_index0(
         .is_some()
     {
         true => Err(Box::from(
-            "Invalid required_revealed_index! index 0 can't be revealed".to_owned(),
+            "Invalid required_revealed_index, index 0 can't be revealed".to_owned(),
         )),
         false => Ok(()),
     }
