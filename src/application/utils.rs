@@ -193,6 +193,15 @@ pub async fn get_nquads_schema_map(
     Ok(nquads_schema_map)
 }
 
+/// Concatenates the revealed statements vector from proof request and required revealed statements vector
+/// from credential proof to get all the indices need to be revealed in the presentation.
+///
+/// # Arguments
+/// * `required_revealed_statements` - vec of required revealed indices
+/// * `revealed_statements` - vec of requested revealed indices
+///
+/// # Returns
+/// * `Vec<usize>` - A vector containing all the indices to be revealed by presentation
 pub fn concate_required_and_reveal_statements(
     required_reveal_statements: Vec<u32>,
     revealed_statements: Vec<usize>,
@@ -216,6 +225,11 @@ pub fn concate_required_and_reveal_statements(
     Ok(all_revealed_statements)
 }
 
+/// Checks if the required revealed statements are containing 0 index (master_secret)
+/// Throws error if it contains the index 0 as required reveal index.
+///
+/// # Arguments
+/// * `required_revealed_statements` - vec of required revealed indices
 pub fn check_for_requird_reveal_index0(
     required_revealed_statements: &Vec<u32>,
 ) -> Result<(), Box<dyn Error>> {
