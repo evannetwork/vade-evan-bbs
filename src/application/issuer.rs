@@ -135,7 +135,7 @@ impl Issuer {
     /// # Arguments
     /// * `credential` - draft credential to be offered
     /// * `required_reveal_statements` - required indices to be revealed
-    /// * `credential_status_type` - draft credential to be offered
+    /// * `credential_status_type` - type of credential status
     ///
     /// # Returns
     /// * `BbsCredentialOffer` - The message to be sent to the prover.
