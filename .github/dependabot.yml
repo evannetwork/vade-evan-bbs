@@ -1,0 +1,12 @@
+version: 2
+updates:
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    # Raise pull requests for version updates
+    # to cargo against the `feature` branch
+    target-branch: "feature/implement-correct-handling-for-required-reveal-statements-in-vade"
+    # Labels on pull requests for version updates only
+    labels:
+      - "cargo dependencies"
