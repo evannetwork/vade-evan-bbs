@@ -4,11 +4,9 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-      time: "13:30"
-      timezone: "Europe/Berlin"
     # Raise pull requests for version updates
-    # to cargo against the `feature` branch
-    target-branch: "feature/fix-critical-dependency-updates"
+    # to cargo against the `develop` branch
+    target-branch: "develop"
     # Labels on pull requests for version updates only
     labels:
       - "cargo dependencies"
