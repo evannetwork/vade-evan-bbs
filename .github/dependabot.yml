@@ -6,7 +6,7 @@ updates:
       interval: "daily"
     # Raise pull requests for version updates
     # to cargo against the `feature` branch
-    target-branch: "feature/implement-correct-handling-for-required-reveal-statements-in-vade"
+    target-branch: "feature/fix-critical-dependency-updates"
     # Labels on pull requests for version updates only
     labels:
       - "cargo dependencies"
