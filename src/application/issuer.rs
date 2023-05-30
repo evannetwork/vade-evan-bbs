@@ -37,7 +37,7 @@ use crate::{
             DEFAULT_REVOCATION_CONTEXTS,
         },
         utils::{
-            check_for_requird_reveal_index0,
+            check_for_required_reveal_index0,
             decode_base64,
             decode_base64_config,
             generate_uuid,
@@ -146,7 +146,7 @@ impl Issuer {
     ) -> Result<BbsCredentialOffer, Box<dyn Error>> {
         let nonce = base64::encode(BbsIssuer::generate_signing_nonce().to_bytes_compressed_form());
 
-        check_for_requird_reveal_index0(required_reveal_statements)?;
+        check_for_required_reveal_index0(required_reveal_statements)?;
 
         Ok(BbsCredentialOffer {
             ld_proof_vc_detail: LdProofVcDetail {
@@ -256,7 +256,7 @@ impl Issuer {
         revocation_list_id: Option<&str>,
         valid_until: Option<String>,
     ) -> Result<UnfinishedBbsCredential, Box<dyn Error>> {
-        check_for_requird_reveal_index0(
+        check_for_required_reveal_index0(
             &credential_offer
                 .ld_proof_vc_detail
                 .options

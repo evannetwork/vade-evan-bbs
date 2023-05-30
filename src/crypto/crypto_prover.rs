@@ -17,7 +17,7 @@
 use crate::application::{
     datatypes::{BbsCredentialSignature, BbsSubProofRequest, UnfinishedBbsCredentialSignature},
     issuer::ADDITIONAL_HIDDEN_MESSAGES_COUNT,
-    utils::{concate_required_and_reveal_statements, decode_base64},
+    utils::{concat_required_and_reveal_statements, decode_base64},
 };
 use bbs::{
     keys::DeterministicPublicKey,
@@ -121,7 +121,7 @@ impl CryptoProver {
                 .map_err(|e| format!("could not create new proof request; {}", &e))?;
         let required_reveal_statements = credential_signature.required_reveal_statements.to_owned();
         let revealed_statements = sub_proof_request.revealed_attributes.to_owned();
-        let all_revealed_statements = concate_required_and_reveal_statements(
+        let all_revealed_statements = concat_required_and_reveal_statements(
             required_reveal_statements,
             revealed_statements,
         )?;

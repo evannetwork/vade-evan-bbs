@@ -35,7 +35,7 @@ use crate::{
         issuer::Issuer,
         prover::Prover,
         utils::{
-            concate_required_and_reveal_statements,
+            concat_required_and_reveal_statements,
             convert_to_nquads,
             decode_base64,
             generate_uuid,
@@ -783,7 +783,7 @@ impl VadePlugin for VadeEvanBbs {
                 })?;
             let required_reveal_statements = vc.proof.required_reveal_statements.to_owned();
             let revealed_statements = sub_request.revealed_attributes.to_owned();
-            let all_revealed_statements = concate_required_and_reveal_statements(
+            let all_revealed_statements = concat_required_and_reveal_statements(
                 required_reveal_statements,
                 revealed_statements,
             )?;

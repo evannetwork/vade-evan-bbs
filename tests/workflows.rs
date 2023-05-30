@@ -1022,7 +1022,7 @@ async fn workflow_can_not_offer_credenial_with_required_revealed_index_0(
         Err(e) => {
             assert!(e
                 .to_string()
-                .contains("Invalid required_revealed_index, index 0 can't be revealed"))
+                .contains("Invalid required reveal statement! Index 0 can't be revealed"))
         }
     }
 

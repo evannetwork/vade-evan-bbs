@@ -202,15 +202,13 @@ pub async fn get_nquads_schema_map(
 ///
 /// # Returns
 /// * `Vec<usize>` - A vector containing all the indices to be revealed by presentation
-pub fn concate_required_and_reveal_statements(
+pub fn concat_required_and_reveal_statements(
     required_reveal_statements: Vec<u32>,
     revealed_statements: Vec<usize>,
 ) -> Result<Vec<usize>, Box<dyn Error>> {
     let mut all_revealed_statements: Vec<usize> = vec![];
+    check_for_required_reveal_index0(&required_reveal_statements)?;
     for required_index in required_reveal_statements {
-        if required_index == 0 {
-            return Err(Box::from("Invalid reveal index, index 0 can't be revealed"));
-        }
         all_revealed_statements.push(required_index as usize);
     }
 
@@ -228,7 +226,7 @@ pub fn concate_required_and_reveal_statements(
 ///
 /// # Arguments
 /// * `required_revealed_statements` - vec of required revealed indices
-pub fn check_for_requird_reveal_index0(
+pub fn check_for_required_reveal_index0(
     required_revealed_statements: &Vec<u32>,
 ) -> Result<(), Box<dyn Error>> {
     match required_revealed_statements
@@ -237,7 +235,7 @@ pub fn check_for_requird_reveal_index0(
         .is_some()
     {
         true => Err(Box::from(
-            "Invalid required_revealed_index, index 0 can't be revealed".to_owned(),
+            "Invalid required reveal statement! Index 0 can't be revealed".to_owned(),
         )),
         false => Ok(()),
     }
