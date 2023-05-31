@@ -868,3 +868,206 @@ impl VadePlugin for VadeEvanBbs {
         )?)))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    extern crate utilities;
+
+    use crate::{IssueCredentialPayload, OfferCredentialPayload, RequestCredentialPayload};
+
+    use utilities::test_data::bbs_coherent_context_test_data::SCHEMA;
+
+    fn create_draft_credential_with_id(id: &str) -> String {
+        r###"{
+            "@context":[
+                "https://www.w3.org/2018/credentials/v1",
+                "https://schema.org/",
+                "https://w3id.org/vc-revocation-list-2020/v1"
+            ],
+            "id": "$ID",
+            "type":[
+                "VerifiableCredential"
+            ],
+            "issuer":"did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g",
+            "issuanceDate":"2021-04-20T08:35:56+0000",
+            "credentialSubject":{
+                "data":{
+                    "test_property_string3":"value",
+                    "test_property_string":"value",
+                    "test_property_string4":"value",
+                    "test_property_string1":"value",
+                    "test_property_string2":"value"
+                }
+            },
+            "credentialSchema":{
+                "id":"did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg",
+                "type":"EvanZKPSchema"
+            }
+        }"###
+            .replace("$ID", id)
+    }
+
+    fn get_offer_payload_with_id(id: &str) -> String {
+        r###"{
+            "draftCredential": $DRAFT_CREDENTIAL,
+            "credentialStatusType": "RevocationList2021Status"
+        }"###
+            .replace("$DRAFT_CREDENTIAL", &create_draft_credential_with_id(id))
+    }
+
+    #[test]
+    fn can_parse_offer_credential_payload_with_a_valid_uuid(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let to_parse = get_offer_payload_with_id("uuid:94450c72-5dc4-4e46-8df0-106819064656");
+
+        let result: Result<OfferCredentialPayload, serde_json::Error> =
+            serde_json::from_str(&to_parse);
+
+        assert!(&result.is_ok());
+
+        Ok(())
+    }
+
+    #[test]
+    fn cannot_parse_a_offer_credential_payload_with_an_invalid_uuid(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let to_parse = get_offer_payload_with_id("94450c72-5dc4-4e46-8df0-106819064656");
+
+        let result: Result<OfferCredentialPayload, serde_json::Error> =
+            serde_json::from_str(&to_parse);
+
+        assert!(&result.is_err());
+        let error_message = format!("{}", &result.err().unwrap());
+        assert!(error_message.starts_with(r#"uuid must start with prefix "uuid:""#));
+
+        Ok(())
+    }
+
+    fn get_request_payload_with_id(id: &str) -> String {
+        r###"{
+            "credentialOffer": {
+                "ldProofVcDetail": {
+                    "credential": $DRAFT_CREDENTIAL,
+                    "options": {
+                        "created": "created",
+                        "proofType": "Ed25519Signature2018",
+                        "credentialStatus": {
+                            "type": "RevocationList2021Status"
+                        }
+                    }
+                },
+                "nonce": "nonce"
+            },
+            "masterSecret": "masterSecret",
+            "issuerPubKey": "issuerPubKey",
+            "credentialSchema": $CREDENTIAL_SCHEMA
+        }"###
+            .replace("$DRAFT_CREDENTIAL", &create_draft_credential_with_id(id))
+            .replace("$CREDENTIAL_SCHEMA", SCHEMA)
+    }
+
+    #[test]
+    fn can_parse_request_credential_payload_with_a_valid_uuid(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let to_parse = get_request_payload_with_id("uuid:94450c72-5dc4-4e46-8df0-106819064656");
+
+        let result: Result<RequestCredentialPayload, serde_json::Error> =
+            serde_json::from_str(&to_parse);
+
+        assert!(&result.is_ok());
+
+        Ok(())
+    }
+
+    #[test]
+    fn cannot_parse_request_credential_payload_with_an_invalid_uuid(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let to_parse = str::replace(
+            r###"{
+                "credentialOffer": {
+                    "ldProofVcDetail": {
+                        "credential": $DRAFT_CREDENTIAL,
+                        "options": {
+                            "created": "created",
+                            "proofType": "Ed25519Signature2018",
+                            "credentialStatus": {
+                                "type": "RevocationList2021Status"
+                            }
+                        }
+                    },
+                    "nonce": "nonce"
+                },
+                "masterSecret": "masterSecret",
+                "issuerPubKey": "issuerPubKey",
+                "credentialSchema": $CREDENTIAL_SCHEMA
+        }"###,
+            "$DRAFT_CREDENTIAL",
+            &create_draft_credential_with_id("94450c72-5dc4-4e46-8df0-106819064656"),
+        )
+        .replace("$CREDENTIAL_SCHEMA", SCHEMA);
+
+        let result: Result<RequestCredentialPayload, serde_json::Error> =
+            serde_json::from_str(&to_parse);
+
+        assert!(&result.is_err());
+        let error_message = format!("{}", &result.err().unwrap());
+        assert!(error_message.starts_with(r#"uuid must start with prefix "uuid:""#));
+
+        Ok(())
+    }
+
+    fn get_issue_payload_with_id(id: &str) -> String {
+        r###"{
+            "credentialRequest": {
+                "credentialOffer": {
+                    "ldProofVcDetail": {
+                        "credential": $DRAFT_CREDENTIAL,
+                        "options": {
+                            "created": "created",
+                            "proofType": "Ed25519Signature2018",
+                            "credentialStatus": {
+                                "type": "RevocationList2021Status"
+                            }
+                        }
+                    },
+                    "nonce": "nonce"
+                },
+                "blindSignatureContext": "blindSignatureContext"
+            },
+            "issuerPublicKeyId": "issuerPublicKeyId",
+            "issuerPublicKey": "issuerPublicKey",
+            "issuerSecretKey": "issuerSecretKey",
+            "requiredIndices": []
+    }"###
+            .replace("$DRAFT_CREDENTIAL", &create_draft_credential_with_id(id))
+            .replace("$CREDENTIAL_SCHEMA", SCHEMA)
+    }
+
+    #[test]
+    fn can_parse_issue_credential_payload_with_a_valid_uuid(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let to_parse = get_issue_payload_with_id("uuid:94450c72-5dc4-4e46-8df0-106819064656");
+
+        let result: Result<IssueCredentialPayload, serde_json::Error> =
+            serde_json::from_str(&to_parse);
+
+        assert!(&result.is_ok());
+
+        Ok(())
+    }
+
+    #[test]
+    fn cannot_parse_issue_credential_payload_with_a_valid_uuid(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let to_parse = get_issue_payload_with_id("94450c72-5dc4-4e46-8df0-106819064656");
+
+        let result: Result<IssueCredentialPayload, serde_json::Error> =
+            serde_json::from_str(&to_parse);
+
+        assert!(&result.is_err());
+        let error_message = format!("{}", &result.err().unwrap());
+        assert!(error_message.starts_with(r#"uuid must start with prefix "uuid:""#));
+
+        Ok(())
+    }
+}
