@@ -121,10 +121,8 @@ impl CryptoProver {
                 .map_err(|e| format!("could not create new proof request; {}", &e))?;
         let required_reveal_statements = &credential_signature.required_reveal_statements;
         let revealed_statements = &sub_proof_request.revealed_attributes;
-        let all_revealed_statements = concat_required_and_reveal_statements(
-            required_reveal_statements,
-            revealed_statements,
-        )?;
+        let all_revealed_statements =
+            concat_required_and_reveal_statements(required_reveal_statements, revealed_statements)?;
 
         let indices: HashSet<&usize> = HashSet::from_iter(all_revealed_statements.iter());
 
