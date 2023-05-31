@@ -781,8 +781,8 @@ impl VadePlugin for VadeEvanBbs {
                         sub_request.schema
                     )
                 })?;
-            let required_reveal_statements = vc.proof.required_reveal_statements.to_owned();
-            let revealed_statements = sub_request.revealed_attributes.to_owned();
+            let required_reveal_statements = &vc.proof.required_reveal_statements;
+            let revealed_statements = &sub_request.revealed_attributes;
             let all_revealed_statements = concat_required_and_reveal_statements(
                 required_reveal_statements,
                 revealed_statements,

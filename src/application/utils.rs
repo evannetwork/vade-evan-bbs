@@ -203,18 +203,18 @@ pub async fn get_nquads_schema_map(
 /// # Returns
 /// * `Vec<usize>` - A vector containing all the indices to be revealed by presentation
 pub fn concat_required_and_reveal_statements(
-    required_reveal_statements: Vec<u32>,
-    revealed_statements: Vec<usize>,
+    required_reveal_statements: &Vec<u32>,
+    revealed_statements: &Vec<usize>,
 ) -> Result<Vec<usize>, Box<dyn Error>> {
     let mut all_revealed_statements: Vec<usize> = vec![];
-    check_for_required_reveal_index0(&required_reveal_statements)?;
+    check_for_required_reveal_index0(required_reveal_statements)?;
     for required_index in required_reveal_statements {
-        all_revealed_statements.push(required_index as usize);
+        all_revealed_statements.push(*required_index as usize);
     }
 
     for revealed_index in revealed_statements {
         if !all_revealed_statements.contains(&revealed_index) {
-            all_revealed_statements.push(revealed_index);
+            all_revealed_statements.push(*revealed_index);
         }
     }
     all_revealed_statements.sort();

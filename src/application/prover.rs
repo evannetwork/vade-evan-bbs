@@ -215,9 +215,9 @@ impl Prover {
                 ))?
                 .clone();
 
-            let required_reveal_statements = credential.proof.required_reveal_statements.to_owned();
+            let required_reveal_statements = &credential.proof.required_reveal_statements;
             check_for_required_reveal_index0(&required_reveal_statements)?;
-            let revealed_statements = sub_proof_request.revealed_attributes.to_owned();
+            let revealed_statements = &sub_proof_request.revealed_attributes;
             let all_revealed_statements = concat_required_and_reveal_statements(
                 required_reveal_statements,
                 revealed_statements,

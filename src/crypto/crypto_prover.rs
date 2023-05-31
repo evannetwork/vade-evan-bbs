@@ -119,14 +119,14 @@ impl CryptoProver {
         let crypto_proof_request =
             BbsVerifier::new_proof_request(&sub_proof_request.revealed_attributes.as_slice(), &pk)
                 .map_err(|e| format!("could not create new proof request; {}", &e))?;
-        let required_reveal_statements = credential_signature.required_reveal_statements.to_owned();
-        let revealed_statements = sub_proof_request.revealed_attributes.to_owned();
+        let required_reveal_statements = &credential_signature.required_reveal_statements;
+        let revealed_statements = &sub_proof_request.revealed_attributes;
         let all_revealed_statements = concat_required_and_reveal_statements(
             required_reveal_statements,
             revealed_statements,
         )?;
 
-        let indices: HashSet<usize> = HashSet::from_iter(all_revealed_statements.iter().cloned());
+        let indices: HashSet<&usize> = HashSet::from_iter(all_revealed_statements.iter());
 
         let mut commitment_messages = Vec::new();
         let link_secret_blinding = ProofNonce::random();
