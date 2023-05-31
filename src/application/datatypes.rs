@@ -105,9 +105,7 @@ impl CredentialSchema {
                 "https://schema.org/".to_string(),
                 "https://w3id.org/vc-revocation-list-2020/v1".to_string(),
             ],
-            id: options.id.unwrap_or_else(|| {
-                PrefixedUuid(format!("uuid:{}", Uuid::new_v4()))
-            }),
+            id: options.id.unwrap_or_else(|| PrefixedUuid::new(Uuid::new_v4().to_string())),
             r#type: vec!["VerifiableCredential".to_string()],
             issuer: options.issuer_did,
             valid_until: options.valid_until,
@@ -502,11 +500,30 @@ impl RevocationListCredential {
     }
 }
 
+/// Helper class to ensure that credential id uuid's are prefixed with `"uuid:"`.
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(try_from = "String")]
 pub struct PrefixedUuid(String);
 
 impl PrefixedUuid {
+    /// Creates a new `PrefixedUuid` by either taking given uuid as is or prefixing it with `"uuid:"` if required.
+    ///
+    /// # Arguments
+    ///
+    /// * `uuid` - uuid string to use as value
+    pub fn new(uuid: String) -> Self {
+        if uuid.starts_with("uuid:") {
+            Self(uuid)
+        } else {
+            Self(format!("uuid:{}", &uuid))
+        }
+    }
+
+    /// Tries to create a new `PrefixedUuid` instance, will fail if missing the `"uuid:"` prefix. Used for parsing uuids.
+    ///
+    /// # Arguments
+    ///
+    /// * `uuid` - uuid string to use as value
     pub fn try_new(uuid: String) -> Result<Self, String> {
         if uuid.starts_with("uuid:") {
             Ok(Self(uuid))
