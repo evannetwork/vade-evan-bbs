@@ -148,7 +148,6 @@ impl Verifier {
         if presentation.verifiable_credential.len() == 0 {
             return Err(Box::from("Invalid presentation: No credentials provided"));
         }
-
         check_assertion_proof(&serde_json::to_string(&presentation)?, signer_address)?;
 
         let challenge =
@@ -174,17 +173,6 @@ impl Verifier {
             let proof = panic::catch_unwind(|| SignatureProof::from(proof_bytes))
                 .map_err(|_| "Error parsing signature")?;
 
-            match verify_presentation(&proof, &key, &challenge, &cred) {
-                Err(e) => {
-                    return Ok(BbsProofVerification {
-                        presented_proof: presentation.id.to_string(),
-                        status: "rejected".to_string(),
-                        reason: Some(e.to_string()),
-                    })
-                }
-                Ok(()) => (),
-            }
-
             match verify_revealed_messages(
                 nquads_to_schema_map
                     .get(&cred.credential_schema.id)
@@ -194,6 +182,16 @@ impl Verifier {
                     ))?,
                 &proof,
             ) {
+                Err(e) => {
+                    return Ok(BbsProofVerification {
+                        presented_proof: presentation.id.to_string(),
+                        status: "rejected".to_string(),
+                        reason: Some(e.to_string()),
+                    })
+                }
+                Ok(()) => (),
+            }
+            match verify_presentation(&proof, &key, &challenge, &cred) {
                 Err(e) => {
                     return Ok(BbsProofVerification {
                         presented_proof: presentation.id.to_string(),

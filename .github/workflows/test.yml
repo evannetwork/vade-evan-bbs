@@ -33,6 +33,8 @@ jobs:
         run: cargo test --no-fail-fast ${{ matrix.features.value }}
       - name: Switch to nightly for udeps
         run: rustup toolchain install nightly
+      - name: Update cargo
+        run: cargo update
       - name: Install cargo udeps
         run: cargo install cargo-udeps --locked
       - name: Run cargo udeps

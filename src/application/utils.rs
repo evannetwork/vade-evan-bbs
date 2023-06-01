@@ -192,3 +192,51 @@ pub async fn get_nquads_schema_map(
 
     Ok(nquads_schema_map)
 }
+
+/// Concatenates the revealed statements vector from proof request and required revealed statements vector
+/// from credential proof to get all the indices need to be revealed in the presentation.
+///
+/// # Arguments
+/// * `required_revealed_statements` - vec of required revealed indices
+/// * `revealed_statements` - vec of requested revealed indices
+///
+/// # Returns
+/// * `Vec<usize>` - A vector containing all the indices to be revealed by presentation
+pub fn concat_required_and_reveal_statements(
+    required_reveal_statements: &Vec<u32>,
+    revealed_statements: &Vec<usize>,
+) -> Result<Vec<usize>, Box<dyn Error>> {
+    let mut all_revealed_statements: Vec<usize> = vec![];
+    check_for_required_reveal_index0(required_reveal_statements)?;
+    for required_index in required_reveal_statements {
+        all_revealed_statements.push(*required_index as usize);
+    }
+
+    for revealed_index in revealed_statements {
+        if !all_revealed_statements.contains(&revealed_index) {
+            all_revealed_statements.push(*revealed_index);
+        }
+    }
+    all_revealed_statements.sort();
+    Ok(all_revealed_statements)
+}
+
+/// Checks if the required revealed statements are containing 0 index (master_secret)
+/// Throws error if it contains the index 0 as required reveal index.
+///
+/// # Arguments
+/// * `required_revealed_statements` - vec of required revealed indices
+pub fn check_for_required_reveal_index0(
+    required_revealed_statements: &Vec<u32>,
+) -> Result<(), Box<dyn Error>> {
+    match required_revealed_statements
+        .into_iter()
+        .find(|index| **index == 0)
+        .is_some()
+    {
+        true => Err(Box::from(
+            "Invalid required reveal statement! Index 0 can't be revealed".to_owned(),
+        )),
+        false => Ok(()),
+    }
+}
