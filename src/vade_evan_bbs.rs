@@ -930,7 +930,8 @@ mod tests {
     fn get_offer_payload_with_id(id: &str) -> String {
         r###"{
             "draftCredential": $DRAFT_CREDENTIAL,
-            "credentialStatusType": "RevocationList2021Status"
+            "credentialStatusType": "RevocationList2021Status",
+            "requiredRevealStatements": [1]
         }"###
             .replace("$DRAFT_CREDENTIAL", &create_draft_credential_with_id(id))
     }
@@ -973,7 +974,8 @@ mod tests {
                         "proofType": "Ed25519Signature2018",
                         "credentialStatus": {
                             "type": "RevocationList2021Status"
-                        }
+                        },
+                        "requiredRevealStatements": [1]
                     }
                 },
                 "nonce": "nonce"
@@ -1012,7 +1014,8 @@ mod tests {
                             "proofType": "Ed25519Signature2018",
                             "credentialStatus": {
                                 "type": "RevocationList2021Status"
-                            }
+                            },
+                            "requiredRevealStatements": [1]
                         }
                     },
                     "nonce": "nonce"
@@ -1047,7 +1050,8 @@ mod tests {
                             "proofType": "Ed25519Signature2018",
                             "credentialStatus": {
                                 "type": "RevocationList2021Status"
-                            }
+                            },
+                            "requiredRevealStatements": [1]
                         }
                     },
                     "nonce": "nonce"
