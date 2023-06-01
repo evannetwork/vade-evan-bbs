@@ -29,7 +29,7 @@ base64 = "0.13.0"
 bbs = { version = "0.4.1", default-features= false }
 flate2 = "1.0.20"
 hex = "0.4.2"
-libsecp256k1 = "0.3.5"
+libsecp256k1 = "0.5.0"
 regex = "1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0.53", features = ["preserve_order", "raw_value"] }
@@ -38,7 +38,7 @@ sha3 = "0.8.2"
 ssi-json-ld = "0.1.0"
 uuid = { version = "0.8.1", features = ["serde", "v4", "wasm-bindgen"] }
 vade = "0.1.0"
-vade-signer = "0.0.1"
+vade-signer = { git = "https://github.com/evannetwork/vade-signer", branch = "develop" }
 
 [dev-dependencies]
 tokio = { version = "1.7.1", features = ["macros", "rt-multi-thread"] }

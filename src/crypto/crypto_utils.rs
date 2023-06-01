@@ -20,7 +20,7 @@ use crate::application::{
 };
 use base64;
 use bbs::prelude::{DeterministicPublicKey, KeyGenOption, SecretKey};
-use secp256k1::{recover, Message, RecoveryId, Signature};
+use libsecp256k1::{recover, Message, RecoveryId, Signature};
 use serde::{Deserialize, Serialize};
 use serde_json::{value::RawValue, Value};
 use sha2::{Digest, Sha256};
@@ -224,7 +224,7 @@ pub fn recover_address_and_data(jwt: &str) -> Result<(String, String), Box<dyn E
     let mut signature_array = [0u8; 64];
     signature_array[..64].clone_from_slice(&signature_decoded[..64]);
     // slice signature and recovery for recovery
-    let ctx_sig = Signature::parse(&signature_array);
+    let ctx_sig = Signature::parse_standard(&signature_array)?;
     let signature_normalized = if signature_decoded[64] < 27 {
         signature_decoded[64]
     } else {

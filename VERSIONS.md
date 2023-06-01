@@ -26,6 +26,11 @@
 - adjust `credential_status` to be optional property in Credential types
 - adjust `revocation_list` param in `VerifyProofPayload` to be optional
 - adjust types, tests and functions to remove `credential_subject.id` from credentials
+- implement handling for `required_revealed_statements` in presentation creation and verification
+
+### Fixes
+
+- update dependencies for critical vulnerabilities
 
 ## v0.3.0
 
