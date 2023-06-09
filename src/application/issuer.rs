@@ -289,6 +289,7 @@ impl Issuer {
         }
 
         let credential_subject = CredentialSubject {
+            id: None,
             data: credential_request
                 .credential_offer
                 .ld_proof_vc_detail
