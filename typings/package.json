@@ -4,7 +4,7 @@
     "access": "public"
   },
   "author": "Blockchains Inc",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "typescript types for vade-evan-bbs",
   "types": "./index.d.ts"
 }
