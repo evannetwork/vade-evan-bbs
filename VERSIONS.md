@@ -22,6 +22,7 @@
 ### Fixes
 
 - update dependencies for critical vulnerabilities
+- add support for `required_reveal_statements` in `vade-evan-bbs`
 
 ## v0.3.0
 
