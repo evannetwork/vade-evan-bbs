@@ -249,6 +249,7 @@ async fn create_presentation(
     let revealed_data = finished_credential.credential_subject.data.clone();
     let mut revealed_properties_schema_map = HashMap::new();
     let revealed = CredentialSubject {
+        id: None,
         data: revealed_data,
     };
     revealed_properties_schema_map.insert(SCHEMA_DID.to_string(), revealed);
