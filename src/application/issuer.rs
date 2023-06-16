@@ -59,6 +59,7 @@ use bbs::{
     ProofNonce,
 };
 use flate2::{read::GzDecoder, write::GzEncoder, Compression};
+use serde_json::{value::Value, Map};
 use std::{collections::HashMap, convert::TryInto, error::Error, io::prelude::*};
 use vade_signer::Signer;
 
@@ -462,7 +463,12 @@ impl Issuer {
             base64::encode_config(&compressed_bytes, base64::URL_SAFE);
         revocation_list.issued = get_now_as_iso_string();
 
-        let document_to_sign = serde_json::to_value(&revocation_list)?;
+        // remove existing proof before signing
+        let mut revocation_list_values_map: Map<String, Value> =
+            serde_json::from_value(serde_json::to_value(&revocation_list)?)?;
+        revocation_list_values_map.remove("proof");
+        let document_to_sign = serde_json::to_value(&revocation_list_values_map)?;
+
         let proof = create_assertion_proof(
             &document_to_sign,
             &issuer_public_key_did,
@@ -499,7 +505,8 @@ mod tests {
         CredentialDraftOptions,
     };
     use bbs::{issuer::Issuer as BbsIssuer, prover::Prover as BbsProver};
-    use std::collections::HashMap;
+    use std::{collections::HashMap, mem::size_of_val};
+
     use utilities::test_data::{
         accounts::local::{ISSUER_DID, ISSUER_PRIVATE_KEY, ISSUER_PUBLIC_KEY_DID},
         bbs_coherent_context_test_data::{
@@ -861,6 +868,39 @@ mod tests {
                 MAX_REVOCATION_ENTRIES
             ))
         );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn revocation_works_multiple_time_and_doesnt_increase_size_of_proof(
+    ) -> Result<(), Box<dyn Error>> {
+        let signer: Box<dyn Signer> = Box::new(LocalSigner::new());
+
+        let mut revocation_list: RevocationListCredential =
+            serde_json::from_str(&REVOCATION_LIST_CREDENTIAL)?;
+        let size_of_original_credential = size_of_val(&revocation_list);
+        let size_of_proof = size_of_val(&revocation_list.proof);
+        for i in 1..10 {
+            let updated_revocation_list = Issuer::revoke_credential(
+                ISSUER_DID,
+                revocation_list.clone(),
+                &format!("{}",i+1),
+                ISSUER_PUBLIC_KEY_DID,
+                ISSUER_PRIVATE_KEY,
+                &signer,
+            )
+            .await?;
+
+            assert_ne!(
+                &revocation_list.credential_subject.encoded_list,
+                &updated_revocation_list.credential_subject.encoded_list
+            );
+            let size_of_updated_credential = size_of_val(&updated_revocation_list);
+            assert!(size_of_updated_credential < size_of_original_credential + size_of_proof, 
+                "Updated credential shouldn't add a new proof without deleting existing proof first!");
+            revocation_list = updated_revocation_list;
+        }
+
         Ok(())
     }
 

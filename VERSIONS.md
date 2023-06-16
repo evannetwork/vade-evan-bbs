@@ -22,6 +22,7 @@
 ### Fixes
 
 - update dependencies for critical vulnerabilities
+- fix credential size is increasing when revoking, because old proof was not removed before
 
 ## v0.3.0
 
