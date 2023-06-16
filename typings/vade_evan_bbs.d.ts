@@ -80,8 +80,10 @@ export interface IssueCredentialPayload {
 export interface OfferCredentialPayload {
   /** credential draft, outlining structure of future credential (without proof and status) */
   draftCredential: DraftBbsCredential;
+  /** type of credential status to use; pass`None` to omit status */
   credentialStatusType: LdProofVcDetailOptionsCredentialStatusType,
-  requiredRevealStatements: number[];
+  /** defaults to `[]`  */
+  requiredRevealStatements?: number[];
 }
 
 /** API payload for creating a zero-knowledge proof out of a BBS+ signature. */
