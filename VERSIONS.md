@@ -22,7 +22,7 @@
 ### Fixes
 
 - update dependencies for critical vulnerabilities
-- add support for `required_reveal_statements` in `vade-evan-bbs`
+- fix credential size is increasing when revoking, because old proof was not removed before
 
 ## v0.3.0
 
