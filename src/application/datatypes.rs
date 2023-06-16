@@ -16,7 +16,7 @@
 
 use bbs::{ProofNonce, SignatureProof, ToVariableLengthBytes};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, error::Error};
+use std::{collections::HashMap, convert::TryFrom, error::Error, fmt::Display};
 use uuid::Uuid;
 
 use super::{issuer::ADDITIONAL_HIDDEN_MESSAGES_COUNT, utils::get_now_as_iso_string};
@@ -88,7 +88,7 @@ pub struct CredentialSchema {
 
 pub struct CredentialDraftOptions {
     pub issuer_did: String,
-    pub id: Option<String>,
+    pub id: Option<PrefixedUuid>,
     pub issuance_date: Option<String>,
     pub valid_until: Option<String>,
 }
@@ -105,9 +105,7 @@ impl CredentialSchema {
                 "https://schema.org/".to_string(),
                 "https://w3id.org/vc-revocation-list-2020/v1".to_string(),
             ],
-            id: options
-                .id
-                .unwrap_or_else(|| format!("uuid:{}", Uuid::new_v4())),
+            id: options.id.unwrap_or_else(|| PrefixedUuid::new(Uuid::new_v4().to_string())),
             r#type: vec!["VerifiableCredential".to_string()],
             issuer: options.issuer_did,
             valid_until: options.valid_until,
@@ -178,7 +176,7 @@ pub struct CredentialProposal {
 pub struct BbsCredential {
     #[serde(rename(serialize = "@context", deserialize = "@context"))]
     pub context: Vec<String>,
-    pub id: String,
+    pub id: PrefixedUuid,
     pub r#type: Vec<String>,
     pub issuer: String,
     pub issuance_date: String,
@@ -226,7 +224,7 @@ impl BbsCredential {
 pub struct UnsignedBbsCredential {
     #[serde(rename(serialize = "@context", deserialize = "@context"))]
     pub context: Vec<String>,
-    pub id: String,
+    pub id: PrefixedUuid,
     pub r#type: Vec<String>,
     pub issuer: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -253,7 +251,7 @@ impl UnsignedBbsCredential {
 pub struct UnfinishedBbsCredential {
     #[serde(rename(serialize = "@context", deserialize = "@context"))]
     pub context: Vec<String>,
-    pub id: String,
+    pub id: PrefixedUuid,
     pub r#type: Vec<String>,
     pub issuer: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -391,7 +389,7 @@ pub struct UnfinishedProofPresentation {
 pub struct BbsPresentation {
     #[serde(rename(serialize = "@context", deserialize = "@context"))]
     pub context: Vec<String>,
-    pub id: String,
+    pub id: PrefixedUuid,
     pub r#type: Vec<String>,
     pub issuer: String,
     pub issuance_date: String,
@@ -504,12 +502,70 @@ impl RevocationListCredential {
     }
 }
 
+/// Helper class to ensure that credential id uuid's are prefixed with `"uuid:"`.
+#[derive(Clone, Deserialize, Serialize)]
+#[serde(try_from = "String")]
+pub struct PrefixedUuid(String);
+
+impl PrefixedUuid {
+    /// Creates a new `PrefixedUuid` by either taking given uuid as is or prefixing it with `"uuid:"` if required.
+    ///
+    /// # Arguments
+    ///
+    /// * `uuid` - uuid string to use as value
+    pub fn new(uuid: String) -> Self {
+        if uuid.starts_with("uuid:") {
+            Self(uuid)
+        } else {
+            Self(format!("uuid:{}", &uuid))
+        }
+    }
+
+    /// Tries to create a new `PrefixedUuid` instance, will fail if missing the `"uuid:"` prefix. Used for parsing uuids.
+    ///
+    /// # Arguments
+    ///
+    /// * `uuid` - uuid string to use as value
+    pub fn try_new(uuid: String) -> Result<Self, String> {
+        if uuid.starts_with("uuid:") {
+            Ok(Self(uuid))
+        } else {
+            Err(format!(
+                r#"uuid must start with prefix "uuid:" but got: "{}""#,
+                uuid
+            ))
+        }
+    }
+
+    pub fn into_inner(self) -> String {
+        self.0
+    }
+
+    pub fn inner(&self) -> &String {
+        &self.0
+    }
+}
+
+impl TryFrom<String> for PrefixedUuid {
+    type Error = String;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        PrefixedUuid::try_new(value)
+    }
+}
+
+impl Display for PrefixedUuid {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DraftBbsCredential {
     #[serde(rename(serialize = "@context", deserialize = "@context"))]
     pub context: Vec<String>,
-    pub id: String,
+    pub id: PrefixedUuid,
     pub r#type: Vec<String>,
     pub issuer: String,
     pub issuance_date: String,
@@ -526,7 +582,7 @@ impl DraftBbsCredential {
     ) -> UnsignedBbsCredential {
         UnsignedBbsCredential {
             context: self.context.clone(),
-            id: self.id.to_owned(),
+            id: self.id.clone(),
             r#type: self.r#type.clone(),
             issuer: self.issuer.to_owned(),
             valid_until: self.valid_until.to_owned(),
@@ -585,5 +641,132 @@ impl LdProofVcDetail {
         };
 
         Ok(message_count)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    extern crate utilities;
+
+    use serde_json::Value;
+    use utilities::test_data::bbs_coherent_context_test_data::{
+        FINISHED_CREDENTIAL,
+        PROOF_PRESENTATION,
+        UNFINISHED_CREDENTIAL,
+        UNSIGNED_CREDENTIAL,
+    };
+
+    use crate::{BbsCredential, ProofPresentation, UnfinishedBbsCredential, UnsignedBbsCredential};
+
+    #[test]
+    fn can_parse_a_credential_with_a_valid_uuid() -> Result<(), Box<dyn std::error::Error>> {
+        let result: Result<BbsCredential, serde_json::Error> =
+            serde_json::from_str(&FINISHED_CREDENTIAL);
+
+        assert!(&result.is_ok());
+
+        Ok(())
+    }
+
+    #[test]
+    fn cannot_parse_a_credential_with_an_invalid_uuid() -> Result<(), Box<dyn std::error::Error>> {
+        let mut credential: Value = serde_json::from_str(&FINISHED_CREDENTIAL)?;
+        credential["id"] = Value::String("733ae398-ca4e-45e8-a420-a602b1ab9131".to_string());
+        let serialized_with_invalid_id = serde_json::to_string(&credential)?;
+
+        let result: Result<BbsCredential, serde_json::Error> =
+            serde_json::from_str(&serialized_with_invalid_id);
+
+        assert!(&result.is_err());
+        let error_message = format!("{}", &result.err().unwrap());
+        assert!(error_message.starts_with(r#"uuid must start with prefix "uuid:""#));
+
+        Ok(())
+    }
+
+    #[test]
+    fn can_parse_an_unsigned_credential_with_a_valid_uuid() -> Result<(), Box<dyn std::error::Error>> {
+        let result: Result<UnsignedBbsCredential, serde_json::Error> =
+            serde_json::from_str(&UNSIGNED_CREDENTIAL);
+
+        assert!(&result.is_ok());
+
+        Ok(())
+    }
+
+    #[test]
+    fn cannot_parse_an_unsigned_credential_with_an_invalid_uuid() -> Result<(), Box<dyn std::error::Error>> {
+        let mut credential: Value = serde_json::from_str(&UNSIGNED_CREDENTIAL)?;
+        credential["id"] = Value::String("733ae398-ca4e-45e8-a420-a602b1ab9131".to_string());
+        let serialized_with_invalid_id = serde_json::to_string(&credential)?;
+
+        let result: Result<UnsignedBbsCredential, serde_json::Error> =
+            serde_json::from_str(&serialized_with_invalid_id);
+
+        assert!(&result.is_err());
+        let error_message = format!("{}", &result.err().unwrap());
+        assert!(error_message.starts_with(r#"uuid must start with prefix "uuid:""#));
+
+        Ok(())
+    }
+
+    #[test]
+    fn can_parse_an_unfinished_credential_with_a_valid_uuid() -> Result<(), Box<dyn std::error::Error>> {
+        let result: Result<UnfinishedBbsCredential, serde_json::Error> =
+            serde_json::from_str(&UNFINISHED_CREDENTIAL);
+
+        assert!(&result.is_ok());
+
+        Ok(())
+    }
+
+    #[test]
+    fn cannot_parse_an_unfinished_credential_with_an_invalid_uuid() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let mut credential: Value = serde_json::from_str(&UNFINISHED_CREDENTIAL)?;
+        credential["id"] = Value::String("733ae398-ca4e-45e8-a420-a602b1ab9131".to_string());
+        let serialized_with_invalid_id = serde_json::to_string(&credential)?;
+
+        let result: Result<UnfinishedBbsCredential, serde_json::Error> =
+            serde_json::from_str(&serialized_with_invalid_id);
+
+        assert!(&result.is_err());
+        let error_message = format!("{}", &result.err().unwrap());
+        assert!(error_message.starts_with(r#"uuid must start with prefix "uuid:""#));
+
+        Ok(())
+    }
+
+    #[test]
+    fn can_parse_a_proof_presentation_with_a_valid_uuid() -> Result<(), Box<dyn std::error::Error>> {
+        let result: Result<ProofPresentation, serde_json::Error> =
+            serde_json::from_str(&PROOF_PRESENTATION);
+
+        assert!(&result.is_ok());
+
+        Ok(())
+    }
+
+    #[test]
+    fn cannot_parse_a_proof_presentation_with_an_invalid_uuid() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let mut proof_presentation: Value = serde_json::from_str(&PROOF_PRESENTATION)?;
+        proof_presentation["verifiableCredential"]
+            .as_array_mut()
+            .ok_or_else(|| "could not get verifiableCredential array".to_string())?[0]
+            .as_object_mut()
+            .ok_or_else(|| "could not get the first verifiableCredential object".to_string())?
+            ["id"] =
+            Value::String("733ae398-ca4e-45e8-a420-a602b1ab9131".to_string());
+        let serialized_with_invalid_id = serde_json::to_string(&proof_presentation)?;
+
+        let result: Result<ProofPresentation, serde_json::Error> =
+            serde_json::from_str(&serialized_with_invalid_id);
+
+        assert!(&result.is_err());
+        let error_message = format!("{}", &result.err().unwrap());
+        assert!(error_message.starts_with(r#"uuid must start with prefix "uuid:""#));
+
+        Ok(())
     }
 }

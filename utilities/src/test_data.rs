@@ -154,7 +154,7 @@ pub mod bbs_coherent_context_test_data {
            "https://schema.org/",
            "https://w3id.org/vc-revocation-list-2020/v1"
         ],
-        "id":"94450c72-5dc4-4e46-8df0-106819064656",
+        "id":"uuid:94450c72-5dc4-4e46-8df0-106819064656",
         "type":[
            "VerifiableCredential"
         ],

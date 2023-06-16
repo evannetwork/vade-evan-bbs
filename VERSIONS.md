@@ -8,6 +8,15 @@
 
 ### Deprecations
 
+- the field `id` is now using a struct to wrap (de)serialization (`PrefixedUuid`) and its value must now be prefixed with `uuid:` in `DraftBbsCredential` and therefore in:
+  - `OfferCredentialPayload`
+  - `RequestCredentialPayload`
+  - `IssueCredentialPayload`
+  - `BbsCredential`
+  - `UnsignedBbsCredential`
+  - `UnfinishedBbsCredential`
+  - `BbsPresentation`
+
 ## v0.4.0
 
 ### Features

@@ -51,6 +51,7 @@ use crate::{
     LdProofVcDetailOptionsCredentialStatus,
     LdProofVcDetailOptionsCredentialStatusType,
     LdProofVcDetailOptionsType,
+    PrefixedUuid,
 };
 use bbs::{
     issuer::Issuer as BbsIssuer,
@@ -333,7 +334,7 @@ impl Issuer {
             blind_signature: base64::encode(blind_signature.to_bytes_compressed_form()),
         };
 
-        let credential_id = format!("uuid:{}", generate_uuid());
+        let credential_id = PrefixedUuid::try_new(generate_uuid())?;
         let credential = UnfinishedBbsCredential {
             context: DEFAULT_CREDENTIAL_CONTEXTS
                 .iter()
