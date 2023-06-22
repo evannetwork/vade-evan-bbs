@@ -2408,8 +2408,9 @@ dependencies = [
 
 [[package]]
 name = "vade"
-version = "0.1.0"
-source = "git+https://github.com/evannetwork/vade?branch=feature/add-proof-proposals#a573ec5b65b8ca03a0536da22aa906e5970579a2"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "03e358313f2c726a5d6d7c8253a5f708f0d2dcca7c3606a7e4e2a5e94a9fd808"
 dependencies = [
  "async-trait",
  "env_logger",
