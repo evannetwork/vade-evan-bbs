@@ -203,12 +203,11 @@ async fn create_proof_request_from_scratch(
 ) -> Result<BbsProofRequest, Box<dyn Error>> {
     let mut reveal_attributes = HashMap::new();
     reveal_attributes.insert(SCHEMA_DID.clone().to_string(), vec![1]);
-    let proof_request_payload =
-        RequestProofPayload::CreateRequestArgs(RequestProofPayloadFromScratch {
-            verifier_did: Some(VERIFIER_DID.to_string()),
-            schemas: vec![SCHEMA_DID.to_string()],
-            reveal_attributes,
-        });
+    let proof_request_payload = RequestProofPayload::FromScratch(RequestProofPayloadFromScratch {
+        verifier_did: Some(VERIFIER_DID.to_string()),
+        schemas: vec![SCHEMA_DID.to_string()],
+        reveal_attributes,
+    });
     let proof_request_json = serde_json::to_string(&proof_request_payload)?;
     let result = vade
         .vc_zkp_request_proof(EVAN_METHOD, TYPE_OPTIONS, &proof_request_json)

@@ -220,8 +220,8 @@ pub struct RequestProofPayloadFromScratch {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", untagged)]
 pub enum RequestProofPayload {
-    CreateRequestArgs(RequestProofPayloadFromScratch),
-    Offer(BbsProofProposal),
+    FromScratch(RequestProofPayloadFromScratch),
+    FromOffer(BbsProofProposal),
 }
 
 /// API payload to revoke a credential as this credential's issuer.
@@ -765,11 +765,11 @@ impl VadePlugin for VadeEvanBbs {
         ignore_unrelated!(method, options);
         let payload: RequestProofPayload = parse!(&payload, "payload");
         let result: BbsProofRequest = match payload {
-            RequestProofPayload::Offer(mut offer) => {
+            RequestProofPayload::FromOffer(mut offer) => {
                 offer.created_at = get_now_as_iso_string();
                 offer.into()
             }
-            RequestProofPayload::CreateRequestArgs(args) => Verifier::create_proof_request(
+            RequestProofPayload::FromScratch(args) => Verifier::create_proof_request(
                 args.verifier_did,
                 args.schemas,
                 args.reveal_attributes,
