@@ -145,7 +145,7 @@ fn empty_array() -> Vec<u32> {
     [].into()
 }
 
-/// API payload to create a BbsProofProposal to be sent by a verifier.
+/// API payload to create a BbsProofProposal to be sent by a holder.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProposeProofPayload {
