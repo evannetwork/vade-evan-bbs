@@ -16,7 +16,7 @@
 
 use bbs::{ProofNonce, SignatureProof, ToVariableLengthBytes};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, error::Error};
+use std::{collections::HashMap, convert::From, error::Error};
 use uuid::Uuid;
 
 use super::{issuer::ADDITIONAL_HIDDEN_MESSAGES_COUNT, utils::get_now_as_iso_string};
@@ -48,6 +48,32 @@ pub struct BbsCredentialRequest {
     pub blind_signature_context: String,
 }
 
+/// Message sent by a prover stating which attributes of which schema he is intending to reveal.
+///
+/// All fields (except `createdAt`) will be included in a `BbsProofRequest` created from this proposal.
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BbsProofProposal {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub verifier: Option<String>,
+    pub created_at: String,
+    pub nonce: String,
+    pub r#type: String,
+    pub sub_proof_requests: Vec<BbsSubProofRequest>,
+}
+
+impl From<BbsProofRequest> for BbsProofProposal {
+    fn from(request: BbsProofRequest) -> Self {
+        Self {
+            verifier: request.verifier,
+            created_at: request.created_at,
+            nonce: request.nonce,
+            r#type: request.r#type,
+            sub_proof_requests: request.sub_proof_requests,
+        }
+    }
+}
+
 /// Message sent by a verifier stating which attributes of which schema the prover is supposed to reveal.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -58,6 +84,18 @@ pub struct BbsProofRequest {
     pub nonce: String,
     pub r#type: String,
     pub sub_proof_requests: Vec<BbsSubProofRequest>,
+}
+
+impl From<BbsProofProposal> for BbsProofRequest {
+    fn from(proposal: BbsProofProposal) -> Self {
+        Self {
+            verifier: proposal.verifier,
+            created_at: proposal.created_at,
+            nonce: proposal.nonce,
+            r#type: proposal.r#type,
+            sub_proof_requests: proposal.sub_proof_requests,
+        }
+    }
 }
 
 /// Part of a proof request that requests attributes of a specific schema

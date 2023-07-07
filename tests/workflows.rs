@@ -198,17 +198,32 @@ async fn create_finished_credential(
     Ok(finished_credential)
 }
 
-async fn create_proof_request(vade: &mut Vade) -> Result<BbsProofRequest, Box<dyn Error>> {
+async fn create_proof_request_from_scratch(
+    vade: &mut Vade,
+) -> Result<BbsProofRequest, Box<dyn Error>> {
     let mut reveal_attributes = HashMap::new();
     reveal_attributes.insert(SCHEMA_DID.clone().to_string(), vec![1]);
-    let proof_request_payload = RequestProofPayload {
+    let proof_request_payload = RequestProofPayload::FromScratch(RequestProofPayloadFromScratch {
         verifier_did: Some(VERIFIER_DID.to_string()),
         schemas: vec![SCHEMA_DID.to_string()],
         reveal_attributes,
-    };
+    });
     let proof_request_json = serde_json::to_string(&proof_request_payload)?;
     let result = vade
         .vc_zkp_request_proof(EVAN_METHOD, TYPE_OPTIONS, &proof_request_json)
+        .await?;
+    let proof_request: BbsProofRequest = serde_json::from_str(&result[0].as_ref().unwrap())?;
+
+    Ok(proof_request)
+}
+
+async fn create_proof_request_from_proposal(
+    vade: &mut Vade,
+    proposal: &BbsProofProposal,
+) -> Result<BbsProofRequest, Box<dyn Error>> {
+    let payload = serde_json::to_string(&proposal)?;
+    let result = vade
+        .vc_zkp_request_proof(EVAN_METHOD, TYPE_OPTIONS, &payload)
         .await?;
     let proof_request: BbsProofRequest = serde_json::from_str(&result[0].as_ref().unwrap())?;
 
@@ -658,8 +673,94 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
     )
     .await?;
     // create proof request
-    let mut proof_request = create_proof_request(&mut vade).await?;
+    let mut proof_request = create_proof_request_from_scratch(&mut vade).await?;
     proof_request.sub_proof_requests[0].revealed_attributes = vec![10, 11];
+
+    // create proof
+    let mut public_key_schema_map = HashMap::new();
+    public_key_schema_map.insert(SCHEMA_DID.to_string(), PUB_KEY.to_string());
+    let presentation = create_presentation(
+        &mut vade,
+        finished_credential.clone(),
+        proof_request.clone(),
+        public_key_schema_map.clone(),
+    )
+    .await?;
+    // verify proof
+    let verify_proof_payload = VerifyProofPayload {
+        presentation: presentation.clone(),
+        proof_request: proof_request.clone(),
+        keys_to_schema_map: public_key_schema_map,
+        signer_address: SIGNER_1_ADDRESS.to_string(),
+        revocation_list: Some(revocation_list.clone()),
+    };
+    let verify_proof_json = serde_json::to_string(&verify_proof_payload)?;
+    let results = vade
+        .vc_zkp_verify_proof(EVAN_METHOD, TYPE_OPTIONS, &verify_proof_json)
+        .await?;
+
+    let result: BbsProofVerification =
+        serde_json::from_str(&results[0].as_ref().ok_or("could not get result")?)?;
+
+    assert_eq!(&result.presented_proof, &presentation.id);
+    assert_eq!(&result.status, &"verified".to_string());
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn workflow_can_propose_request_issue_verify_a_credential_with_proof_proposal(
+) -> Result<(), Box<dyn Error>> {
+    let mut vade = get_vade();
+
+    let revocation_list = create_revocation_list(&mut vade).await?;
+
+    // Create credential offering
+    let schema = CredentialSchema::from_str(SCHEMA)?;
+    let mut credential_draft = schema.to_draft_credential(CredentialDraftOptions {
+        issuer_did: ISSUER_DID.to_string(),
+        id: None,
+        issuance_date: None,
+        valid_until: None,
+    });
+    let mut credential_values = HashMap::new();
+    credential_values.insert("test_property_string3".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string1".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string2".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string4".to_owned(), "value".to_owned());
+    credential_draft.credential_subject.data = credential_values;
+    let offer_payload = OfferCredentialPayload {
+        draft_credential: credential_draft,
+        credential_status_type:
+            LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
+        required_reveal_statements: vec![1],
+    };
+
+    let offer = create_credential_offer(&mut vade, offer_payload).await?;
+    let (credential_request, signature_blinding_base64) =
+        create_credential_request(&mut vade, offer.clone()).await?;
+
+    let unfinished_credential = create_unfinished_credential(
+        &mut vade,
+        credential_request,
+        Some(revocation_list.id.clone()),
+        Some("0".to_string()),
+    )
+    .await?;
+    let finished_credential = create_finished_credential(
+        &mut vade,
+        unfinished_credential.clone(),
+        signature_blinding_base64.clone(),
+    )
+    .await?;
+
+    // create proof request, that we'll use for a proposal
+    let proof_request_draft = create_proof_request_from_scratch(&mut vade).await?;
+    let proof_proposal: BbsProofProposal = proof_request_draft.into();
+
+    // create proof request, that we'll use to create the proof
+    let proof_request = create_proof_request_from_proposal(&mut vade, &proof_proposal).await?;
 
     // create proof
     let mut public_key_schema_map = HashMap::new();
@@ -742,7 +843,7 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
     let updated_revocation = revoke_credential(&mut vade, revocation_list, "0".to_string()).await?;
 
     // create proof request
-    let proof_request = create_proof_request(&mut vade).await?;
+    let proof_request = create_proof_request_from_scratch(&mut vade).await?;
 
     // create proof
     let mut public_key_schema_map = HashMap::new();
@@ -859,7 +960,7 @@ async fn workflow_can_not_verify_presentation_mismatch_revealed_statements(
     )
     .await?;
     // create proof request
-    let mut proof_request = create_proof_request(&mut vade).await?;
+    let mut proof_request = create_proof_request_from_scratch(&mut vade).await?;
     proof_request.sub_proof_requests[0].revealed_attributes = vec![10, 11];
 
     // create proof
@@ -948,7 +1049,7 @@ async fn workflow_can_not_verify_presentation_mismatch_required_revealed_stateme
     )
     .await?;
     // create proof request
-    let mut proof_request = create_proof_request(&mut vade).await?;
+    let mut proof_request = create_proof_request_from_scratch(&mut vade).await?;
     proof_request.sub_proof_requests[0].revealed_attributes = vec![10, 11];
 
     // create proof
