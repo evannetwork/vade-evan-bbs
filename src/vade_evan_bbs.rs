@@ -151,7 +151,7 @@ fn empty_array() -> Vec<u32> {
 pub struct ProposeProofPayload {
     /// DID of the verifier
     pub verifier_did: Option<String>,
-    /// List of schema IDs to request
+    /// List of schema IDs to propose
     pub schemas: Vec<String>,
     /// Attributes to reveal per schema ID
     pub reveal_attributes: HashMap<String, Vec<usize>>,
@@ -637,9 +637,9 @@ impl VadePlugin for VadeEvanBbs {
     }
 
     /// Proposes a proof for one or more credentials issued under one or more specific schemas and
-    /// is sent by a verifier to a prover.
+    /// is sent by a prover to a verifier.
     ///
-    /// The proof proposal consists of the fields the issuer wants to reveal per schema.
+    /// The proof proposal consists of the fields the holder wants to reveal per schema.
     ///
     /// # Arguments
     ///
@@ -657,7 +657,6 @@ impl VadePlugin for VadeEvanBbs {
     ) -> Result<VadePluginResultValue<Option<String>>, Box<dyn Error>> {
         ignore_unrelated!(method, options);
 
-        ignore_unrelated!(method, options);
         let payload: ProposeProofPayload = parse!(&payload, "payload");
         let result: BbsProofProposal = Verifier::create_proof_request(
             payload.verifier_did,
@@ -744,7 +743,7 @@ impl VadePlugin for VadeEvanBbs {
     /// Requests a proof for one or more credentials issued under one or more specific schemas and
     /// is sent by a verifier to a prover.
     ///
-    /// Proof request can be created from scratch or by using a proof offering as an input argument.
+    /// Proof request can be created from scratch or by using a proof proposal as an input argument.
     ///
     /// The proof request consists of the fields the verifier wants to be revealed per schema.
     ///
