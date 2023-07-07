@@ -24,12 +24,12 @@ import {
   CredentialStatus,
   CredentialSubject,
   DraftBbsCredential,
-  LdProofVcDetail,
   ProofPresentation,
   RevocationListCredential,
   SchemaProperty,
   UnfinishedBbsCredential,
   LdProofVcDetailOptionsCredentialStatusType,
+  BbsProofProposal,
 } from './application/datatypes';
 
 /** Message passed to vade containing the desired credential type.
@@ -80,8 +80,10 @@ export interface IssueCredentialPayload {
 export interface OfferCredentialPayload {
   /** credential draft, outlining structure of future credential (without proof and status) */
   draftCredential: DraftBbsCredential;
+  /** type of credential status to use; pass`None` to omit status */
   credentialStatusType: LdProofVcDetailOptionsCredentialStatusType,
-  requiredRevealStatements: number[];
+  /** defaults to `[]`  */
+  requiredRevealStatements?: number[];
 }
 
 /** API payload for creating a zero-knowledge proof out of a BBS+ signature. */
@@ -125,8 +127,8 @@ export interface RequestCredentialPayload {
   credentialSchema: CredentialSchema;
 }
 
-/** API payload to create a BbsProofRequest to be sent by a verifier. */
-export interface RequestProofPayload {
+/** API payload to create a BbsProofProposal to be sent by a holder. */
+export interface ProposeProofPayload {
   /** DID of the verifier */
   verifierDid?: string;
   /** List of schema IDs to request */
@@ -134,6 +136,19 @@ export interface RequestProofPayload {
   /** Attributes to reveal per schema ID */
   revealAttributes: Record<string, number[]>;
 }
+
+/** API payload to create a BbsProofRequest if flow starts with request. */
+export interface RequestProofPayloadFromScratch {
+  /** DID of the verifier */
+  verifierDid?: string;
+  /** List of schema IDs to request */
+  schemas: string[];
+  /** Attributes to reveal per schema ID */
+  revealAttributes: Record<string, number[]>;
+}
+
+/** API payload to create a BbsProofRequest to be sent by a verifier. */
+export type RequestProofPayload = RequestProofPayloadFromScratch | BbsProofProposal;
 
 /** API payload to revoke a credential as this credential's issuer. */
 export interface RevokeCredentialPayload {

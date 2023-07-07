@@ -25,6 +25,20 @@ export interface BbsCredentialRequest {
 }
 
 /**
+ * Message sent by a prover stating which attributes of which schema he is intending to reveal.
+ *
+ * All fields (except `createdAt`) will be included in a `BbsProofRequest` created from this proposal.
+ */
+export interface BbsProofProposal {
+  verifier: string;
+  createdAt: string;
+  nonce: string;
+  type: string;
+  subProofRequests: BbsSubProofRequest[];
+}
+
+
+/**
  * Message sent by a verifier stating which attributes of which schema the prover is supposed to reveal.
  */
 export interface BbsProofRequest {

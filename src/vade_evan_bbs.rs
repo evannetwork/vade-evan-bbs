@@ -40,11 +40,13 @@ use crate::{
             decode_base64,
             generate_uuid,
             get_dpk_from_string,
+            get_now_as_iso_string,
             get_nquads_schema_map,
         },
         verifier::Verifier,
     },
     crypto::{crypto_utils::get_public_key_from_private_key, crypto_verifier::CryptoVerifier},
+    BbsProofProposal,
     CredentialStatus,
     DraftBbsCredential,
 };
@@ -135,7 +137,24 @@ pub struct OfferCredentialPayload {
     /// credential draft, outlining structure of future credential (without proof and status)
     pub draft_credential: DraftBbsCredential,
     pub credential_status_type: LdProofVcDetailOptionsCredentialStatusType,
+    #[serde(default = "empty_array")]
     pub required_reveal_statements: Vec<u32>,
+}
+
+fn empty_array() -> Vec<u32> {
+    [].into()
+}
+
+/// API payload to create a BbsProofProposal to be sent by a holder.
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProposeProofPayload {
+    /// DID of the verifier
+    pub verifier_did: Option<String>,
+    /// List of schema IDs to request
+    pub schemas: Vec<String>,
+    /// Attributes to reveal per schema ID
+    pub reveal_attributes: HashMap<String, Vec<usize>>,
 }
 
 /// API payload for creating a zero-knowledge proof out of a BBS+ signature.
@@ -185,16 +204,24 @@ pub struct RequestCredentialPayload {
     pub credential_schema: CredentialSchema,
 }
 
-/// API payload to create a BbsProofRequest to be sent by a verifier.
+/// API payload to create a BbsProofRequest if flow starts with request.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct RequestProofPayload {
+pub struct RequestProofPayloadFromScratch {
     /// DID of the verifier
     pub verifier_did: Option<String>,
     /// List of schema IDs to request
     pub schemas: Vec<String>,
     /// Attributes to reveal per schema ID
     pub reveal_attributes: HashMap<String, Vec<usize>>,
+}
+
+/// API payload to create a BbsProofRequest to be sent by a verifier.
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", untagged)]
+pub enum RequestProofPayload {
+    FromScratch(RequestProofPayloadFromScratch),
+    FromProposal(BbsProofProposal),
 }
 
 /// API payload to revoke a credential as this credential's issuer.
@@ -609,6 +636,41 @@ impl VadePlugin for VadeEvanBbs {
         )?)))
     }
 
+    /// Proposes a proof for one or more credentials issued under one or more specific schemas and
+    /// is sent by a verifier to a prover.
+    ///
+    /// The proof proposal consists of the fields the issuer wants to reveal per schema.
+    ///
+    /// # Arguments
+    ///
+    /// * `method` - method to request a proof for (e.g. "did:example")
+    /// * `options` - serialized [`TypeOptions`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.TypeOptions.html)
+    /// * `payload` - serialized [`ProposeProofPayload`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.RequestProofPayload.html)
+    ///
+    /// # Returns
+    /// * `Option<String>` - A `ProofRequest` as JSON
+    async fn vc_zkp_propose_proof(
+        &mut self,
+        method: &str,
+        options: &str,
+        payload: &str,
+    ) -> Result<VadePluginResultValue<Option<String>>, Box<dyn Error>> {
+        ignore_unrelated!(method, options);
+
+        ignore_unrelated!(method, options);
+        let payload: ProposeProofPayload = parse!(&payload, "payload");
+        let result: BbsProofProposal = Verifier::create_proof_request(
+            payload.verifier_did,
+            payload.schemas,
+            payload.reveal_attributes,
+        )?
+        .into();
+
+        Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
+            &result,
+        )?)))
+    }
+
     /// Creates a new bbs credential proposal. This message is the first in the
     /// credential issuance flow and is sent by the potential credential holder to the credential issuer.
     ///
@@ -681,6 +743,9 @@ impl VadePlugin for VadeEvanBbs {
 
     /// Requests a proof for one or more credentials issued under one or more specific schemas and
     /// is sent by a verifier to a prover.
+    ///
+    /// Proof request can be created from scratch or by using a proof offering as an input argument.
+    ///
     /// The proof request consists of the fields the verifier wants to be revealed per schema.
     ///
     /// # Arguments
@@ -699,11 +764,17 @@ impl VadePlugin for VadeEvanBbs {
     ) -> Result<VadePluginResultValue<Option<String>>, Box<dyn Error>> {
         ignore_unrelated!(method, options);
         let payload: RequestProofPayload = parse!(&payload, "payload");
-        let result: BbsProofRequest = Verifier::create_proof_request(
-            payload.verifier_did,
-            payload.schemas,
-            payload.reveal_attributes,
-        )?;
+        let result: BbsProofRequest = match payload {
+            RequestProofPayload::FromProposal(mut offer) => {
+                offer.created_at = get_now_as_iso_string();
+                offer.into()
+            }
+            RequestProofPayload::FromScratch(args) => Verifier::create_proof_request(
+                args.verifier_did,
+                args.schemas,
+                args.reveal_attributes,
+            )?,
+        };
 
         Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
             &result,
@@ -886,5 +957,143 @@ impl VadePlugin for VadeEvanBbs {
         Ok(VadePluginResultValue::Success(Some(serde_json::to_string(
             &credential,
         )?)))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    extern crate utilities;
+
+    use crate::{IssueCredentialPayload, OfferCredentialPayload, RequestCredentialPayload};
+
+    use utilities::test_data::bbs_coherent_context_test_data::SCHEMA;
+
+    fn create_draft_credential_with_id(id: &str) -> String {
+        r###"{
+            "@context":[
+                "https://www.w3.org/2018/credentials/v1",
+                "https://schema.org/",
+                "https://w3id.org/vc-revocation-list-2020/v1"
+            ],
+            "id": "$ID",
+            "type":[
+                "VerifiableCredential"
+            ],
+            "issuer":"did:evan:EiDmRkKsOaey8tPzc6RyQrYkMNjpqXXVTj9ggy0EbiXS4g",
+            "issuanceDate":"2021-04-20T08:35:56+0000",
+            "credentialSubject":{
+                "data":{
+                    "test_property_string3":"value",
+                    "test_property_string":"value",
+                    "test_property_string4":"value",
+                    "test_property_string1":"value",
+                    "test_property_string2":"value"
+                }
+            },
+            "credentialSchema":{
+                "id":"did:evan:EiBmiHCHLMbGVn9hllRM5qQOsshvETToEALBAtFqP3PUIg",
+                "type":"EvanZKPSchema"
+            }
+        }"###
+            .replace("$ID", id)
+    }
+
+    fn get_offer_payload_with_id(id: &str) -> String {
+        r###"{
+            "draftCredential": $DRAFT_CREDENTIAL,
+            "credentialStatusType": "RevocationList2021Status",
+            "requiredRevealStatements": [1]
+        }"###
+            .replace("$DRAFT_CREDENTIAL", &create_draft_credential_with_id(id))
+    }
+
+    #[test]
+    fn can_parse_offer_credential_payload_with_a_valid_uuid(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let to_parse = get_offer_payload_with_id("uuid:94450c72-5dc4-4e46-8df0-106819064656");
+
+        let result: Result<OfferCredentialPayload, serde_json::Error> =
+            serde_json::from_str(&to_parse);
+
+        assert!(&result.is_ok());
+
+        Ok(())
+    }
+
+    fn get_request_payload_with_id(id: &str) -> String {
+        r###"{
+            "credentialOffer": {
+                "ldProofVcDetail": {
+                    "credential": $DRAFT_CREDENTIAL,
+                    "options": {
+                        "created": "created",
+                        "proofType": "Ed25519Signature2018",
+                        "credentialStatus": {
+                            "type": "RevocationList2021Status"
+                        }
+                    }
+                },
+                "nonce": "nonce"
+            },
+            "masterSecret": "masterSecret",
+            "issuerPubKey": "issuerPubKey",
+            "credentialSchema": $CREDENTIAL_SCHEMA
+        }"###
+            .replace("$DRAFT_CREDENTIAL", &create_draft_credential_with_id(id))
+            .replace("$CREDENTIAL_SCHEMA", SCHEMA)
+    }
+
+    #[test]
+    fn can_parse_request_credential_payload_with_a_valid_uuid(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let to_parse = get_request_payload_with_id("uuid:94450c72-5dc4-4e46-8df0-106819064656");
+
+        let result: Result<RequestCredentialPayload, serde_json::Error> =
+            serde_json::from_str(&to_parse);
+
+        assert!(&result.is_ok());
+
+        Ok(())
+    }
+
+    fn get_issue_payload_with_id(id: &str) -> String {
+        r###"{
+            "credentialRequest": {
+                "credentialOffer": {
+                    "ldProofVcDetail": {
+                        "credential": $DRAFT_CREDENTIAL,
+                        "options": {
+                            "created": "created",
+                            "proofType": "Ed25519Signature2018",
+                            "credentialStatus": {
+                                "type": "RevocationList2021Status"
+                            },
+                            "requiredRevealStatements": [1]
+                        }
+                    },
+                    "nonce": "nonce"
+                },
+                "blindSignatureContext": "blindSignatureContext"
+            },
+            "issuerPublicKeyId": "issuerPublicKeyId",
+            "issuerPublicKey": "issuerPublicKey",
+            "issuerSecretKey": "issuerSecretKey",
+            "requiredIndices": []
+    }"###
+            .replace("$DRAFT_CREDENTIAL", &create_draft_credential_with_id(id))
+            .replace("$CREDENTIAL_SCHEMA", SCHEMA)
+    }
+
+    #[test]
+    fn can_parse_issue_credential_payload_with_a_valid_uuid(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let to_parse = get_issue_payload_with_id("uuid:94450c72-5dc4-4e46-8df0-106819064656");
+
+        let result: Result<IssueCredentialPayload, serde_json::Error> =
+            serde_json::from_str(&to_parse);
+
+        assert!(&result.is_ok());
+
+        Ok(())
     }
 }

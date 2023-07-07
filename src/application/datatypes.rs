@@ -16,7 +16,7 @@
 
 use bbs::{ProofNonce, SignatureProof, ToVariableLengthBytes};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, error::Error};
+use std::{collections::HashMap, convert::From, error::Error};
 use uuid::Uuid;
 
 use super::{issuer::ADDITIONAL_HIDDEN_MESSAGES_COUNT, utils::get_now_as_iso_string};
@@ -48,6 +48,32 @@ pub struct BbsCredentialRequest {
     pub blind_signature_context: String,
 }
 
+/// Message sent by a prover stating which attributes of which schema he is intending to reveal.
+///
+/// All fields (except `createdAt`) will be included in a `BbsProofRequest` created from this proposal.
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BbsProofProposal {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub verifier: Option<String>,
+    pub created_at: String,
+    pub nonce: String,
+    pub r#type: String,
+    pub sub_proof_requests: Vec<BbsSubProofRequest>,
+}
+
+impl From<BbsProofRequest> for BbsProofProposal {
+    fn from(request: BbsProofRequest) -> Self {
+        Self {
+            verifier: request.verifier,
+            created_at: request.created_at,
+            nonce: request.nonce,
+            r#type: request.r#type,
+            sub_proof_requests: request.sub_proof_requests,
+        }
+    }
+}
+
 /// Message sent by a verifier stating which attributes of which schema the prover is supposed to reveal.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -58,6 +84,18 @@ pub struct BbsProofRequest {
     pub nonce: String,
     pub r#type: String,
     pub sub_proof_requests: Vec<BbsSubProofRequest>,
+}
+
+impl From<BbsProofProposal> for BbsProofRequest {
+    fn from(proposal: BbsProofProposal) -> Self {
+        Self {
+            verifier: proposal.verifier,
+            created_at: proposal.created_at,
+            nonce: proposal.nonce,
+            r#type: proposal.r#type,
+            sub_proof_requests: proposal.sub_proof_requests,
+        }
+    }
 }
 
 /// Part of a proof request that requests attributes of a specific schema
@@ -115,6 +153,7 @@ impl CredentialSchema {
                 .issuance_date
                 .unwrap_or_else(|| get_now_as_iso_string()),
             credential_subject: CredentialSubject {
+                id: None,
                 data: self // fill ALL subject data fields with empty string (mandatory and optional ones)
                     .properties
                     .clone()
@@ -200,6 +239,7 @@ impl BbsCredential {
             issuance_date: cred.issuance_date,
             valid_until: cred.valid_until,
             credential_subject: CredentialSubject {
+                id: None,
                 data: cred.credential_subject.data,
             },
             credential_schema: CredentialSchemaReference {
@@ -289,6 +329,8 @@ impl UnfinishedBbsCredential {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct CredentialSubject {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
     pub data: HashMap<String, String>,
 }
 
@@ -328,6 +370,7 @@ pub struct BbsCredentialSignature {
     pub proof_purpose: String,
     pub verification_method: String,
     pub credential_message_count: usize,
+    #[serde(default = "empty_array")]
     pub required_reveal_statements: Vec<u32>,
     pub signature: String,
 }
@@ -342,6 +385,7 @@ pub struct UnfinishedBbsCredentialSignature {
     pub proof_purpose: String,
     pub verification_method: String,
     pub credential_message_count: usize,
+    #[serde(default = "empty_array")]
     pub required_reveal_statements: Vec<u32>,
     pub blind_signature: String,
 }
@@ -443,6 +487,7 @@ pub struct BbsPresentationProof {
     pub proof_purpose: String,
     pub credential_message_count: usize,
     pub verification_method: String,
+    #[serde(default = "empty_array")]
     pub required_reveal_statements: Vec<u32>,
     pub nonce: String,
     pub proof: String,
@@ -560,6 +605,7 @@ pub struct LdProofVcDetailOptions {
     pub created: String,
     pub proof_type: LdProofVcDetailOptionsType,
     pub credential_status: LdProofVcDetailOptionsCredentialStatus,
+    #[serde(default = "empty_array")]
     pub required_reveal_statements: Vec<u32>,
 }
 
@@ -567,6 +613,10 @@ pub struct LdProofVcDetailOptions {
 pub struct LdProofVcDetail {
     pub credential: DraftBbsCredential,
     pub options: LdProofVcDetailOptions,
+}
+
+fn empty_array() -> Vec<u32> {
+    [].into()
 }
 
 impl LdProofVcDetail {
