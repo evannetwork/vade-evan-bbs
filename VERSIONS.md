@@ -4,7 +4,12 @@
 
 ### Features
 
+- add `vc_zkp_propose_proof` to add propose step, that can be done before requesting proofs
+- add support to accept `BbsProofProposal` as input for `vc_zkp_request_proof`
+
 ### Fixes
+
+- adjust `credentialStatus` to be optional property in TypeScript typings for `IssueCredentialPayload`
 
 ### Deprecations
 

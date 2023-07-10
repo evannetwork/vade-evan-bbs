@@ -411,6 +411,7 @@ mod tests {
         revealed_data.remove("test_property_string4");
 
         let revealed = CredentialSubject {
+            id: None,
             data: revealed_data,
         };
         let mut revealed_properties_map = HashMap::new();
