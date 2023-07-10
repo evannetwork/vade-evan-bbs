@@ -8,6 +8,12 @@
 
 ### Deprecations
 
+## v0.0.6
+
+### Fixes
+
+- adjust `credentialStatus` to be optional property in TypeScript typings for `IssueCredentialPayload`
+
 ## v0.0.5
 
 ### Features
