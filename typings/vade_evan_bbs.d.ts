@@ -65,7 +65,7 @@ export interface IssueCredentialPayload {
   /** credential request */
   credentialRequest: BbsCredentialRequest;
   /** status to be appended to credential in offer */
-  credentialStatus: CredentialStatus;
+  credentialStatus?: CredentialStatus;
   /** DID url of the public key of the issuer used to later verify the signature */
   issuerPublicKeyId: string;
   /** The public bbs+ key of the issuer used to later verify the signature */
