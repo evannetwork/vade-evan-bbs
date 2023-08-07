@@ -199,9 +199,9 @@ impl Prover {
         public_key_schema_map: &HashMap<String, DeterministicPublicKey>,
         nquads_schema_map: &HashMap<String, Vec<String>>,
         master_secret: &SignatureMessage,
-        prover_did: &str,
-        prover_public_key_did: &str,
-        prover_proving_key: &str,
+        prover_did: Option<&str>,
+        prover_public_key_did: Option<&str>,
+        prover_proving_key: Option<&str>,
         signer: &Box<dyn Signer>,
     ) -> Result<ProofPresentation, Box<dyn Error>> {
         let mut poks: HashMap<String, PoKOfSignature> = HashMap::new();
@@ -280,14 +280,19 @@ impl Prover {
         };
 
         let document_to_sign = serde_json::to_value(&signatureless_presentation)?;
-        let proof = create_assertion_proof(
-            &document_to_sign,
-            &prover_public_key_did,
-            &prover_did,
-            &prover_proving_key,
-            signer,
-        )
-        .await?;
+        let mut proof = None;
+        if prover_did.is_some() {
+            proof = Some(
+                create_assertion_proof(
+                    &document_to_sign,
+                    &prover_public_key_did.ok_or("proverPublicKeyDid is invalid")?,
+                    &prover_did.ok_or("proverDid is invalid")?,
+                    &prover_proving_key.ok_or("proverProvingKey is invalid")?,
+                    signer,
+                )
+                .await?,
+            );
+        }
 
         Ok(ProofPresentation::new(signatureless_presentation, proof))
     }
@@ -574,13 +579,49 @@ mod tests {
             &public_key_schema_map,
             &nquads_schema_map,
             &master_secret,
-            &VERIFIER_DID,
-            &format!("{}#key-1", VERIFIER_DID),
-            holder_secret_key,
+            Some(&VERIFIER_DID),
+            Some(&format!("{}#key-1", VERIFIER_DID)),
+            Some(holder_secret_key),
             &signer,
         )
         .await?;
 
+        assert_proof(proof.clone(), proof_request, revealed_properties_map)?;
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn can_create_presentation_and_skip_proof_if_no_prover() -> Result<(), Box<dyn Error>> {
+        let (
+            proof_request,
+            credential_map,
+            revealed_properties_map,
+            public_key_schema_map,
+            nquads_schema_map,
+        ) = get_create_proof_data().await?;
+
+        let master_secret: SignatureMessage = SignatureMessage::from(
+            decode_base64(&MASTER_SECRET, "Master Secret")?.into_boxed_slice(),
+        );
+
+        let signer: Box<dyn Signer> = Box::new(LocalSigner::new());
+
+        let proof = Prover::present_proof(
+            &proof_request,
+            &credential_map,
+            &revealed_properties_map,
+            &public_key_schema_map,
+            &nquads_schema_map,
+            &master_secret,
+            None,
+            None,
+            None,
+            &signer,
+        )
+        .await?;
+
+        assert!(proof.proof.is_none());
         assert_proof(proof.clone(), proof_request, revealed_properties_map)?;
 
         Ok(())

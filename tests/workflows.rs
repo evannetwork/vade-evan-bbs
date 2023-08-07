@@ -275,9 +275,9 @@ async fn create_presentation(
         public_key_schema_map: public_key_schema_map.clone(),
         revealed_properties_schema_map,
         master_secret: MASTER_SECRET.to_string(),
-        prover_did: VERIFIER_DID.to_string(),
-        prover_public_key_did: format!("{}#key-1", VERIFIER_DID),
-        prover_proving_key: SIGNER_1_PRIVATE_KEY.to_string(),
+        prover_did: Some(VERIFIER_DID.to_string()),
+        prover_public_key_did: Some(format!("{}#key-1", VERIFIER_DID)),
+        prover_proving_key: Some(SIGNER_1_PRIVATE_KEY.to_string()),
     };
 
     let present_proof_json = serde_json::to_string(&present_proof_payload)?;
