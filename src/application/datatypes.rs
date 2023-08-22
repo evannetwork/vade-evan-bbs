@@ -398,13 +398,13 @@ pub struct ProofPresentation {
     pub id: String,
     pub r#type: Vec<String>,
     pub verifiable_credential: Vec<BbsPresentation>,
-    pub proof: AssertionProof,
+    pub proof: Option<AssertionProof>,
 }
 
 impl ProofPresentation {
     pub fn new(
         unsigned_proof_presentation: UnfinishedProofPresentation,
-        proof: AssertionProof,
+        proof: Option<AssertionProof>,
     ) -> ProofPresentation {
         return ProofPresentation {
             context: unsigned_proof_presentation.context,

@@ -6,6 +6,7 @@
 
 - add `vc_zkp_propose_proof` to add propose step, that can be done before requesting proofs
 - add support to accept `BbsProofProposal` as input for `vc_zkp_request_proof`
+- make proof in `ProofPresentation` optional and skip proof verification if not provided
 
 ### Fixes
 

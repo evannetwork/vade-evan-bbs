@@ -148,7 +148,9 @@ impl Verifier {
         if presentation.verifiable_credential.len() == 0 {
             return Err(Box::from("Invalid presentation: No credentials provided"));
         }
-        check_assertion_proof(&serde_json::to_string(&presentation)?, signer_address)?;
+        if presentation.proof.is_some() {
+            check_assertion_proof(&serde_json::to_string(&presentation)?, signer_address)?;
+        }
 
         let challenge =
             CryptoVerifier::create_challenge(&presentation, &proof_request, &keys_to_schema_map)?;
@@ -409,6 +411,47 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn can_verify_and_skip_proof_check_if_proof_not_present() -> Result<(), Box<dyn Error>> {
+        let signer_address = SIGNER_1_ADDRESS;
+        let mut presentation: ProofPresentation = serde_json::from_str(&PROOF_PRESENTATION)?;
+        // remove proof from presentation
+        presentation.proof = None;
+        let proof_request: BbsProofRequest =
+            serde_json::from_str(&PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES_WITHOUT_VERIFIER)?;
+        let key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;
+
+        let mut keys_to_schema_map = HashMap::new();
+        keys_to_schema_map.insert(
+            presentation.verifiable_credential[0]
+                .credential_schema
+                .id
+                .clone(),
+            key,
+        );
+
+        let nquads: Vec<String> =
+            convert_to_credential_nquads(&presentation.verifiable_credential.get(0)).await?;
+        let mut nquads_to_schema_map = HashMap::new();
+        nquads_to_schema_map.insert(
+            presentation.verifiable_credential[0]
+                .credential_schema
+                .id
+                .clone(),
+            nquads,
+        );
+
+        Verifier::verify_proof(
+            &presentation,
+            &proof_request,
+            &keys_to_schema_map,
+            signer_address,
+            &nquads_to_schema_map,
+        )?;
+
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn throws_on_invalid_bbs_proof() -> Result<(), Box<dyn Error>> {
         let proofless_presentation: UnfinishedProofPresentation =
             serde_json::from_str(PROOF_PRESENTATION_INVALID_SIGNATURE_AND_WITHOUT_JWS)?;
@@ -422,7 +465,7 @@ mod tests {
             &signer,
         )
         .await?;
-        let presentation = ProofPresentation::new(proofless_presentation, assertion_proof);
+        let presentation = ProofPresentation::new(proofless_presentation, Some(assertion_proof));
         let proof_request: BbsProofRequest =
             serde_json::from_str(&PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES)?;
         let key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;
@@ -467,10 +510,8 @@ mod tests {
         // Our assertion got corrupted mysteriously
         let mut presentation: ProofPresentation = serde_json::from_str(&PROOF_PRESENTATION)?;
         let other_proof =
-            serde_json::from_str::<RevocationListCredential>(REVOCATION_LIST_CREDENTIAL)?
-                .proof
-                .jws;
-        presentation.proof.jws = other_proof;
+            serde_json::from_str::<RevocationListCredential>(REVOCATION_LIST_CREDENTIAL)?.proof;
+        presentation.proof = Some(other_proof);
 
         let proof_request: BbsProofRequest =
             serde_json::from_str(&PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES)?;

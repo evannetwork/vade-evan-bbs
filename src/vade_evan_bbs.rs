@@ -172,11 +172,11 @@ pub struct PresentProofPayload {
     /// Prover's master secret
     pub master_secret: String,
     /// DID of the prover
-    pub prover_did: String,
+    pub prover_did: Option<String>,
     /// Key DID of the prover's public key for the created assertion proof
-    pub prover_public_key_did: String,
+    pub prover_public_key_did: Option<String>,
     /// Prover's secret key to create an assertion proof with
-    pub prover_proving_key: String,
+    pub prover_proving_key: Option<String>,
 }
 
 /// API payload to create a credential proposal to be sent by a holder.
@@ -624,9 +624,9 @@ impl VadePlugin for VadeEvanBbs {
             &public_key_schema_map,
             &nquads_schema_map,
             &master_secret,
-            &payload.prover_did,
-            &payload.prover_public_key_did,
-            &payload.prover_proving_key,
+            payload.prover_did.as_deref(),
+            payload.prover_public_key_did.as_deref(),
+            payload.prover_proving_key.as_deref(),
             &self.signer,
         )
         .await?;
