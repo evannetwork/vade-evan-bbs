@@ -47,16 +47,19 @@ export interface AuthenticationOptions {
   identity: string;
 }
 
-/** API payload needed to create a revocation list */
+/** API payload needed to create a revocation list.
+ *
+ * If `issuerPublicKeyDid` or `issuerProvingKey` are omitted, proofs will not be generated for
+ * revocation list credential. */
 export interface CreateRevocationListPayload {
   /** DID of the issuer */
   issuerDid: string;
-  /** DID of the issuer's public key used to verify the credential's signature */
-  issuerPublicKeyDid: string;
-  /** Private key of the issuer used to sign the credential */
-  issuerProvingKey: string;
   /** future did id for revocation list */
   credentialDid: string;
+  /** DID of the issuer's public key used to verify the credential's signature */
+  issuerPublicKeyDid?: string;
+  /** Private key of the issuer used to sign the credential */
+  issuerProvingKey?: string;
 }
 
 /** API payload for issuing a new credential

@@ -7,7 +7,7 @@
 - add `vc_zkp_propose_proof` to add propose step, that can be done before requesting proofs
 - add support to accept `BbsProofProposal` as input for `vc_zkp_request_proof`
 - update `vc_zkp_create_revocation_registry_definition` to skip proof generation
-  if `issuer_public_key_did` and `issuer_proving_key` are not provided
+  if `issuer_public_key_did` or `issuer_proving_key` are not provided
 
 ### Fixes
 
