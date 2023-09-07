@@ -99,11 +99,11 @@ export interface PresentProofPayload {
   /** Prover's master secret */
   masterSecret: string;
   /** DID of the prover */
-  proverDid: string;
+  proverDid?: string;
   /** Key DID of the prover's public key for the created assertion proof */
-  proverPublicKeyDid: string;
+  proverPublicKeyDid?: string;
   /** Prover's secret key to create an assertion proof with */
-  proverProvingKey: string;
+  proverProvingKey?: string;
 }
 
 /** API payload to create a credential proposal to be sent by a holder. */
