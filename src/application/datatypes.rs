@@ -353,6 +353,16 @@ pub struct RevocationListCredentialSubject {
     pub encoded_list: String,
 }
 
+/// Keys required to generate a proof for a revocation list
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RevocationListProofKeys {
+    /// DID of the issuer's public key used to verify the credential's signature
+    pub issuer_public_key_did: String,
+    /// Private key of the issuer used to sign the credential
+    pub issuer_proving_key: String,
+}
+
 /// Reference to a credential schema.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]

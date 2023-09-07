@@ -26,6 +26,7 @@ use crate::{
             CredentialSubject,
             RevocationListCredential,
             RevocationListCredentialSubject,
+            RevocationListProofKeys,
             UnfinishedBbsCredential,
             UnfinishedBbsCredentialSignature,
             UnproofedRevocationListCredential,
@@ -59,9 +60,22 @@ use bbs::{
     ProofNonce,
 };
 use flate2::{read::GzDecoder, write::GzEncoder, Compression};
+use serde::{Deserialize, Serialize};
 use serde_json::{value::Value, Map};
 use std::{collections::HashMap, convert::TryInto, error::Error, io::prelude::*};
 use vade_signer::Signer;
+
+pub struct CreateRevocationListProofInput<'a> {
+    pub revocation_list_proof_keys: RevocationListProofKeys,
+    pub signer: &'a Box<dyn Signer>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum CreateRevocationListOutput {
+    WithoutProof(UnproofedRevocationListCredential),
+    WithProof(RevocationListCredential),
+}
 
 pub struct Issuer {}
 
@@ -354,24 +368,21 @@ impl Issuer {
     }
 
     /// Creates a new revocation list. This list is used to store the revocation stat of a given credential id.
-    /// It needs to be publicly published and updated after every revocation. The definition is signed by the issuer.
+    /// It needs to be publicly published and updated after every revocation. The credentials proof signed by the issuer
+    /// if keys were provided.
     ///
     /// # Arguments
     /// * `assigned_did` - DID that will point to the revocation list
     /// * `issuer_did` - DID of the issuer
-    /// * `issuer_public_key_did` - DID of the public key that will be associated with the created signature
-    /// * `issuer_proving_key` - Private key of the issuer used for signing the definition
-    /// * `signer` - `Signer` to sign with
+    /// * `proof_input` - signer and keys to create revocation list credential proof (optional)
     ///
     /// # Returns
-    /// * `RevocationListCredential` - The initial revocation list credential.
+    /// * `CreatedRevocationList` - Can be a revocation with or without proof, depending on `revocation_list_proof_keys`.
     pub async fn create_revocation_list(
         assigned_did: &str,
         issuer_did: &str,
-        issuer_public_key_did: &str,
-        issuer_proving_key: &str,
-        signer: &Box<dyn Signer>,
-    ) -> Result<RevocationListCredential, Box<dyn Error>> {
+        proof_input: Option<CreateRevocationListProofInput<'_>>,
+    ) -> Result<CreateRevocationListOutput, Box<dyn Error>> {
         let available_bytes = [0u8; MAX_REVOCATION_ENTRIES / 8];
         let mut gzip_encoder = GzEncoder::new(Vec::new(), Compression::default());
         gzip_encoder.write_all(&available_bytes)?;
@@ -386,7 +397,7 @@ impl Issuer {
                 "VerifiableCredential".to_string(),
                 "RevocationList2020Credential".to_string(),
             ],
-            issuer: issuer_public_key_did.to_owned(),
+            issuer: issuer_did.to_owned(),
             issued: get_now_as_iso_string(),
             credential_subject: RevocationListCredentialSubject {
                 id: format!("{}#{}", assigned_did, "list"),
@@ -395,19 +406,32 @@ impl Issuer {
             },
         };
 
-        let document_to_sign = serde_json::to_value(&unfinished_revocation_list)?;
-        let proof = create_assertion_proof(
-            &document_to_sign,
-            &issuer_public_key_did,
-            &issuer_did,
-            &issuer_proving_key,
-            &signer,
-        )
-        .await?;
+        if let Some(proof_arguments) = proof_input {
+            let document_to_sign = serde_json::to_value(&unfinished_revocation_list)?;
+            let proof = create_assertion_proof(
+                &document_to_sign,
+                &proof_arguments
+                    .revocation_list_proof_keys
+                    .issuer_public_key_did,
+                &issuer_did,
+                &proof_arguments
+                    .revocation_list_proof_keys
+                    .issuer_proving_key,
+                &proof_arguments.signer,
+            )
+            .await?;
 
-        let revocation_list = RevocationListCredential::new(unfinished_revocation_list, proof);
+            let revocation_list_with_proof =
+                RevocationListCredential::new(unfinished_revocation_list, proof);
 
-        Ok(revocation_list)
+            return Ok(CreateRevocationListOutput::WithProof(
+                revocation_list_with_proof,
+            ));
+        }
+
+        return Ok(CreateRevocationListOutput::WithoutProof(
+            unfinished_revocation_list,
+        ));
     }
 
     /// Revokes a credential by flipping the specific index in the given revocation list.
@@ -833,9 +857,13 @@ mod tests {
         Issuer::create_revocation_list(
             EXAMPLE_REVOCATION_LIST_DID,
             ISSUER_DID,
-            ISSUER_PUBLIC_KEY_DID,
-            ISSUER_PRIVATE_KEY,
-            &signer,
+            Some(CreateRevocationListProofInput {
+                revocation_list_proof_keys: RevocationListProofKeys {
+                    issuer_public_key_did: ISSUER_PUBLIC_KEY_DID.to_string(),
+                    issuer_proving_key: ISSUER_PRIVATE_KEY.to_string(),
+                },
+                signer: &signer,
+            }),
         )
         .await?;
 
@@ -885,7 +913,7 @@ mod tests {
             let updated_revocation_list = Issuer::revoke_credential(
                 ISSUER_DID,
                 revocation_list.clone(),
-                &format!("{}",i+1),
+                &format!("{}", i + 1),
                 ISSUER_PUBLIC_KEY_DID,
                 ISSUER_PRIVATE_KEY,
                 &signer,
@@ -897,7 +925,7 @@ mod tests {
                 &updated_revocation_list.credential_subject.encoded_list
             );
             let size_of_updated_credential = size_of_val(&updated_revocation_list);
-            assert!(size_of_updated_credential < size_of_original_credential + size_of_proof, 
+            assert!(size_of_updated_credential < size_of_original_credential + size_of_proof,
                 "Updated credential shouldn't add a new proof without deleting existing proof first!");
             revocation_list = updated_revocation_list;
         }

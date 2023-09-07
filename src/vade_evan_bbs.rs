@@ -32,7 +32,7 @@ use crate::{
             UnfinishedBbsCredential,
             UnsignedBbsCredential,
         },
-        issuer::Issuer,
+        issuer::{CreateRevocationListProofInput, Issuer},
         prover::Prover,
         utils::{
             concat_required_and_reveal_statements,
@@ -49,6 +49,7 @@ use crate::{
     BbsProofProposal,
     CredentialStatus,
     DraftBbsCredential,
+    RevocationListProofKeys,
 };
 use async_trait::async_trait;
 use bbs::{
@@ -89,12 +90,11 @@ pub struct AuthenticationOptions {
 pub struct CreateRevocationListPayload {
     /// DID of the issuer
     pub issuer_did: String,
-    /// DID of the issuer's public key used to verify the credential's signature
-    pub issuer_public_key_did: String,
-    /// Private key of the issuer used to sign the credential
-    pub issuer_proving_key: String,
     /// future did id for revocation list
     pub credential_did: String,
+    /// keys required to generate a proof for a revocation list
+    #[serde(flatten)]
+    pub revocation_list_proof_keys: Option<RevocationListProofKeys>,
 }
 
 // ####### Keep until nquads are implemented in Rust #######
@@ -466,12 +466,20 @@ impl VadePlugin for VadeEvanBbs {
         ignore_unrelated!(method, options);
         let payload: CreateRevocationListPayload = parse!(&payload, "payload");
 
+        let proof_input: Option<CreateRevocationListProofInput>;
+        if let Some(proof_keys) = payload.revocation_list_proof_keys {
+            proof_input = Some(CreateRevocationListProofInput {
+                revocation_list_proof_keys: proof_keys,
+                signer: &self.signer,
+            });
+        } else {
+            proof_input = None;
+        }
+
         let revocation_list = Issuer::create_revocation_list(
             &payload.credential_did,
             &payload.issuer_did,
-            &payload.issuer_public_key_did,
-            &payload.issuer_proving_key,
-            &self.signer,
+            proof_input,
         )
         .await?;
 
