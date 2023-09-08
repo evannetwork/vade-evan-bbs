@@ -419,7 +419,7 @@ impl Issuer {
             None => None,
         };
 
-        return Ok(revocation_list);
+        Ok(revocation_list)
     }
 
     /// Revokes a credential by flipping the specific index in the given revocation list.

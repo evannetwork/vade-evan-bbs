@@ -162,9 +162,9 @@ export interface RevokeCredentialPayload {
   /** Credential ID to revoke */
   revocationId: string;
   /** DID of the issuer's public key for verifying assertion proofs */
-  issuerPublicKeyDid: string;
+  issuerPublicKeyDid?: string;
   /** DID of the issuer's secret key for creating assertion proofs */
-  issuerProvingKey: string;
+  issuerProvingKey?: string;
 }
 
 /** API payload needed to create a credential schema needed for issuing credentials */
