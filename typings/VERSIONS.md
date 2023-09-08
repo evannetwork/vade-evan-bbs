@@ -4,6 +4,8 @@
 
 ### Features
 
+- make `proverDid`, `proverPublicKeyDid` and `proverProvingKey` of PresentProofPayload to be optional
+
 ### Fixes
 
 ### Deprecations
