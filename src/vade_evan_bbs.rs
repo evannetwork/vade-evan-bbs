@@ -32,7 +32,7 @@ use crate::{
             UnfinishedBbsCredential,
             UnsignedBbsCredential,
         },
-        issuer::{CreateRevocationListProofInput, Issuer},
+        issuer::{Issuer, RevocationListProofInput},
         prover::Prover,
         utils::{
             concat_required_and_reveal_statements,
@@ -234,10 +234,8 @@ pub struct RevokeCredentialPayload {
     pub revocation_list: RevocationListCredential,
     /// Credential ID to revoke
     pub revocation_id: String,
-    /// DID of the issuer's public key for verifying assertion proofs
-    pub issuer_public_key_did: String,
-    /// DID of the issuer's secret key for creating assertion proofs
-    pub issuer_proving_key: String,
+    #[serde(flatten)]
+    pub revocation_list_proof_keys: Option<RevocationListProofKeys>,
 }
 
 /// API payload needed to create a credential schema needed for issuing credentials
@@ -456,7 +454,7 @@ impl VadePlugin for VadeEvanBbs {
     /// * `payload` - serialized [`CreateRevocationListPayload`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.CreateRevocationListPayload.html)
     ///
     /// # Returns
-    /// * created revocation list as a JSON object as serialized [`RevocationList`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.RevocationList.html)
+    /// * created revocation list as a JSON object as serialized [`RevocationListCredential`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.RevocationListCredential.html)
     async fn vc_zkp_create_revocation_registry_definition(
         &mut self,
         method: &str,
@@ -466,20 +464,15 @@ impl VadePlugin for VadeEvanBbs {
         ignore_unrelated!(method, options);
         let payload: CreateRevocationListPayload = parse!(&payload, "payload");
 
-        let proof_input: Option<CreateRevocationListProofInput>;
-        if let Some(proof_keys) = payload.revocation_list_proof_keys {
-            proof_input = Some(CreateRevocationListProofInput {
-                revocation_list_proof_keys: proof_keys,
-                signer: &self.signer,
-            });
-        } else {
-            proof_input = None;
-        }
-
         let revocation_list = Issuer::create_revocation_list(
             &payload.credential_did,
             &payload.issuer_did,
-            proof_input,
+            payload
+                .revocation_list_proof_keys
+                .map(|proof_keys| RevocationListProofInput {
+                    revocation_list_proof_keys: proof_keys,
+                    signer: &self.signer,
+                }),
         )
         .await?;
 
@@ -815,9 +808,12 @@ impl VadePlugin for VadeEvanBbs {
             &payload.issuer,
             payload.revocation_list,
             &payload.revocation_id,
-            &payload.issuer_public_key_did,
-            &payload.issuer_proving_key,
-            &self.signer,
+            payload
+                .revocation_list_proof_keys
+                .map(|proof_keys| RevocationListProofInput {
+                    revocation_list_proof_keys: proof_keys,
+                    signer: &self.signer,
+                }),
         )
         .await?;
 

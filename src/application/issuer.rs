@@ -29,7 +29,6 @@ use crate::{
             RevocationListProofKeys,
             UnfinishedBbsCredential,
             UnfinishedBbsCredentialSignature,
-            UnproofedRevocationListCredential,
             UnsignedBbsCredential,
             CREDENTIAL_PROOF_PURPOSE,
             CREDENTIAL_SCHEMA_TYPE,
@@ -60,21 +59,13 @@ use bbs::{
     ProofNonce,
 };
 use flate2::{read::GzDecoder, write::GzEncoder, Compression};
-use serde::{Deserialize, Serialize};
 use serde_json::{value::Value, Map};
 use std::{collections::HashMap, convert::TryInto, error::Error, io::prelude::*};
 use vade_signer::Signer;
 
-pub struct CreateRevocationListProofInput<'a> {
+pub struct RevocationListProofInput<'a> {
     pub revocation_list_proof_keys: RevocationListProofKeys,
     pub signer: &'a Box<dyn Signer>,
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum CreateRevocationListOutput {
-    WithoutProof(UnproofedRevocationListCredential),
-    WithProof(RevocationListCredential),
 }
 
 pub struct Issuer {}
@@ -369,7 +360,7 @@ impl Issuer {
 
     /// Creates a new revocation list. This list is used to store the revocation stat of a given credential id.
     /// It needs to be publicly published and updated after every revocation. The credentials proof signed by the issuer
-    /// if keys were provided.
+    /// if keys were provided if `proof_input` was provided.
     ///
     /// # Arguments
     /// * `assigned_did` - DID that will point to the revocation list
@@ -381,13 +372,13 @@ impl Issuer {
     pub async fn create_revocation_list(
         assigned_did: &str,
         issuer_did: &str,
-        proof_input: Option<CreateRevocationListProofInput<'_>>,
-    ) -> Result<CreateRevocationListOutput, Box<dyn Error>> {
+        proof_input: Option<RevocationListProofInput<'_>>,
+    ) -> Result<RevocationListCredential, Box<dyn Error>> {
         let available_bytes = [0u8; MAX_REVOCATION_ENTRIES / 8];
         let mut gzip_encoder = GzEncoder::new(Vec::new(), Compression::default());
         gzip_encoder.write_all(&available_bytes)?;
         let compressed_bytes = gzip_encoder.finish();
-        let unfinished_revocation_list = UnproofedRevocationListCredential {
+        let mut revocation_list = RevocationListCredential {
             context: DEFAULT_REVOCATION_CONTEXTS
                 .iter()
                 .map(|c| String::from(c.to_owned()))
@@ -404,45 +395,42 @@ impl Issuer {
                 r#type: "RevocationList2020".to_string(),
                 encoded_list: base64::encode_config(&compressed_bytes?, base64::URL_SAFE),
             },
+            proof: None,
         };
 
-        if let Some(proof_arguments) = proof_input {
-            let document_to_sign = serde_json::to_value(&unfinished_revocation_list)?;
-            let proof = create_assertion_proof(
-                &document_to_sign,
-                &proof_arguments
-                    .revocation_list_proof_keys
-                    .issuer_public_key_did,
-                &issuer_did,
-                &proof_arguments
-                    .revocation_list_proof_keys
-                    .issuer_proving_key,
-                &proof_arguments.signer,
-            )
-            .await?;
+        revocation_list.proof = match proof_input {
+            Some(proof_arguments) => {
+                let document_to_sign = serde_json::to_value(&revocation_list)?;
+                Some(
+                    create_assertion_proof(
+                        &document_to_sign,
+                        &proof_arguments
+                            .revocation_list_proof_keys
+                            .issuer_public_key_did,
+                        &issuer_did,
+                        &proof_arguments
+                            .revocation_list_proof_keys
+                            .issuer_proving_key,
+                        &proof_arguments.signer,
+                    )
+                    .await?,
+                )
+            }
+            None => None,
+        };
 
-            let revocation_list_with_proof =
-                RevocationListCredential::new(unfinished_revocation_list, proof);
-
-            return Ok(CreateRevocationListOutput::WithProof(
-                revocation_list_with_proof,
-            ));
-        }
-
-        return Ok(CreateRevocationListOutput::WithoutProof(
-            unfinished_revocation_list,
-        ));
+        return Ok(revocation_list);
     }
 
     /// Revokes a credential by flipping the specific index in the given revocation list.
     /// See <https://w3c-ccg.github.io/vc-status-rl-2020/#revocationlist2020credential> for reference
+    /// `proof_input` is optional if a revocation list without proofs is used but mandatory for revocation lists with proofs.
+    ///
     /// # Arguments
     /// * `issuer` - DID of the issuer
     /// * `revocation_list` - Revocation list the credential belongs to
     /// * `revocation_id` - Revocation ID of the credential
-    /// * `issuer_public_key_did` - DID of the public key that will be associated with the created signature
-    /// * `issuer_proving_key` - Private key of the issuer used for signing the definition
-    /// * `signer` - `Signer` to sign with
+    /// * `proof_input` - signer and keys to create revocation list credential proof (optional)
     ///
     /// # Returns
     /// * `RevocationListCredential` - The updated revocation list that needs to be stored in the original revocation list's place.
@@ -450,9 +438,7 @@ impl Issuer {
         issuer: &str,
         mut revocation_list: RevocationListCredential,
         revocation_id: &str,
-        issuer_public_key_did: &str,
-        issuer_proving_key: &str,
-        signer: &Box<dyn Signer>,
+        proof_input: Option<RevocationListProofInput<'_>>,
     ) -> Result<RevocationListCredential, Box<dyn Error>> {
         let revocation_id = revocation_id
             .parse::<usize>()
@@ -487,23 +473,29 @@ impl Issuer {
         revocation_list.credential_subject.encoded_list =
             base64::encode_config(&compressed_bytes, base64::URL_SAFE);
         revocation_list.issued = get_now_as_iso_string();
-
-        // remove existing proof before signing
-        let mut revocation_list_values_map: Map<String, Value> =
-            serde_json::from_value(serde_json::to_value(&revocation_list)?)?;
-        revocation_list_values_map.remove("proof");
-        let document_to_sign = serde_json::to_value(&revocation_list_values_map)?;
-
-        let proof = create_assertion_proof(
-            &document_to_sign,
-            &issuer_public_key_did,
-            &issuer,
-            &issuer_proving_key,
-            &signer,
-        )
-        .await?;
-
-        revocation_list.proof = proof;
+        revocation_list.proof = match proof_input {
+            Some(proof_arguments) => {
+                // remove existing proof before signing
+                let mut revocation_list_values_map: Map<String, Value> =
+                    serde_json::from_value(serde_json::to_value(&revocation_list)?)?;
+                revocation_list_values_map.remove("proof");
+                let document_to_sign = serde_json::to_value(&revocation_list_values_map)?;
+                let proof = create_assertion_proof(
+                    &document_to_sign,
+                    &proof_arguments
+                        .revocation_list_proof_keys
+                        .issuer_public_key_did,
+                    &issuer,
+                    &proof_arguments
+                        .revocation_list_proof_keys
+                        .issuer_proving_key,
+                    &proof_arguments.signer,
+                )
+                .await?;
+                Some(proof)
+            }
+            None => None,
+        };
 
         Ok(revocation_list)
     }
@@ -851,13 +843,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn revocation_can_create_revocation_registry() -> Result<(), Box<dyn Error>> {
+    async fn revocation_can_create_revocation_registry_with_proof() -> Result<(), Box<dyn Error>> {
         let signer: Box<dyn Signer> = Box::new(LocalSigner::new());
 
         Issuer::create_revocation_list(
             EXAMPLE_REVOCATION_LIST_DID,
             ISSUER_DID,
-            Some(CreateRevocationListProofInput {
+            Some(RevocationListProofInput {
                 revocation_list_proof_keys: RevocationListProofKeys {
                     issuer_public_key_did: ISSUER_PUBLIC_KEY_DID.to_string(),
                     issuer_proving_key: ISSUER_PRIVATE_KEY.to_string(),
@@ -866,6 +858,14 @@ mod tests {
             }),
         )
         .await?;
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn revocation_can_create_revocation_registry_without_proof() -> Result<(), Box<dyn Error>>
+    {
+        Issuer::create_revocation_list(EXAMPLE_REVOCATION_LIST_DID, ISSUER_DID, None).await?;
 
         Ok(())
     }
@@ -881,9 +881,13 @@ mod tests {
             ISSUER_DID,
             revocation_list.clone(),
             &(MAX_REVOCATION_ENTRIES + 1).to_string(),
-            ISSUER_PUBLIC_KEY_DID,
-            ISSUER_PRIVATE_KEY,
-            &signer,
+            Some(RevocationListProofInput {
+                revocation_list_proof_keys: RevocationListProofKeys {
+                    issuer_public_key_did: ISSUER_PUBLIC_KEY_DID.to_string(),
+                    issuer_proving_key: ISSUER_PRIVATE_KEY.to_string(),
+                },
+                signer: &signer,
+            }),
         )
         .await
         .map_err(|e| format!("{}", e))
@@ -914,9 +918,13 @@ mod tests {
                 ISSUER_DID,
                 revocation_list.clone(),
                 &format!("{}", i + 1),
-                ISSUER_PUBLIC_KEY_DID,
-                ISSUER_PRIVATE_KEY,
-                &signer,
+                Some(RevocationListProofInput {
+                    revocation_list_proof_keys: RevocationListProofKeys {
+                        issuer_public_key_did: ISSUER_PUBLIC_KEY_DID.to_string(),
+                        issuer_proving_key: ISSUER_PRIVATE_KEY.to_string(),
+                    },
+                    signer: &signer,
+                }),
             )
             .await?;
 
@@ -944,9 +952,13 @@ mod tests {
             ISSUER_DID,
             revocation_list.clone(),
             "1",
-            ISSUER_PUBLIC_KEY_DID,
-            ISSUER_PRIVATE_KEY,
-            &signer,
+            Some(RevocationListProofInput {
+                revocation_list_proof_keys: RevocationListProofKeys {
+                    issuer_public_key_did: ISSUER_PUBLIC_KEY_DID.to_string(),
+                    issuer_proving_key: ISSUER_PRIVATE_KEY.to_string(),
+                },
+                signer: &signer,
+            }),
         )
         .await?;
 
