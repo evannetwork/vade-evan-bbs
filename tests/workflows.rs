@@ -21,7 +21,6 @@ use utilities::test_data::{
         ISSUER_PRIVATE_KEY,
         ISSUER_PUBLIC_KEY_DID,
         SIGNER_1_ADDRESS,
-        SIGNER_1_DID,
         SIGNER_1_PRIVATE_KEY,
         VERIFIER_DID,
     },
@@ -91,9 +90,7 @@ async fn create_revocation_list_without_proof(
 }
 
 fn get_options() -> String {
-    r###"{{
-        "type": "bbs",
-    }}"###.to_string()
+    r#"{ "type": "bbs" }"#.to_string()
 }
 
 async fn create_credential_proposal(vade: &mut Vade) -> Result<CredentialProposal, Box<dyn Error>> {
