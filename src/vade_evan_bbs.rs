@@ -74,16 +74,6 @@ pub struct TypeOptions {
     pub r#type: Option<String>,
 }
 
-/// Contains information necessary to make on-chain transactions (e.g. updating a DID Document).
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AuthenticationOptions {
-    /// Reference to the private key, will be forwarded to external signer if available
-    pub private_key: String,
-    /// DID of the identity
-    pub identity: String,
-}
-
 /// API payload needed to create a revocation list
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -366,7 +356,7 @@ impl VadePlugin for VadeEvanBbs {
     /// Runs a custom function, currently supports
     ///
     /// - `create_master_secret` to create new master secrets
-    /// - `create_new_keys` to create a new key pair for BBS+ based signatures and persist  this in the given identity's DID document
+    /// - `create_new_keys` to create a new key pair for BBS+ based signatures
     ///
     /// # Arguments
     ///
@@ -402,8 +392,6 @@ impl VadePlugin for VadeEvanBbs {
     }
 
     /// Creates a new zero-knowledge proof credential schema.
-    ///
-    /// Note that `options.identity` needs to be whitelisted for this function.
     ///
     /// # Arguments
     ///
@@ -444,8 +432,6 @@ impl VadePlugin for VadeEvanBbs {
     /// Creates a new revocation list and stores it on-chain. The list consists of a encoded bit list which can
     /// hold up to 131,072 revokable ids. The list is GZIP encoded and will be updated on every revocation.
     /// The output is a W3C credential with a JWS signature by the given key.
-    ///
-    /// Note that `options.identity` needs to be whitelisted for this function.
     ///
     /// # Arguments
     ///
@@ -784,8 +770,6 @@ impl VadePlugin for VadeEvanBbs {
     /// Revokes a credential. The information returned by this function needs to be persisted in order to update the revocation list. To revoke a credential, the revoker must be in possession of the private key associated
     /// with the credential's revocation list. After revocation, the published revocation list is updated on-chain.
     /// Only then is the credential truly revoked.
-    ///
-    /// Note that `options.identity` needs to be whitelisted for this function.
     ///
     /// # Arguments
     ///

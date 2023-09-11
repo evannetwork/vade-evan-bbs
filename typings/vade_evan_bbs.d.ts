@@ -39,7 +39,11 @@ export interface TypeOptions {
   type?: string;
 }
 
-/** Contains information necessary to make on-chain transactions (e.g. updating a DID Document). */
+/**
+ * Contains information necessary to make on-chain transactions (e.g. updating a DID Document).
+ *
+ * @deprecated will be removed as properties from it are not used anymore
+ */
 export interface AuthenticationOptions {
   /** Reference to the private key, will be forwarded to external signer if available */
   privateKey: string;

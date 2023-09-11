@@ -91,14 +91,9 @@ async fn create_revocation_list_without_proof(
 }
 
 fn get_options() -> String {
-    format!(
-        r###"{{
-            "type": "bbs",
-            "privateKey": "{}",
-            "identity": "{}"
-        }}"###,
-        SIGNER_1_PRIVATE_KEY, SIGNER_1_DID,
-    )
+    r###"{{
+        "type": "bbs",
+    }}"###.to_string()
 }
 
 async fn create_credential_proposal(vade: &mut Vade) -> Result<CredentialProposal, Box<dyn Error>> {
