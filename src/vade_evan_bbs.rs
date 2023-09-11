@@ -32,7 +32,7 @@ use crate::{
             UnfinishedBbsCredential,
             UnsignedBbsCredential,
         },
-        issuer::Issuer,
+        issuer::{Issuer, RevocationListProofInput},
         prover::Prover,
         utils::{
             concat_required_and_reveal_statements,
@@ -49,6 +49,7 @@ use crate::{
     BbsProofProposal,
     CredentialStatus,
     DraftBbsCredential,
+    RevocationListProofKeys,
 };
 use async_trait::async_trait;
 use bbs::{
@@ -73,28 +74,17 @@ pub struct TypeOptions {
     pub r#type: Option<String>,
 }
 
-/// Contains information necessary to make on-chain transactions (e.g. updating a DID Document).
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AuthenticationOptions {
-    /// Reference to the private key, will be forwarded to external signer if available
-    pub private_key: String,
-    /// DID of the identity
-    pub identity: String,
-}
-
 /// API payload needed to create a revocation list
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateRevocationListPayload {
     /// DID of the issuer
     pub issuer_did: String,
-    /// DID of the issuer's public key used to verify the credential's signature
-    pub issuer_public_key_did: String,
-    /// Private key of the issuer used to sign the credential
-    pub issuer_proving_key: String,
     /// future did id for revocation list
     pub credential_did: String,
+    /// keys required to generate a proof for a revocation list
+    #[serde(flatten)]
+    pub revocation_list_proof_keys: Option<RevocationListProofKeys>,
 }
 
 // ####### Keep until nquads are implemented in Rust #######
@@ -234,10 +224,8 @@ pub struct RevokeCredentialPayload {
     pub revocation_list: RevocationListCredential,
     /// Credential ID to revoke
     pub revocation_id: String,
-    /// DID of the issuer's public key for verifying assertion proofs
-    pub issuer_public_key_did: String,
-    /// DID of the issuer's secret key for creating assertion proofs
-    pub issuer_proving_key: String,
+    #[serde(flatten)]
+    pub revocation_list_proof_keys: Option<RevocationListProofKeys>,
 }
 
 /// API payload needed to create a credential schema needed for issuing credentials
@@ -368,7 +356,7 @@ impl VadePlugin for VadeEvanBbs {
     /// Runs a custom function, currently supports
     ///
     /// - `create_master_secret` to create new master secrets
-    /// - `create_new_keys` to create a new key pair for BBS+ based signatures and persist  this in the given identity's DID document
+    /// - `create_new_keys` to create a new key pair for BBS+ based signatures
     ///
     /// # Arguments
     ///
@@ -404,8 +392,6 @@ impl VadePlugin for VadeEvanBbs {
     }
 
     /// Creates a new zero-knowledge proof credential schema.
-    ///
-    /// Note that `options.identity` needs to be whitelisted for this function.
     ///
     /// # Arguments
     ///
@@ -447,8 +433,6 @@ impl VadePlugin for VadeEvanBbs {
     /// hold up to 131,072 revokable ids. The list is GZIP encoded and will be updated on every revocation.
     /// The output is a W3C credential with a JWS signature by the given key.
     ///
-    /// Note that `options.identity` needs to be whitelisted for this function.
-    ///
     /// # Arguments
     ///
     /// * `method` - method to create a revocation list for (e.g. "did:example")
@@ -456,7 +440,7 @@ impl VadePlugin for VadeEvanBbs {
     /// * `payload` - serialized [`CreateRevocationListPayload`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.CreateRevocationListPayload.html)
     ///
     /// # Returns
-    /// * created revocation list as a JSON object as serialized [`RevocationList`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.RevocationList.html)
+    /// * created revocation list as a JSON object as serialized [`RevocationListCredential`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.RevocationListCredential.html)
     async fn vc_zkp_create_revocation_registry_definition(
         &mut self,
         method: &str,
@@ -469,9 +453,12 @@ impl VadePlugin for VadeEvanBbs {
         let revocation_list = Issuer::create_revocation_list(
             &payload.credential_did,
             &payload.issuer_did,
-            &payload.issuer_public_key_did,
-            &payload.issuer_proving_key,
-            &self.signer,
+            payload
+                .revocation_list_proof_keys
+                .map(|proof_keys| RevocationListProofInput {
+                    revocation_list_proof_keys: proof_keys,
+                    signer: &self.signer,
+                }),
         )
         .await?;
 
@@ -784,8 +771,6 @@ impl VadePlugin for VadeEvanBbs {
     /// with the credential's revocation list. After revocation, the published revocation list is updated on-chain.
     /// Only then is the credential truly revoked.
     ///
-    /// Note that `options.identity` needs to be whitelisted for this function.
-    ///
     /// # Arguments
     ///
     /// * `method` - method to revoke a credential for (e.g. "did:example")
@@ -807,9 +792,12 @@ impl VadePlugin for VadeEvanBbs {
             &payload.issuer,
             payload.revocation_list,
             &payload.revocation_id,
-            &payload.issuer_public_key_did,
-            &payload.issuer_proving_key,
-            &self.signer,
+            payload
+                .revocation_list_proof_keys
+                .map(|proof_keys| RevocationListProofInput {
+                    revocation_list_proof_keys: proof_keys,
+                    signer: &self.signer,
+                }),
         )
         .await?;
 

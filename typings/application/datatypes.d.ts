@@ -267,6 +267,8 @@ export interface BbsProofVerification {
 
 /*
  * `RevocationListCredential` without a proof (for internal use only).
+ *
+ * @deprecated will be removed, use `RevocationListCredential` instead (as `.proof` is optional)
  */
 export interface UnproofedRevocationListCredential {
   '@context': (string | { [key in string]?: { '@type': string } })[];
@@ -288,7 +290,7 @@ export interface RevocationListCredential {
   issuer: string;
   issued: string;
   credentialSubject: RevocationListCredentialSubject;
-  proof: AssertionProof;
+  proof?: AssertionProof;
 }
 
 export interface DraftBbsCredential {

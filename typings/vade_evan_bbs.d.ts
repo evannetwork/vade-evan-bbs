@@ -39,7 +39,11 @@ export interface TypeOptions {
   type?: string;
 }
 
-/** Contains information necessary to make on-chain transactions (e.g. updating a DID Document). */
+/**
+ * Contains information necessary to make on-chain transactions (e.g. updating a DID Document).
+ *
+ * @deprecated will be removed as properties from it are not used anymore
+ */
 export interface AuthenticationOptions {
   /** Reference to the private key, will be forwarded to external signer if available */
   privateKey: string;
@@ -47,16 +51,19 @@ export interface AuthenticationOptions {
   identity: string;
 }
 
-/** API payload needed to create a revocation list */
+/** API payload needed to create a revocation list.
+ *
+ * If `issuerPublicKeyDid` or `issuerProvingKey` are omitted, proofs will not be generated for
+ * revocation list credential. */
 export interface CreateRevocationListPayload {
   /** DID of the issuer */
   issuerDid: string;
-  /** DID of the issuer's public key used to verify the credential's signature */
-  issuerPublicKeyDid: string;
-  /** Private key of the issuer used to sign the credential */
-  issuerProvingKey: string;
   /** future did id for revocation list */
   credentialDid: string;
+  /** DID of the issuer's public key used to verify the credential's signature */
+  issuerPublicKeyDid?: string;
+  /** Private key of the issuer used to sign the credential */
+  issuerProvingKey?: string;
 }
 
 /** API payload for issuing a new credential
@@ -159,9 +166,9 @@ export interface RevokeCredentialPayload {
   /** Credential ID to revoke */
   revocationId: string;
   /** DID of the issuer's public key for verifying assertion proofs */
-  issuerPublicKeyDid: string;
+  issuerPublicKeyDid?: string;
   /** DID of the issuer's secret key for creating assertion proofs */
-  issuerProvingKey: string;
+  issuerProvingKey?: string;
 }
 
 /** API payload needed to create a credential schema needed for issuing credentials */

@@ -469,6 +469,7 @@ mod tests {
         let other_proof =
             serde_json::from_str::<RevocationListCredential>(REVOCATION_LIST_CREDENTIAL)?
                 .proof
+                .ok_or_else(|| format!("test data does not contain proof"))?
                 .jws;
         presentation.proof.jws = other_proof;
 
