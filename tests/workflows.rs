@@ -21,7 +21,6 @@ use utilities::test_data::{
         ISSUER_PRIVATE_KEY,
         ISSUER_PUBLIC_KEY_DID,
         SIGNER_1_ADDRESS,
-        SIGNER_1_DID,
         SIGNER_1_PRIVATE_KEY,
         VERIFIER_DID,
     },
@@ -69,15 +68,29 @@ async fn create_revocation_list(
     Ok(result)
 }
 
-fn get_options() -> String {
-    format!(
+async fn create_revocation_list_without_proof(
+    vade: &mut Vade,
+) -> Result<RevocationListCredential, Box<dyn Error>> {
+    let payload = format!(
         r###"{{
-            "type": "bbs",
-            "privateKey": "{}",
-            "identity": "{}"
-        }}"###,
-        SIGNER_1_PRIVATE_KEY, SIGNER_1_DID,
-    )
+        "issuerDid": "{}",
+        "credentialDid": "did:evan:revocation123"
+    }}"###,
+        ISSUER_DID
+    );
+    let results = vade
+        .vc_zkp_create_revocation_registry_definition(EVAN_METHOD, &get_options(), &payload)
+        .await?;
+
+    // check results
+    assert_eq!(results.len(), 1);
+    let result: RevocationListCredential =
+        serde_json::from_str(results[0].as_ref().unwrap()).unwrap();
+    Ok(result)
+}
+
+fn get_options() -> String {
+    r#"{ "type": "bbs" }"#.to_string()
 }
 
 async fn create_credential_proposal(vade: &mut Vade) -> Result<CredentialProposal, Box<dyn Error>> {
@@ -232,15 +245,38 @@ async fn create_proof_request_from_proposal(
 
 async fn revoke_credential(
     vade: &mut Vade,
-    revocation_list: RevocationListCredential,
+    revocation_list: &RevocationListCredential,
     revocation_list_id: String,
 ) -> Result<RevocationListCredential, Box<dyn Error>> {
     let revoke_credential_payload = RevokeCredentialPayload {
         issuer: ISSUER_DID.to_string(),
-        revocation_list: revocation_list,
+        revocation_list: revocation_list.clone(),
         revocation_id: revocation_list_id.to_string(),
-        issuer_public_key_did: ISSUER_PUBLIC_KEY_DID.to_string(),
-        issuer_proving_key: ISSUER_PRIVATE_KEY.to_string(),
+        revocation_list_proof_keys: Some(RevocationListProofKeys {
+            issuer_public_key_did: ISSUER_PUBLIC_KEY_DID.to_string(),
+            issuer_proving_key: ISSUER_PRIVATE_KEY.to_string(),
+        }),
+    };
+    let revoke_credential_json = serde_json::to_string(&revoke_credential_payload)?;
+    let updated_revocation_result = vade
+        .vc_zkp_revoke_credential(EVAN_METHOD, &get_options(), &revoke_credential_json)
+        .await?[0]
+        .clone();
+    Ok(serde_json::from_str(
+        &updated_revocation_result.ok_or("Return value was empty")?,
+    )?)
+}
+
+async fn revoke_credential_without_keys(
+    vade: &mut Vade,
+    revocation_list: &RevocationListCredential,
+    revocation_list_id: String,
+) -> Result<RevocationListCredential, Box<dyn Error>> {
+    let revoke_credential_payload = RevokeCredentialPayload {
+        issuer: ISSUER_DID.to_string(),
+        revocation_list: revocation_list.clone(),
+        revocation_id: revocation_list_id.to_string(),
+        revocation_list_proof_keys: None,
     };
     let revoke_credential_json = serde_json::to_string(&revoke_credential_payload)?;
     let updated_revocation_result = vade
@@ -795,6 +831,231 @@ async fn workflow_can_propose_request_issue_verify_a_credential_with_proof_propo
 }
 
 #[tokio::test]
+async fn workflow_can_revoke_a_credential() -> Result<(), Box<dyn Error>> {
+    let mut vade = get_vade();
+
+    let revocation_list = create_revocation_list(&mut vade).await?;
+
+    // Create credential offering
+    let schema = CredentialSchema::from_str(SCHEMA)?;
+    let mut credential_draft = schema.to_draft_credential(CredentialDraftOptions {
+        issuer_did: ISSUER_DID.to_string(),
+        id: None,
+        issuance_date: None,
+        valid_until: None,
+    });
+    let mut credential_values = HashMap::new();
+    credential_values.insert("test_property_string3".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string1".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string2".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string4".to_owned(), "value".to_owned());
+    credential_draft.credential_subject.data = credential_values;
+    let offer_payload = OfferCredentialPayload {
+        draft_credential: credential_draft,
+        credential_status_type:
+            LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
+        required_reveal_statements: vec![1],
+    };
+
+    let offer = create_credential_offer(&mut vade, offer_payload).await?;
+
+    let (credential_request, signature_blinding_base64) =
+        create_credential_request(&mut vade, offer.clone()).await?;
+
+    let unfinished_credential = create_unfinished_credential(
+        &mut vade,
+        credential_request,
+        Some(revocation_list.id.clone()),
+        Some("0".to_string()),
+    )
+    .await?;
+
+    create_finished_credential(&mut vade, unfinished_credential, signature_blinding_base64).await?;
+
+    // revoke credential
+    let updated_revocation =
+        revoke_credential(&mut vade, &revocation_list, "0".to_string()).await?;
+
+    assert_ne!(
+        serde_json::to_string(&revocation_list)?,
+        serde_json::to_string(&updated_revocation)?
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn workflow_can_revoke_a_credential_with_an_unproofed_revocation_list(
+) -> Result<(), Box<dyn Error>> {
+    let mut vade = get_vade();
+
+    let revocation_list = create_revocation_list_without_proof(&mut vade).await?;
+
+    // Create credential offering
+    let schema = CredentialSchema::from_str(SCHEMA)?;
+    let mut credential_draft = schema.to_draft_credential(CredentialDraftOptions {
+        issuer_did: ISSUER_DID.to_string(),
+        id: None,
+        issuance_date: None,
+        valid_until: None,
+    });
+    let mut credential_values = HashMap::new();
+    credential_values.insert("test_property_string3".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string1".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string2".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string4".to_owned(), "value".to_owned());
+    credential_draft.credential_subject.data = credential_values;
+    let offer_payload = OfferCredentialPayload {
+        draft_credential: credential_draft,
+        credential_status_type:
+            LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
+        required_reveal_statements: vec![1],
+    };
+
+    let offer = create_credential_offer(&mut vade, offer_payload).await?;
+
+    let (credential_request, signature_blinding_base64) =
+        create_credential_request(&mut vade, offer.clone()).await?;
+
+    let unfinished_credential = create_unfinished_credential(
+        &mut vade,
+        credential_request,
+        Some(revocation_list.id.clone()),
+        Some("0".to_string()),
+    )
+    .await?;
+
+    create_finished_credential(&mut vade, unfinished_credential, signature_blinding_base64).await?;
+
+    // revoke credential
+    let updated_revocation =
+        revoke_credential(&mut vade, &revocation_list, "0".to_string()).await?;
+
+    assert_ne!(
+        serde_json::to_string(&revocation_list)?,
+        serde_json::to_string(&updated_revocation)?
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn workflow_can_revoke_a_credential_without_providing_keys_during_revocation(
+) -> Result<(), Box<dyn Error>> {
+    let mut vade = get_vade();
+
+    let revocation_list = create_revocation_list(&mut vade).await?;
+
+    // Create credential offering
+    let schema = CredentialSchema::from_str(SCHEMA)?;
+    let mut credential_draft = schema.to_draft_credential(CredentialDraftOptions {
+        issuer_did: ISSUER_DID.to_string(),
+        id: None,
+        issuance_date: None,
+        valid_until: None,
+    });
+    let mut credential_values = HashMap::new();
+    credential_values.insert("test_property_string3".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string1".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string2".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string4".to_owned(), "value".to_owned());
+    credential_draft.credential_subject.data = credential_values;
+    let offer_payload = OfferCredentialPayload {
+        draft_credential: credential_draft,
+        credential_status_type:
+            LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
+        required_reveal_statements: vec![1],
+    };
+
+    let offer = create_credential_offer(&mut vade, offer_payload).await?;
+
+    let (credential_request, signature_blinding_base64) =
+        create_credential_request(&mut vade, offer.clone()).await?;
+
+    let unfinished_credential = create_unfinished_credential(
+        &mut vade,
+        credential_request,
+        Some(revocation_list.id.clone()),
+        Some("0".to_string()),
+    )
+    .await?;
+
+    create_finished_credential(&mut vade, unfinished_credential, signature_blinding_base64).await?;
+
+    // revoke credential
+    let updated_revocation =
+        revoke_credential_without_keys(&mut vade, &revocation_list, "0".to_string()).await?;
+
+    assert_ne!(
+        serde_json::to_string(&revocation_list)?,
+        serde_json::to_string(&updated_revocation)?
+    );
+
+    Ok(())
+}
+
+
+
+#[tokio::test]
+async fn workflow_can_revoke_a_credential_an_unproofed_revocation_list_without_providing_keys_during_revocation(
+) -> Result<(), Box<dyn Error>> {
+    let mut vade = get_vade();
+
+    let revocation_list = create_revocation_list_without_proof(&mut vade).await?;
+
+    // Create credential offering
+    let schema = CredentialSchema::from_str(SCHEMA)?;
+    let mut credential_draft = schema.to_draft_credential(CredentialDraftOptions {
+        issuer_did: ISSUER_DID.to_string(),
+        id: None,
+        issuance_date: None,
+        valid_until: None,
+    });
+    let mut credential_values = HashMap::new();
+    credential_values.insert("test_property_string3".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string1".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string2".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string".to_owned(), "value".to_owned());
+    credential_values.insert("test_property_string4".to_owned(), "value".to_owned());
+    credential_draft.credential_subject.data = credential_values;
+    let offer_payload = OfferCredentialPayload {
+        draft_credential: credential_draft,
+        credential_status_type:
+            LdProofVcDetailOptionsCredentialStatusType::RevocationList2021Status,
+        required_reveal_statements: vec![1],
+    };
+
+    let offer = create_credential_offer(&mut vade, offer_payload).await?;
+
+    let (credential_request, signature_blinding_base64) =
+        create_credential_request(&mut vade, offer.clone()).await?;
+
+    let unfinished_credential = create_unfinished_credential(
+        &mut vade,
+        credential_request,
+        Some(revocation_list.id.clone()),
+        Some("0".to_string()),
+    )
+    .await?;
+
+    create_finished_credential(&mut vade, unfinished_credential, signature_blinding_base64).await?;
+
+    // revoke credential
+    let updated_revocation =
+        revoke_credential_without_keys(&mut vade, &revocation_list, "0".to_string()).await?;
+
+    assert_ne!(
+        serde_json::to_string(&revocation_list)?,
+        serde_json::to_string(&updated_revocation)?
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error>> {
     let mut vade = get_vade();
 
@@ -840,7 +1101,8 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
             .await?;
 
     // revoke credential
-    let updated_revocation = revoke_credential(&mut vade, revocation_list, "0".to_string()).await?;
+    let updated_revocation =
+        revoke_credential(&mut vade, &revocation_list, "0".to_string()).await?;
 
     // create proof request
     let proof_request = create_proof_request_from_scratch(&mut vade).await?;

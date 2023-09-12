@@ -351,6 +351,16 @@ pub struct RevocationListCredentialSubject {
     pub encoded_list: String,
 }
 
+/// Keys required to generate a proof for a revocation list
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RevocationListProofKeys {
+    /// DID of the issuer's public key used to verify the credential's signature
+    pub issuer_public_key_did: String,
+    /// Private key of the issuer used to sign the credential
+    pub issuer_proving_key: String,
+}
+
 /// Reference to a credential schema.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -502,19 +512,6 @@ pub struct BbsProofVerification {
     pub reason: Option<String>,
 }
 
-/// `RevocationListCredential` without a proof (for internal use only).
-#[derive(Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct UnproofedRevocationListCredential {
-    #[serde(rename(serialize = "@context", deserialize = "@context"))]
-    pub context: Vec<String>,
-    pub id: String,
-    pub r#type: Vec<String>,
-    pub issuer: String,
-    pub issued: String,
-    pub credential_subject: RevocationListCredentialSubject,
-}
-
 /// A revocation list credential associating verifiable credential revocation IDs to their revocation status as a bit list. See
 /// <https://w3c-ccg.github.io/vc-status-rl-2020/#revocationlist2020credential>
 #[derive(Serialize, Deserialize, Clone)]
@@ -527,24 +524,8 @@ pub struct RevocationListCredential {
     pub issuer: String,
     pub issued: String,
     pub credential_subject: RevocationListCredentialSubject,
-    pub proof: AssertionProof,
-}
-
-impl RevocationListCredential {
-    pub fn new(
-        list: UnproofedRevocationListCredential,
-        proof: AssertionProof,
-    ) -> RevocationListCredential {
-        RevocationListCredential {
-            context: list.context,
-            id: list.id,
-            r#type: list.r#type,
-            issuer: list.issuer,
-            issued: list.issued,
-            credential_subject: list.credential_subject,
-            proof,
-        }
-    }
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub proof: Option<AssertionProof>,
 }
 
 /// Helper class to ensure that credential id uuid's are prefixed with `"uuid:"`.

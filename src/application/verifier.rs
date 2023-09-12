@@ -511,7 +511,7 @@ mod tests {
         let mut presentation: ProofPresentation = serde_json::from_str(&PROOF_PRESENTATION)?;
         let other_proof =
             serde_json::from_str::<RevocationListCredential>(REVOCATION_LIST_CREDENTIAL)?.proof;
-        presentation.proof = Some(other_proof);
+        presentation.proof = other_proof;
 
         let proof_request: BbsProofRequest =
             serde_json::from_str(&PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES)?;
