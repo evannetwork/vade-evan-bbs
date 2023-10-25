@@ -9,6 +9,7 @@
 - make proof in `ProofPresentation` optional and skip proof verification if not provided
 - update `vc_zkp_create_revocation_registry_definition` and `vc_zkp_revoke_credential` to skip proof generation
   if `issuer_public_key_did` or `issuer_proving_key` are not provided
+- update `signer_address` in `VerifyProofPayload` to be optional
 
 ### Fixes
 
