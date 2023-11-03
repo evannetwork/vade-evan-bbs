@@ -727,7 +727,7 @@ async fn workflow_can_propose_request_issue_verify_a_credential() -> Result<(), 
         presentation: presentation.clone(),
         proof_request: proof_request.clone(),
         keys_to_schema_map: public_key_schema_map,
-        signer_address: SIGNER_1_ADDRESS.to_string(),
+        signer_address: Some(SIGNER_1_ADDRESS.to_string()),
         revocation_list: Some(revocation_list.clone()),
     };
     let verify_proof_json = serde_json::to_string(&verify_proof_payload)?;
@@ -813,7 +813,7 @@ async fn workflow_can_propose_request_issue_verify_a_credential_with_proof_propo
         presentation: presentation.clone(),
         proof_request: proof_request.clone(),
         keys_to_schema_map: public_key_schema_map,
-        signer_address: SIGNER_1_ADDRESS.to_string(),
+        signer_address: Some(SIGNER_1_ADDRESS.to_string()),
         revocation_list: Some(revocation_list.clone()),
     };
     let verify_proof_json = serde_json::to_string(&verify_proof_payload)?;
@@ -1124,7 +1124,7 @@ async fn workflow_cannot_verify_revoked_credential() -> Result<(), Box<dyn Error
         presentation,
         proof_request,
         keys_to_schema_map: public_key_schema_map,
-        signer_address: SIGNER_1_ADDRESS.to_string(),
+        signer_address: Some(SIGNER_1_ADDRESS.to_string()),
         revocation_list: Some(updated_revocation),
     };
     let verify_proof_json = serde_json::to_string(&verify_proof_payload)?;
@@ -1243,7 +1243,7 @@ async fn workflow_can_not_verify_presentation_mismatch_revealed_statements(
         presentation: presentation.clone(),
         proof_request: proof_request.clone(),
         keys_to_schema_map: public_key_schema_map,
-        signer_address: SIGNER_1_ADDRESS.to_string(),
+        signer_address: Some(SIGNER_1_ADDRESS.to_string()),
         revocation_list: Some(revocation_list.clone()),
     };
     let verify_proof_json = serde_json::to_string(&verify_proof_payload)?;
@@ -1334,7 +1334,7 @@ async fn workflow_can_not_verify_presentation_mismatch_required_revealed_stateme
         presentation: presentation.clone(),
         proof_request: proof_request.clone(),
         keys_to_schema_map: public_key_schema_map,
-        signer_address: SIGNER_1_ADDRESS.to_string(),
+        signer_address: Some(SIGNER_1_ADDRESS.to_string()),
         revocation_list: Some(revocation_list.clone()),
     };
     let verify_proof_json = serde_json::to_string(&verify_proof_payload)?;

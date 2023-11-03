@@ -142,14 +142,23 @@ impl Verifier {
         presentation: &ProofPresentation,
         proof_request: &BbsProofRequest,
         keys_to_schema_map: &HashMap<String, DeterministicPublicKey>,
-        signer_address: &str,
+        signer_address: Option<String>,
         nquads_to_schema_map: &HashMap<String, Vec<String>>,
     ) -> Result<BbsProofVerification, Box<dyn Error>> {
         if presentation.verifiable_credential.len() == 0 {
             return Err(Box::from("Invalid presentation: No credentials provided"));
         }
         if presentation.proof.is_some() {
-            check_assertion_proof(&serde_json::to_string(&presentation)?, signer_address)?;
+            match signer_address {
+                Some(address) => {
+                    check_assertion_proof(&serde_json::to_string(&presentation)?, &address)?;
+                }
+                None => {
+                    return Err(Box::from(
+                        "Invalid presentation: No signer is provided to check proof",
+                    ));
+                }
+            }
         }
 
         let challenge =
@@ -337,7 +346,7 @@ mod tests {
 
     #[tokio::test]
     async fn can_verify_proof() -> Result<(), Box<dyn Error>> {
-        let signer_address = SIGNER_1_ADDRESS;
+        let signer_address = Some(SIGNER_1_ADDRESS.to_owned());
         let presentation: ProofPresentation = serde_json::from_str(&PROOF_PRESENTATION)?;
         let proof_request: BbsProofRequest =
             serde_json::from_str(&PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES)?;
@@ -373,7 +382,7 @@ mod tests {
 
     #[tokio::test]
     async fn can_verify_proof_without_verifier() -> Result<(), Box<dyn Error>> {
-        let signer_address = SIGNER_1_ADDRESS;
+        let signer_address = Some(SIGNER_1_ADDRESS.to_owned());
         let presentation: ProofPresentation = serde_json::from_str(&PROOF_PRESENTATION)?;
         let proof_request: BbsProofRequest =
             serde_json::from_str(&PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES_WITHOUT_VERIFIER)?;
@@ -411,8 +420,52 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn throws_error_if_signer_address_not_passed_for_proof() -> Result<(), Box<dyn Error>> {
+        let presentation: ProofPresentation = serde_json::from_str(&PROOF_PRESENTATION)?;
+
+        let proof_request: BbsProofRequest =
+            serde_json::from_str(&PROOF_REQUEST_SCHEMA_FIVE_PROPERTIES_WITHOUT_VERIFIER)?;
+        let key: DeterministicPublicKey = get_dpk_from_string(&PUB_KEY)?;
+
+        let mut keys_to_schema_map = HashMap::new();
+        keys_to_schema_map.insert(
+            presentation.verifiable_credential[0]
+                .credential_schema
+                .id
+                .clone(),
+            key,
+        );
+
+        let nquads: Vec<String> =
+            convert_to_credential_nquads(&presentation.verifiable_credential.get(0)).await?;
+        let mut nquads_to_schema_map = HashMap::new();
+        nquads_to_schema_map.insert(
+            presentation.verifiable_credential[0]
+                .credential_schema
+                .id
+                .clone(),
+            nquads,
+        );
+
+        match Verifier::verify_proof(
+            &presentation,
+            &proof_request,
+            &keys_to_schema_map,
+            None,
+            &nquads_to_schema_map,
+        ){ 
+            Ok(_) => assert!(false, "This test should have failed"),
+            Err(e) => assert_eq!(
+               "Invalid presentation: No signer is provided to check proof",
+                format!("{}", e)
+            ),
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn can_verify_and_skip_proof_check_if_proof_not_present() -> Result<(), Box<dyn Error>> {
-        let signer_address = SIGNER_1_ADDRESS;
         let mut presentation: ProofPresentation = serde_json::from_str(&PROOF_PRESENTATION)?;
         // remove proof from presentation
         presentation.proof = None;
@@ -444,7 +497,7 @@ mod tests {
             &presentation,
             &proof_request,
             &keys_to_schema_map,
-            signer_address,
+            None,
             &nquads_to_schema_map,
         )?;
 
@@ -455,7 +508,7 @@ mod tests {
     async fn throws_on_invalid_bbs_proof() -> Result<(), Box<dyn Error>> {
         let proofless_presentation: UnfinishedProofPresentation =
             serde_json::from_str(PROOF_PRESENTATION_INVALID_SIGNATURE_AND_WITHOUT_JWS)?;
-        let holder_address = SIGNER_1_ADDRESS;
+        let holder_address = Some(SIGNER_1_ADDRESS.to_owned());
         let signer: Box<dyn Signer> = Box::new(LocalSigner::new());
         let assertion_proof = create_assertion_proof(
             &serde_json::to_value(&proofless_presentation)?,
@@ -506,7 +559,7 @@ mod tests {
 
     #[test]
     fn throws_on_invalid_assertion_proof() -> Result<(), Box<dyn Error>> {
-        let holder_address = SIGNER_1_ADDRESS;
+        let holder_address = Some(SIGNER_1_ADDRESS.to_owned());
         // Our assertion got corrupted mysteriously
         let mut presentation: ProofPresentation = serde_json::from_str(&PROOF_PRESENTATION)?;
         let other_proof =
@@ -551,7 +604,7 @@ mod tests {
 
     #[test]
     fn throws_on_invalid_presentation_structure() -> Result<(), Box<dyn Error>> {
-        let holder_address = SIGNER_1_ADDRESS;
+        let holder_address = Some(SIGNER_1_ADDRESS.to_owned());
         // Our bbs proof got corrupted mysteriously
         let mut presentation_doc: Value = serde_json::from_str(&PROOF_PRESENTATION)?;
         presentation_doc["verifiableCredential"] = Value::Array(Vec::new());
@@ -587,7 +640,7 @@ mod tests {
 
     #[test]
     fn deems_proof_invalid_on_unexpected_values() -> Result<(), Box<dyn Error>> {
-        let holder_address = SIGNER_1_ADDRESS;
+        let holder_address = Some(SIGNER_1_ADDRESS.to_owned());
         // Our assertion got corrupted mysteriously
         let presentation: ProofPresentation = serde_json::from_str(&PROOF_PRESENTATION)?;
 

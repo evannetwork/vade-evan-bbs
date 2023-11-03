@@ -277,7 +277,7 @@ pub struct VerifyProofPayload {
     /// Relevant BBS+ public keys for each credential schema occurring in this proof
     pub keys_to_schema_map: HashMap<String, String>,
     /// Signer address
-    pub signer_address: String,
+    pub signer_address: Option<String>,
     /// revocation list credential
     pub revocation_list: Option<RevocationListCredential>,
 }
@@ -868,7 +868,7 @@ impl VadePlugin for VadeEvanBbs {
             &payload.presentation,
             &proof_request,
             &public_key_schema_map,
-            &payload.signer_address,
+            payload.signer_address,
             &nquads_schema_map,
         )?;
         if verification_result.status != "rejected" {
