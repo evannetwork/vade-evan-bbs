@@ -347,6 +347,7 @@ impl VadePlugin for VadeEvanBbs {
     ///
     /// - `create_master_secret` to create new master secrets
     /// - `create_new_keys` to create a new key pair for BBS+ based signatures
+    /// - `get_public_key_from_private_key` to get the public key from a given private key
     ///
     /// # Arguments
     ///
