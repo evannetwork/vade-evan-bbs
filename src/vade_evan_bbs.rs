@@ -282,13 +282,6 @@ pub struct VerifyProofPayload {
     pub revocation_list: Option<RevocationListCredential>,
 }
 
-/// API payload to create new BBS+ keys and persist them on the DID document.
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CreateKeysPayload {
-    pub key_owner_did: String,
-}
-
 /// API payload to derive public key from base 64 encoded private key.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
