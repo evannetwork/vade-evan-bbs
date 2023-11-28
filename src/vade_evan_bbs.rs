@@ -328,10 +328,7 @@ impl VadeEvanBbs {
 }
 
 impl VadeEvanBbs {
-    async fn create_new_keys(
-        &mut self,
-        payload: CreateKeysPayload,
-    ) -> Result<String, Box<dyn Error>> {
+    async fn create_new_keys(&mut self) -> Result<String, Box<dyn Error>> {
         let keys = Issuer::create_new_keys();
         let pub_key = base64::encode(keys.0.to_bytes_compressed_form());
         let secret_key = base64::encode(keys.1.to_bytes_compressed_form());
@@ -340,11 +337,11 @@ impl VadeEvanBbs {
 
         let serialized_keys = format!(
             r###"{{
-                "didUrl": "{}#{}",
+                "keyId": "{}",
                 "publicKey": "{}",
                 "secretKey": "{}"
             }}"###,
-            &payload.key_owner_did, key_id, pub_key, secret_key
+            key_id, pub_key, secret_key
         );
 
         Ok(serialized_keys)
@@ -363,7 +360,7 @@ impl VadePlugin for VadeEvanBbs {
     /// * `method` - method to call a function for (e.g. "did:example")
     /// * `function` - currently supports `create_master_secret` and  `create_new_keys`
     /// * `options` - serialized [`TypeOptions`](https://docs.rs/vade_evan_bbs/*/vade_evan_bbs/struct.TypeOptions.html)
-    /// * `payload` - necessary for `create_new_keys`, can be left empty for `create_master_secret`
+    /// * `payload` - necessary for `get_public_key_from_private_key`, can be left empty for `create_master_secret` and `create_new_keys`
     async fn run_custom_function(
         &mut self,
         method: &str,
@@ -376,12 +373,9 @@ impl VadePlugin for VadeEvanBbs {
             "create_master_secret" => Ok(VadePluginResultValue::Success(Some(
                 serde_json::to_string(&Prover::create_master_secret())?,
             ))),
-            "create_new_keys" => {
-                let payload: CreateKeysPayload = parse!(&payload, "payload");
-                Ok(VadePluginResultValue::Success(Some(
-                    self.create_new_keys(payload).await?,
-                )))
-            }
+            "create_new_keys" => Ok(VadePluginResultValue::Success(Some(
+                self.create_new_keys().await?,
+            ))),
             "get_public_key_from_private_key" => {
                 let payload: GetPublicKeyFromPrivateKeyPayload = parse!(&payload, "payload");
                 let pk_base_64 = get_public_key_from_private_key(&payload.private_key)?;

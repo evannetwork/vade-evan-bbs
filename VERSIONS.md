@@ -26,6 +26,8 @@
   - `UnfinishedBbsCredential`
   - `BbsPresentation`
 
+- remove payload parameter from `create_new_keys` custom function
+
 ## v0.4.0
 
 ### Features
