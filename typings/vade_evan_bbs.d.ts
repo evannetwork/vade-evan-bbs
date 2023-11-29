@@ -223,8 +223,8 @@ export interface VerifyProofPayload {
 
 /** Result of the createKeys method for BBS+ */
 export interface BbsKeys {
-  /** DID Url of the persisted public key */
-  didUrl: string;
+  /** key id of the persisted public key */
+  keyId: string;
   publicKey: string;
   secretKey: string;
 }
