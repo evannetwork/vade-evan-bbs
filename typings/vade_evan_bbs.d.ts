@@ -88,7 +88,7 @@ export interface OfferCredentialPayload {
   /** credential draft, outlining structure of future credential (without proof and status) */
   draftCredential: DraftBbsCredential;
   /** type of credential status to use; pass`None` to omit status */
-  credentialStatusType: LdProofVcDetailOptionsCredentialStatusType,
+  credentialStatusType: LdProofVcDetailOptionsCredentialStatusType;
   /** defaults to `[]`  */
   requiredRevealStatements?: number[];
 }
@@ -155,7 +155,9 @@ export interface RequestProofPayloadFromScratch {
 }
 
 /** API payload to create a BbsProofRequest to be sent by a verifier. */
-export type RequestProofPayload = RequestProofPayloadFromScratch | BbsProofProposal;
+export type RequestProofPayload =
+  | RequestProofPayloadFromScratch
+  | BbsProofProposal;
 
 /** API payload to revoke a credential as this credential's issuer. */
 export interface RevokeCredentialPayload {
@@ -219,15 +221,10 @@ export interface VerifyProofPayload {
   revocationList?: RevocationListCredential;
 }
 
-/** API payload to create new BBS+ keys and persist them on the DID document. */
-export interface CreateKeysPayload {
-  keyOwnerDid: string;
-}
-
 /** Result of the createKeys method for BBS+ */
 export interface BbsKeys {
-  /** DID Url of the persisted public key */
-  didUrl: string;
+  /** key id of the persisted public key */
+  keyId: string;
   publicKey: string;
   secretKey: string;
 }
